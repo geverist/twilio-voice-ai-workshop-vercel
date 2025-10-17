@@ -7440,8 +7440,8 @@ app.get('/health', (req, res) => {
 
       const checks = {
         hasWebSocket: code.includes('WebSocket') || code.includes('ws'),
-        hasHandler: code.includes('exports.handler') || code.includes('module.exports'),
-        hasCallback: code.includes('callback'),
+        hasHandler: code.includes('exports.handler') || code.includes('module.exports') || code.includes('const app = express()') || code.includes('const express = require'),
+        hasCallback: code.includes('callback') || code.includes('wss.on') || code.includes('ws.on'),
         hasImplementation: codeLines > 5 && (todoLines === 0 || codeLines > todoLines * 2)
       };
 
@@ -7468,9 +7468,9 @@ app.get('/health', (req, res) => {
         if (deploySection) deploySection.style.display = 'none';
       } else {
         let message = '⚠️ Validation issues found:\n';
-        if (!checks.hasWebSocket) message += '- Missing WebSocket import\n';
-        if (!checks.hasHandler) message += '- Missing exports.handler function\n';
-        if (!checks.hasCallback) message += '- Missing callback() call\n';
+        if (!checks.hasWebSocket) message += '- Missing WebSocket import (require(\'ws\') or WebSocketServer)\n';
+        if (!checks.hasHandler) message += '- Missing handler setup (exports.handler or Express app)\n';
+        if (!checks.hasCallback) message += '- Missing event handlers (callback() or ws.on())\n';
         if (!checks.hasImplementation) message += `- Not enough implementation code (found ${codeLines} lines of code, ${todoLines} TODOs)\n`;
         showStatus('step7Status', 'warning', message);
       }
