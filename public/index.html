@@ -6681,7 +6681,7 @@ ${hintsLine}
                   <span style="font-size: 1.5rem;">✅</span>
                   <div>
                     <strong style="color: #155724; font-size: 1.05rem;">OpenAI API Key Connected${studentDemoMode ? ' (Demo)' : ''}</strong><br>
-                    <span style="color: #155724; font-size: 13px;">${studentDemoMode ? 'sk-demo-...workshop' : (openaiApiKey ? openaiApiKey.substring(0, 12) + '...' + openaiApiKey.substring(openaiApiKey.length - 4) : 'Connected')}</span>
+                    <span style="color: #155724; font-size: 13px;">${studentDemoMode ? 'sk-demo-****...****' : (openaiApiKey ? 'sk-****...****' : 'Connected')}</span>
                   </div>
                 </div>
                 ${studentDemoMode ? `
