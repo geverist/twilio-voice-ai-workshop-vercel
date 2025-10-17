@@ -2414,9 +2414,12 @@
 
     async function loadServices() {
       // Handle demo mode
-      if (twilioCredentials?.demoMode) {
+      if (studentDemoMode || twilioCredentials?.demoMode) {
         displayServices({
-          phoneNumbers: [{ phoneNumber: '+1 (555) 123-4567', sid: 'PNdemo', friendlyName: 'Demo Number' }],
+          phoneNumbers: [
+            { phoneNumber: '+1 (555) 867-5309', sid: 'PNdemo001', friendlyName: 'Demo Workshop Number' },
+            { phoneNumber: '+1 (555) 123-4567', sid: 'PNdemo002', friendlyName: 'Demo Testing Number' }
+          ],
           messagingService: { sid: 'MGdemo', friendlyName: 'Demo Messaging Service' },
           syncService: { sid: 'ISdemo', friendlyName: 'Demo Sync Service' }
         });
