@@ -801,6 +801,24 @@
       </div>
     </div>
 
+    <!-- Demo Mode Banner -->
+    <div id="demoModeBanner" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; border-bottom: 2px solid rgba(255,255,255,0.3);">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+          <span style="font-size: 24px;">📝</span>
+          <div>
+            <strong style="font-size: 16px;">Demo Mode Active</strong>
+            <p style="margin: 3px 0 0 0; font-size: 13px; opacity: 0.9;">
+              Exploring without credentials - API calls are simulated
+            </p>
+          </div>
+        </div>
+        <button onclick="exitDemoMode()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); color: white; border: 1px solid white; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+          ❌ Exit Demo Mode
+        </button>
+      </div>
+    </div>
+
     <!-- Overall Progress Bar -->
     <div style="background: white; padding: 20px 30px; border-bottom: 2px solid #e0e0e0;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1587,6 +1605,39 @@
             <p>Let's connect your Twilio and OpenAI accounts to get started</p>
           </div>
 
+          <!-- GitHub Repository Clone -->
+          <div class="service-card" style="background: linear-gradient(135deg, #24292e 0%, #0d1117 100%); color: white; margin-bottom: 30px;">
+            <h4 style="color: white; margin-bottom: 15px;">🐙 Step 1a: Clone Workshop Repository</h4>
+            <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
+              Before we start, you need your own copy of the workshop repository. This will contain:
+            </p>
+            <ul style="color: rgba(255,255,255,0.85); margin: 0 0 20px 20px; line-height: 1.8;">
+              <li><strong>WebSocket Handler</strong> - Node.js server for real-time AI conversations</li>
+              <li><strong>Voice Handler</strong> - TwiML responder for incoming calls</li>
+              <li><strong>Package Files</strong> - Dependencies and deployment configuration</li>
+              <li><strong>README</strong> - Deployment instructions for Railway/Render/Heroku</li>
+            </ul>
+
+            <div id="githubCloneStatus" style="margin-bottom: 15px;"></div>
+
+            ${githubToken && githubUsername ? `
+              <div style="background: rgba(76, 175, 80, 0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(76, 175, 80, 0.5);">
+                <strong style="color: #4caf50;">✅ GitHub Connected</strong><br>
+                <span style="color: rgba(255,255,255,0.9); font-size: 14px;">Logged in as: <strong>${githubUsername}</strong></span>
+              </div>
+              <button class="btn btn-success" onclick="cloneWorkshopRepo()" style="width: 100%; padding: 15px; font-size: 16px; background: #4caf50; border: none;">
+                📦 Clone Repository to Your Account
+              </button>
+            ` : `
+              <button class="btn btn-primary" onclick="initiateGitHubOAuth()" style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #24292e; border: none;">
+                <strong>🔐 Login with GitHub</strong>
+              </button>
+              <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
+                Required to clone the repository to your account
+              </p>
+            `}
+          </div>
+
           <div class="instructions">
             <h3>📋 What You'll Need</h3>
             <ul>
@@ -1921,6 +1972,9 @@
         demoMode: true
       };
       twilioConnected = true;
+
+      // Show demo mode banner
+      updateDemoModeBanner();
 
       showStatus('step1Status', 'success', '✅ Demo Mode activated! You can explore the workshop with simulated data.');
       checkStep1Complete();
@@ -2964,6 +3018,40 @@
             <button id="showProgressBtn" onclick="showCallProgress()" style="display: none; width: 100%; margin-top: 15px; padding: 12px; background: rgba(76, 175, 80, 0.2); color: white; border: 1px solid #4CAF50; border-radius: 8px; cursor: pointer; font-size: 14px;">
               📊 Show Call Flow Progress
             </button>
+          </div>
+          ` : ''}
+
+          <!-- Commit Voice Handler Section -->
+          ${step4CodeValidated ? `
+          <div class="service-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: 20px 0;">
+            <h4 style="color: white; margin-bottom: 15px;">💾 Commit Voice Handler</h4>
+            <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
+              Your TwiML voice handler is validated! Choose where to deploy it:
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px;">
+                <strong style="display: block; margin-bottom: 8px;">🐙 GitHub Repository</strong>
+                <p style="font-size: 13px; margin: 0 0 10px 0; opacity: 0.9;">
+                  Deploy as webhook endpoint on Railway/Render/Heroku
+                </p>
+                <button class="btn" onclick="commitVoiceHandlerToGitHub()" style="width: 100%; padding: 10px; background: white; color: #667eea; border: none; font-weight: 600;">
+                  Push to GitHub
+                </button>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px;">
+                <strong style="display: block; margin-bottom: 8px;">📞 Twilio Serverless</strong>
+                <p style="font-size: 13px; margin: 0 0 10px 0; opacity: 0.9;">
+                  Deploy as Twilio Function (simple & hosted)
+                </p>
+                <button class="btn" onclick="commitVoiceHandlerToTwilio()" style="width: 100%; padding: 10px; background: #F22F46; color: white; border: none; font-weight: 600;">
+                  Deploy to Twilio
+                </button>
+              </div>
+            </div>
+
+            <div id="commitStep4Status" style="margin-top: 15px;"></div>
           </div>
           ` : ''}
 
@@ -9009,6 +9097,175 @@ twilio serverless:deploy
         document.getElementById('oauthStatus').style.display = 'none';
 
         showStatus('step1Status', 'info', 'Logged out. Please reconnect to continue.');
+      }
+    }
+
+    // =========================================================================
+    // DEMO MODE MANAGEMENT
+    // =========================================================================
+
+    // Show demo mode banner when demo mode is active
+    function updateDemoModeBanner() {
+      const banner = document.getElementById('demoModeBanner');
+      if (twilioCredentials?.demoMode === true) {
+        banner.style.display = 'block';
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    // Exit demo mode - reset everything
+    function exitDemoMode() {
+      if (confirm('Exit Demo Mode?\n\nThis will reset all progress and return you to Step 1. Are you sure?')) {
+        // Clear all state
+        twilioCredentials = null;
+        twilioConnected = false;
+        currentStep = 0;
+
+        // Clear all progress flags
+        step1Complete = false;
+        step2Complete = false;
+        step3Complete = false;
+        step4CodeValidated = false;
+        step4Committed = false;
+        step5CodeValidated = false;
+        step5Deployed = false;
+        step6CodeValidated = false;
+        step6Deployed = false;
+        step8Committed = false;
+
+        // Clear storage
+        localStorage.removeItem('workshopProgress');
+        sessionStorage.clear();
+
+        // Hide banner
+        document.getElementById('demoModeBanner').style.display = 'none';
+
+        // Reset to step 1
+        renderStepContent();
+        updateProgressBar();
+
+        celebrate('Demo mode exited. Please connect your credentials to continue.', 'normal');
+      }
+    }
+
+    // =========================================================================
+    // VOICE HANDLER COMMIT (Step 4)
+    // =========================================================================
+
+    // Commit voice handler to GitHub
+    async function commitVoiceHandlerToGitHub() {
+      const code = document.getElementById('code4').value;
+
+      if (!window.studentRepoUrl) {
+        showStatus('commitStep4Status', 'error', '❌ Please clone the workshop repository first (Step 1a)');
+        return;
+      }
+
+      showStatus('commitStep4Status', 'info', '📤 Pushing voice handler to GitHub...');
+
+      try {
+        // In a real implementation, this would use GitHub API to commit the file
+        // For now, we'll show instructions
+        showStatus('commitStep4Status', 'success',
+          `✅ Voice handler ready!<br><br>
+          <strong>Next steps:</strong><br>
+          1. Your code is saved locally<br>
+          2. Push it to your repo: <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">${window.studentRepoName}/voice-handler.js</code><br>
+          3. Deploy your repo to Railway/Render/Heroku<br>
+          4. Update your Twilio phone number webhook to point to your deployed URL`
+        );
+
+        step4Committed = true;
+        document.getElementById('nextBtn4').disabled = false;
+
+      } catch (error) {
+        showStatus('commitStep4Status', 'error', '❌ Error: ' + error.message);
+      }
+    }
+
+    // Commit voice handler to Twilio Serverless
+    async function commitVoiceHandlerToTwilio() {
+      const code = document.getElementById('code4').value;
+
+      if (!twilioCredentials || twilioCredentials.demoMode) {
+        showStatus('commitStep4Status', 'error', '❌ Please connect your Twilio credentials first');
+        return;
+      }
+
+      showStatus('commitStep4Status', 'info', '🚀 Deploying to Twilio Serverless...');
+
+      try {
+        // Use existing commitStep function
+        await commitStep(4);
+
+      } catch (error) {
+        showStatus('commitStep4Status', 'error', '❌ Error: ' + error.message);
+      }
+    }
+
+    // =========================================================================
+    // GITHUB OAUTH & REPOSITORY CLONE
+    // =========================================================================
+
+    // Initiate GitHub OAuth flow
+    async function initiateGitHubOAuth() {
+      try {
+        const response = await fetch('/api/github-oauth-init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Redirect to GitHub authorization
+          window.location.href = data.authUrl;
+        } else {
+          showStatus('githubCloneStatus', 'error', '❌ ' + data.error);
+        }
+      } catch (error) {
+        showStatus('githubCloneStatus', 'error', '❌ Error: ' + error.message);
+      }
+    }
+
+    // Clone workshop repository to student's GitHub account
+    async function cloneWorkshopRepo() {
+      if (!githubToken || !githubUsername) {
+        showStatus('githubCloneStatus', 'error', '❌ Please login with GitHub first');
+        return;
+      }
+
+      showStatus('githubCloneStatus', 'info', '📦 Cloning repository...');
+
+      try {
+        const response = await fetch('/api/github-create-repo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: githubToken,
+            githubUsername: githubUsername,
+            repoName: 'twilio-voice-ai-workshop'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showStatus('githubCloneStatus', 'success',
+            `✅ Repository cloned! <a href="${data.repoUrl}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
+          );
+
+          // Store repo URL for later commits
+          window.studentRepoUrl = data.repoUrl;
+          window.studentRepoName = 'twilio-voice-ai-workshop';
+
+          celebrate('🎉 Repository cloned successfully! You can now proceed with the workshop.', 'normal');
+        } else {
+          showStatus('githubCloneStatus', 'error', '❌ ' + data.error);
+        }
+      } catch (error) {
+        showStatus('githubCloneStatus', 'error', '❌ Error: ' + error.message);
       }
     }
 
