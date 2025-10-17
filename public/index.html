@@ -1741,6 +1741,9 @@
           localStorage.setItem('github_token', githubToken);
           localStorage.setItem('github_username', githubUsername);
 
+          // Load any existing progress (including studentRepoName)
+          loadProgressFromStorage();
+
           // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
 
