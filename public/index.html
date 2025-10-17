@@ -3286,48 +3286,78 @@
       const code = document.getElementById('code4').value;
       const isOutbound = callDirection === 'outbound';
 
-      const hasSayVerb = code.includes('twiml.say(') || code.includes('.say(');
-      const hasGatherVerb = code.includes('twiml.gather(') || code.includes('.gather(');
-      const hasHangupVerb = code.includes('twiml.hangup(') || code.includes('.hangup(');
+      try {
+        // Try to execute the code to validate it actually works
+        const mockTwiml = {
+          say: function(text, options) { this._hasSay = true; return this; },
+          gather: function(options) { this._hasGather = true; return this; },
+          hangup: function() { this._hasHangup = true; return this; },
+          dial: function(options) { this._hasDial = true; return { number: function() {} }; },
+          _hasSay: false,
+          _hasGather: false,
+          _hasHangup: false,
+          _hasDial: false,
+          toString: function() { return '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'; }
+        };
 
-      // For both inbound and outbound, expect Say + Gather (basic IVR)
-      if (hasSayVerb && hasGatherVerb) {
-        basicTwimlCreated = true;
-        step4CodeValidated = true;
-        // Only enable Next button for inbound (outbound needs to test+deploy first)
-        if (!isOutbound) {
-          document.getElementById('nextBtn4').disabled = false;
-        }
-        showStatus('step4Status', 'success', '✅ Perfect! Your IVR is ready. ' + (isOutbound ? 'Test it live below!' : 'Deploy it below!'));
-        updateProgressBar();
+        // Create a safe execution context
+        const wrappedCode = `
+          (function() {
+            const twiml = arguments[0];
+            const context = arguments[1];
+            ${code}
+            return twiml;
+          })
+        `;
 
-        // Hide the placeholder hint and reveal next sections
-        const placeholder = document.getElementById('step4Placeholder');
-        if (placeholder) placeholder.style.display = 'none';
+        const func = eval(wrappedCode);
+        const result = func(mockTwiml, { TWILIO_PHONE_NUMBER: '+15555555555' });
 
-        const testSection = document.getElementById('step4TestSection');
-        const deploySection = document.getElementById('step4DeploySection');
+        // Check if required verbs were called
+        const hasSayVerb = result._hasSay;
+        const hasGatherVerb = result._hasGather;
 
-        if (isOutbound) {
-          // For outbound: show test section, deploy will show after test
-          if (testSection) testSection.style.display = 'block';
-        } else {
-          // For inbound: show deploy section immediately (can't test until deployed)
-          if (deploySection) deploySection.style.display = 'block';
-        }
-
-        // Scroll to reveal
-        setTimeout(() => {
-          if (isOutbound && testSection) {
-            testSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          } else if (deploySection) {
-            deploySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // For both inbound and outbound, expect Say + Gather (basic IVR)
+        if (hasSayVerb && hasGatherVerb) {
+          basicTwimlCreated = true;
+          step4CodeValidated = true;
+          // Only enable Next button for inbound (outbound needs to test+deploy first)
+          if (!isOutbound) {
+            document.getElementById('nextBtn4').disabled = false;
           }
-        }, 300);
-      } else if (!hasSayVerb) {
-        showStatus('step4Status', 'error', '❌ Missing Say verb. Use twiml.say() to greet the caller.');
-      } else if (!hasGatherVerb) {
-        showStatus('step4Status', 'error', '❌ Missing Gather verb. Use twiml.gather() to collect input.');
+          showStatus('step4Status', 'success', '✅ Perfect! Your IVR is ready. ' + (isOutbound ? 'Test it live below!' : 'Deploy it below!'));
+          updateProgressBar();
+
+          // Hide the placeholder hint and reveal next sections
+          const placeholder = document.getElementById('step4Placeholder');
+          if (placeholder) placeholder.style.display = 'none';
+
+          const testSection = document.getElementById('step4TestSection');
+          const deploySection = document.getElementById('step4DeploySection');
+
+          if (isOutbound) {
+            // For outbound: show test section, deploy will show after test
+            if (testSection) testSection.style.display = 'block';
+          } else {
+            // For inbound: show deploy section immediately (can't test until deployed)
+            if (deploySection) deploySection.style.display = 'block';
+          }
+
+          // Scroll to reveal
+          setTimeout(() => {
+            if (isOutbound && testSection) {
+              testSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else if (deploySection) {
+              deploySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }, 300);
+        } else if (!hasSayVerb) {
+          showStatus('step4Status', 'error', '❌ Missing Say verb. Use twiml.say() to greet the caller.');
+        } else if (!hasGatherVerb) {
+          showStatus('step4Status', 'error', '❌ Missing Gather verb. Use twiml.gather() to collect input.');
+        }
+      } catch (error) {
+        showStatus('step4Status', 'error', `❌ Code error: ${error.message}. Check your syntax.`);
       }
     }
 
@@ -3443,10 +3473,10 @@
       const greeting = greetingMatch ? greetingMatch[1] : 'Hello world';
 
       console.log('makeLiveTestCall - twilioCredentials:', twilioCredentials);
-      console.log('makeLiveTestCall - demoMode:', twilioCredentials?.demoMode);
+      console.log('makeLiveTestCall - studentDemoMode:', studentDemoMode);
 
       // Demo mode simulation
-      if (twilioCredentials?.demoMode === true) {
+      if (studentDemoMode || twilioCredentials?.demoMode === true) {
         document.getElementById('liveTestStatus').innerHTML =
           '<div style="color: #4fc1ff; padding: 10px; background: #2c313c; border-radius: 4px;">📞 Demo Mode: Simulating call...</div>';
 
@@ -3469,9 +3499,15 @@
             </div>
           `;
 
-          // Enable next button after demo call
-          const nextBtn = document.getElementById('nextBtn4');
-          if (nextBtn) nextBtn.disabled = false;
+          // Mark test as completed and show deploy section
+          step4LiveTestCompleted = true;
+          const deploySection = document.getElementById('step4DeploySection');
+          if (deploySection) {
+            deploySection.style.display = 'block';
+            setTimeout(() => {
+              deploySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 500);
+          }
         }, 2000);
         return;
       }
