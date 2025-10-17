@@ -7047,11 +7047,17 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           throw new Error(errorMsg);
         }
 
-        showStatus(statusId, 'success', `✅ ${functionName} deployed successfully!`);
-
-        // Mark this step as committed
+        // Mark this step as committed/deployed
         if (stepNumber === 4) {
           step4Committed = true;
+          step4Deployed = true; // Set deployed flag so test section appears
+
+          // Save progress immediately
+          saveProgressToStorage();
+          updateProgressBar();
+
+          showStatus(statusId, 'success', `✅ ${functionName} deployed successfully! Test it below!`);
+
           // Show inbound test card for inbound calls
           if (callDirection === 'inbound') {
             const testCard = document.getElementById('inboundTestCard');
@@ -7065,7 +7071,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
               }, 500);
             }
           } else {
-            // For both inbound and outbound: show test section after deployment
+            // For outbound: show test section after deployment
             const testSection = document.getElementById('step4TestSection');
             if (testSection) {
               testSection.style.display = 'block';
