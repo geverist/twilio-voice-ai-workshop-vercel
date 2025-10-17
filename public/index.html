@@ -1797,6 +1797,13 @@
         localStorage.removeItem('settingUpAccounts');
       }
 
+      // IMPORTANT: Always ensure we start at step 0 unless explicitly resuming
+      // If we're NOT showing the resume modal, currentStep should be 0
+      if (!savedProgress || setupComplete || isGithubCallback || isSettingUpAccounts || sessionStorage.getItem('startingFresh') === 'true') {
+        // Ensure we're at step 0 (don't use any potentially stale currentStep value)
+        currentStep = 0;
+      }
+
       // Always render content first
       renderProgressSteps();
       renderStepContent();
