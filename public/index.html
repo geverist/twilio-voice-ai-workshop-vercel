@@ -3800,6 +3800,112 @@
       const greetingMatch = code.match(/twiml\.say\(['"]([^'"]+)['"]/);
       const greeting = greetingMatch ? greetingMatch[1] : 'Hello world';
 
+      // Execute the code to generate TwiML XML
+      let twimlXml = '';
+      try {
+        // Create mock Twilio VoiceResponse to execute the function
+        const mockTwiml = {
+          _instructions: [],
+          say: function(text, options) {
+            this._instructions.push({ type: 'say', text, options: options || {} });
+            return this;
+          },
+          gather: function(options) {
+            const gatherObj = {
+              type: 'gather',
+              options: options || {},
+              _nested: []
+            };
+            this._instructions.push(gatherObj);
+            return {
+              say: (text, opts) => {
+                gatherObj._nested.push({ type: 'say', text, options: opts || {} });
+                return this;
+              }
+            };
+          },
+          hangup: function() {
+            this._instructions.push({ type: 'hangup' });
+            return this;
+          },
+          dial: function(numberOrOptions, options) {
+            this._instructions.push({
+              type: 'dial',
+              number: typeof numberOrOptions === 'string' ? numberOrOptions : null,
+              options: typeof numberOrOptions === 'object' ? numberOrOptions : (options || {})
+            });
+            return {
+              number: (num) => mockTwiml
+            };
+          },
+          toString: function() {
+            let xml = '<?xml version="1.0" encoding="UTF-8"?><Response>';
+            this._instructions.forEach(inst => {
+              if (inst.type === 'say') {
+                const voice = inst.options.voice ? ` voice="${inst.options.voice}"` : '';
+                const language = inst.options.language ? ` language="${inst.options.language}"` : '';
+                xml += `<Say${voice}${language}>${inst.text}</Say>`;
+              } else if (inst.type === 'gather') {
+                const numDigits = inst.options.numDigits ? ` numDigits="${inst.options.numDigits}"` : '';
+                const timeout = inst.options.timeout ? ` timeout="${inst.options.timeout}"` : '';
+                const action = inst.options.action ? ` action="${inst.options.action}"` : '';
+                xml += `<Gather${numDigits}${timeout}${action}>`;
+                inst._nested.forEach(nested => {
+                  if (nested.type === 'say') {
+                    const voice = nested.options.voice ? ` voice="${nested.options.voice}"` : '';
+                    xml += `<Say${voice}>${nested.text}</Say>`;
+                  }
+                });
+                xml += '</Gather>';
+              } else if (inst.type === 'hangup') {
+                xml += '<Hangup/>';
+              } else if (inst.type === 'dial') {
+                const timeout = inst.options.timeout ? ` timeout="${inst.options.timeout}"` : '';
+                const md = inst.options.machineDetection ? ` machineDetection="${inst.options.machineDetection}"` : '';
+                xml += `<Dial${timeout}${md}>`;
+                if (inst.number) {
+                  xml += `<Number>${inst.number}</Number>`;
+                }
+                xml += '</Dial>';
+              }
+            });
+            xml += '</Response>';
+            return xml;
+          }
+        };
+
+        // Execute the function code
+        const wrappedCode = `
+          (function() {
+            const twilio = {
+              twiml: {
+                VoiceResponse: function() { return mockTwiml; }
+              }
+            };
+            ${code}
+            const context = {};
+            const event = {};
+            const callback = (err, twiml) => {
+              if (twiml) {
+                return twiml.toString();
+              }
+            };
+            if (typeof exports !== 'undefined' && exports.handler) {
+              const result = exports.handler(context, event, callback);
+              if (result) return result.toString();
+            }
+            return mockTwiml.toString();
+          })()
+        `;
+
+        twimlXml = eval(wrappedCode);
+      } catch (e) {
+        console.error('Failed to generate TwiML:', e);
+        document.getElementById('liveTestStatus').innerHTML =
+          `<div style="color: #e06c75; padding: 10px; background: #2c313c; border-radius: 4px;">❌ Error generating TwiML: ${e.message}</div>`;
+        return;
+      }
+
       console.log('makeLiveTestCall - twilioCredentials:', twilioCredentials);
       console.log('makeLiveTestCall - studentDemoMode:', studentDemoMode);
 
@@ -3852,7 +3958,7 @@
             action: 'makeCall',
             to: yourNumber,
             from: selectedPhoneNumber,
-            ivrTwiml: code, // TwiML will play greeting, gather, then hangup
+            ivrTwiml: twimlXml, // Send generated TwiML XML
             ...twilioCredentials
           })
         });
