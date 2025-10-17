@@ -2807,6 +2807,7 @@
             <div class="code-header">
               <span>📝 ${isOutbound ? 'IVR' : 'Inbound'} TwiML Handler</span>
               <div style="display: flex; gap: 10px;">
+                <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode4()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code4')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="showSolution(4)">💡 Show Solution</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode4()">Reset</button>
@@ -2851,10 +2852,6 @@
 
   callback(null, twiml);
 };`}</textarea>
-          </div>
-
-          <div class="button-group">
-            <button class="btn btn-success" onclick="validateCode4()">✓ Validate</button>
           </div>
 
           <div id="step4Status" class="status-box"></div>
@@ -6044,6 +6041,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             <div class="code-header">
               <span>📝 ConversationRelay TwiML Handler</span>
               <div style="display: flex; gap: 10px;">
+                <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode8()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code8')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="showSolution(8)">💡 Show Solution</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode8()">Reset</button>
@@ -6112,10 +6110,6 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   callback(null, response);
 };</textarea>
 </invoke>
-          </div>
-
-          <div class="button-group">
-            <button class="btn btn-success" onclick="validateCode8()">✓ Validate</button>
           </div>
 
           <div id="step8Status" class="status-box"></div>
@@ -6509,6 +6503,7 @@ ${hintsLine}
             <div class="code-header">
               <span>📝 WebSocket Handler</span>
               <div style="display: flex; gap: 10px;">
+                <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode7()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code7')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="showSolution(7)">💡 Show Solution</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode7()">Reset</button>
@@ -6621,10 +6616,6 @@ ${hintsLine}
 
   // Don't call callback here - let the 'close' event handle it
 };</textarea>
-          </div>
-
-          <div class="button-group">
-            <button class="btn btn-success" onclick="validateCode7()">✓ Validate Code</button>
           </div>
 
           <div id="step7Status" class="status-box"></div>
@@ -7225,6 +7216,8 @@ ${hintsLine}
             <div class="code-header">
               <span>📝 OpenAI Integration</span>
               <div style="display: flex; gap: 10px;">
+                <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode5()">✓ Validate</button>
+                <button class="btn btn-test" style="padding: 6px 12px; font-size: 13px;" onclick="testCode5()">▶️ Test</button>
                 <button class="btn-copy" onclick="copyCode('code5')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="showSolution(5)">💡 Show Solution</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode5()">Reset</button>
@@ -7241,11 +7234,6 @@ ${hintsLine}
 
   return "AI response here";
 }</textarea>
-          </div>
-
-          <div class="button-group">
-            <button class="btn btn-test" onclick="testCode5()">▶️ Test Code</button>
-            <button class="btn btn-success" onclick="validateCode5()">✓ Validate</button>
           </div>
 
           <div class="console-output" id="console5"></div>
