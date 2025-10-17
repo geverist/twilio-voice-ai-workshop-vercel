@@ -1234,6 +1234,9 @@
       // Update demo mode banner visibility
       updateDemoModeBanner();
 
+      // Update progress bar to reflect Step 1 completion in demo mode
+      updateProgressBar();
+
       // Show personalized welcome message
       const welcomeMsg = studentName
         ? `👋 Welcome, ${studentName}! ${isDemoMode ? 'Running in demo mode.' : "Let's build an AI voice agent together."}`
