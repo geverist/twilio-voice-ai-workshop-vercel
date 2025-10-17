@@ -1801,6 +1801,7 @@
       // Check if coming from setup wizard
       const setupComplete = localStorage.getItem('workshop_setup_complete');
       const savedProgress = loadProgressFromStorage();
+      console.log('🔎 savedProgress loaded:', savedProgress);
       const hasWorkshopCredentials = localStorage.getItem('workshopCredentials');
 
       if (setupComplete) {
