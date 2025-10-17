@@ -11,33 +11,30 @@
 import OpenAI from 'openai';
 
 export const config = {
-  runtime: 'edge', // Use Edge runtime for WebSocket support
+  runtime: 'edge',
 };
 
 export default async function handler(req) {
-  const upgradeHeader = req.headers.get('upgrade');
+  const upgrade = req.headers.get('upgrade') || '';
 
-  // Check if this is a WebSocket upgrade request
-  if (upgradeHeader !== 'websocket') {
-    return new Response('Expected WebSocket upgrade', { status: 426 });
+  if (upgrade.toLowerCase() !== 'websocket') {
+    return new Response('Expected WebSocket', { status: 426 });
   }
 
-  // Get session token from query params to load their custom settings (optional)
   const url = new URL(req.url);
   const sessionToken = url.searchParams.get('sessionToken') || null;
   const sessionId = sessionToken || 'default';
 
-  // Use workshop owner's OpenAI API key (not student's)
   const openaiApiKey = process.env.OPENAI_API_KEY;
   if (!openaiApiKey) {
-    console.error('OPENAI_API_KEY not configured in environment');
-    return new Response('Server configuration error', { status: 500 });
+    return new Response('Server not configured', { status: 500 });
   }
 
-  // Create WebSocket pair
-  const { 0: client, 1: server } = new WebSocketPair();
+  // Vercel Edge Runtime WebSocket support
+  const pair = new WebSocketPair();
+  const [client, server] = [pair[0], pair[1]];
 
-  // Handle WebSocket connection with student's custom settings
+  server.accept();
   handleWebSocket(server, openaiApiKey, sessionToken, sessionId);
 
   return new Response(null, {
@@ -86,9 +83,6 @@ async function handleWebSocket(ws, openaiApiKey, sessionToken, sessionId) {
 
   // Store conversation history
   const conversationHistory = [];
-
-  // Accept the WebSocket connection
-  ws.accept();
 
   // Send greeting when connection opens
   ws.addEventListener('open', () => {
