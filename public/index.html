@@ -1050,16 +1050,21 @@
     let deployedServiceSid = null;
     let githubToken = null;
     let githubUsername = null;
+    let studentRepoName = null; // Student's GitHub repository name
     let studentName = localStorage.getItem('studentName') || '';
     let studentDemoMode = localStorage.getItem('studentDemoMode') === 'true';
     let ttsProvider = 'amazon-polly'; // Default TTS provider
     let elevenlabsApiKey = null; // For ElevenLabs TTS
     let conversationRelayVoice = null; // Selected voice for ConversationRelay
+    let ciServiceSid = null; // Conversational Intelligence service (silent background setup)
+    let workshopCallSids = []; // Track all calls made during workshop for analytics
 
     // Incremental deployment tracking
     let step4Committed = false; // Basic TwiML
     let step5Committed = false; // WebSocket
     let step6Committed = false; // ConversationRelay
+    let step7Committed = false; // Custom Prompt
+    let step7Deployed = false;  // Custom Prompt deployed
     let step8Committed = false; // Tooling
     let deployedEnvironmentSid = null;
     let deployedBuildSid = null;
@@ -1102,6 +1107,7 @@
         step8Committed,
         deployedEnvironmentSid,
         deployedBuildSid,
+        studentRepoName,
         timestamp: new Date().toISOString(),
         completedSteps: steps.slice(0, currentStep).map(s => s.title)
       };
@@ -1331,6 +1337,7 @@
       step8Committed = progress.step8Committed || false;
       deployedEnvironmentSid = progress.deployedEnvironmentSid || null;
       deployedBuildSid = progress.deployedBuildSid || null;
+      studentRepoName = progress.studentRepoName || null;
 
       // Close modal
       if (window.resumeModal) {
@@ -1398,6 +1405,7 @@
     function startFresh() {
       // Clear all progress and state
       localStorage.removeItem('workshop_progress');
+      localStorage.removeItem('workshopProgress');  // Also clear alternative key
       localStorage.removeItem('studentDemoMode');
       localStorage.removeItem('studentName');
       localStorage.removeItem('demoPurchasedNumber');
@@ -1406,7 +1414,8 @@
       localStorage.removeItem('workshopCredentials');
       sessionStorage.clear();
 
-      // Reset all state variables
+      // Reset all state variables to initial values
+      currentStep = 0;
       studentDemoMode = false;
       studentName = '';
       twilioConnected = false;
@@ -1415,11 +1424,44 @@
       githubUsername = null;
       twilioCredentials = null;
       openaiApiKey = null;
+      callDirectionChosen = false;
+      callDirection = '';
+      servicesReady = false;
+      basicTwimlCreated = false;
+      functionsDeployed = false;
+      basicCallTested = false;
+      websocketBuilt = false;
+      conversationRelayCreated = false;
+      aiCallTested = false;
+      selectedPhoneNumber = null;
+      websocketUrl = '';
+      syncServiceSkipped = false;
+      deployedServiceSid = null;
+      ttsProvider = 'amazon-polly';
+      conversationRelayVoice = null;
+      step4Committed = false;
+      step4Deployed = false;
+      step5Committed = false;
+      step5Deployed = false;
+      step6Committed = false;
+      step6Deployed = false;
+      step8Committed = false;
+      deployedEnvironmentSid = null;
+      deployedBuildSid = null;
+      studentRepoName = null;
 
       // Close the resume modal
       if (window.resumeModal) {
         window.resumeModal.remove();
       }
+
+      // Reset to step 1
+      renderProgressSteps();
+      renderStepContent();
+      updateProgressBar();
+
+      // Save cleared state
+      saveProgressToStorage();
 
       // Show the setup modal
       showSetupRequiredModal();
@@ -1673,10 +1715,10 @@
           container.innerHTML = renderStep4_BasicTwiML();
           break;
         case 4:
-          container.innerHTML = renderStep6_WebSocket();
+          container.innerHTML = renderStep5_WebSocket();
           break;
         case 5:
-          container.innerHTML = renderStep9_ConversationRelay();
+          container.innerHTML = renderStep6_ConversationRelay();
           // Initialize dropdowns after rendering
           setTimeout(() => {
             const ttsSelect = document.getElementById('ttsProvider');
@@ -2587,6 +2629,11 @@
               <a href="https://console.twilio.com/us1/develop/sms/services" target="_blank" style="color: #4fc1ff; text-decoration: none; font-size: 13px;">
                 🔗 Create in Console
               </a>
+              ${!hasMessaging ? `
+              <button class="btn btn-success" onclick="verifyMessagingSetup()" style="padding: 6px 12px; font-size: 12px; background: #10b981;">
+                ✓ Verify Setup
+              </button>
+              ` : ''}
             </div>
           </div>
         </div>
@@ -2609,6 +2656,11 @@
               <a href="https://console.twilio.com/us1/develop/sync/services" target="_blank" style="color: #4fc1ff; text-decoration: none; font-size: 13px;">
                 🔗 Create in Console
               </a>
+              ${!hasSync && !syncServiceSkipped ? `
+              <button class="btn btn-success" onclick="verifySyncSetup()" style="padding: 6px 12px; font-size: 12px; background: #10b981;">
+                ✓ Verify Setup
+              </button>
+              ` : ''}
             </div>
           </div>
         </div>
@@ -2765,10 +2817,56 @@
 
         if (data.success) {
           showStatus('step3Status', 'success', '✅ Messaging service created!');
+
+          // ===================================================================
+          // SILENT: Create Conversational Intelligence service in background
+          // ===================================================================
+          // This runs silently - students won't know until the "big reveal" in Step 9
+          setupConversationalIntelligence();
+
           loadServices();
         }
       } catch (error) {
         showStatus('step3Status', 'error', error.message);
+      }
+    }
+
+    async function setupConversationalIntelligence() {
+      // Silent background setup - no status messages shown to user
+      console.log('🔇 Silently setting up Conversational Intelligence...');
+
+      try {
+        // Handle demo mode
+        if (studentDemoMode || twilioCredentials?.demoMode) {
+          ciServiceSid = 'ISdemo123456789';
+          console.log('✅ Demo CI service created (silent)');
+          return;
+        }
+
+        // Create CI service
+        const response = await fetch('/api/setup-ci', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accountSid: twilioAccountSid,
+            authToken: twilioAuthToken,
+            action: 'create-service'
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          ciServiceSid = data.serviceSid;
+          console.log('✅ CI service created silently:', ciServiceSid);
+          console.log('   Operators attached:', data.operators);
+        } else {
+          console.warn('⚠️ CI service creation failed (non-critical):', data.error);
+        }
+
+      } catch (error) {
+        // Don't show error to user - CI is a "nice to have" feature
+        console.warn('⚠️ CI setup failed (non-critical):', error.message);
       }
     }
 
@@ -2803,6 +2901,80 @@
         }
       } catch (error) {
         showStatus('step3Status', 'error', error.message);
+      }
+    }
+
+    async function verifyMessagingSetup() {
+      if (studentDemoMode || twilioCredentials?.demoMode) {
+        showStatus('step3Status', 'info', '📝 Demo Mode: Marking messaging service as configured...');
+        setTimeout(() => {
+          localStorage.setItem('demoMessagingProvisioned', 'true');
+          showStatus('step3Status', 'success', '✅ Messaging service verified!');
+          loadServices();
+        }, 500);
+        return;
+      }
+
+      showStatus('step3Status', 'info', '⏳ Checking for messaging services in your account...');
+
+      try {
+        const response = await fetch('/api/tutorial-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'listMessagingServices',
+            ...twilioCredentials
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.services && data.services.length > 0) {
+          showStatus('step3Status', 'success', `✅ Found ${data.services.length} messaging service(s) in your account!`);
+          // The loadServices() call will pick up the existing services
+          loadServices();
+        } else {
+          showStatus('step3Status', 'error', '❌ No messaging services found. Please create one in the console first, then click Verify again.');
+        }
+      } catch (error) {
+        showStatus('step3Status', 'error', `❌ Verification failed: ${error.message}`);
+      }
+    }
+
+    async function verifySyncSetup() {
+      if (studentDemoMode || twilioCredentials?.demoMode) {
+        showStatus('step3Status', 'info', '📝 Demo Mode: Marking Sync service as configured...');
+        setTimeout(() => {
+          localStorage.setItem('demoSyncProvisioned', 'true');
+          showStatus('step3Status', 'success', '✅ Sync service verified!');
+          loadServices();
+        }, 500);
+        return;
+      }
+
+      showStatus('step3Status', 'info', '⏳ Checking for Sync services in your account...');
+
+      try {
+        const response = await fetch('/api/tutorial-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'listSyncServices',
+            ...twilioCredentials
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.services && data.services.length > 0) {
+          showStatus('step3Status', 'success', `✅ Found ${data.services.length} Sync service(s) in your account!`);
+          // The loadServices() call will pick up the existing services
+          loadServices();
+        } else {
+          showStatus('step3Status', 'error', '❌ No Sync services found. Please create one in the console first, then click Verify again.');
+        }
+      } catch (error) {
+        showStatus('step3Status', 'error', `❌ Verification failed: ${error.message}`);
       }
     }
 
@@ -3045,7 +3217,6 @@
               <div style="display: flex; gap: 10px;">
                 <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode4()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code4')">📋 Copy Code</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="showSolution(4)">💡 Show Solution</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode4()">Reset</button>
               </div>
             </div>
@@ -3100,34 +3271,58 @@
           </div>
           ` : ''}
 
-          ${isOutbound ? `
-          <div id="step4TestSection" class="service-card" style="margin-top: 20px; background: linear-gradient(135deg, #98c379 0%, #2c313c 100%); display: ${step4CodeValidated ? 'block' : 'none'};">
-            <h4 style="color: white; margin-bottom: 15px;">📞 Test Your IVR Live!</h4>
-            <p style="color: #e5e5e5; margin-bottom: 10px;">
-              Test your IVR by calling YOUR phone. You'll hear the greeting and menu options.
-            </p>
-            <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.15); border-radius: 6px; font-size: 14px;">
-              ⚠️ <strong>Required:</strong> You must make a test call before deploying so you can hear how the old IVR sounds!
-            </p>
-            <div style="margin-bottom: 15px;">
-              <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #4fc1ff;">
-                Your Phone Number (to receive test call):
-              </label>
-              <input type="tel" id="testCallNumber" placeholder="+12345678901"
-                     style="width: 100%; padding: 12px; background: #2c313c; color: #abb2bf; border: 1px solid #3e4451; border-radius: 4px; font-size: 14px;">
-              <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Enter YOUR number to receive the test call</p>
-            </div>
-            <button class="btn btn-primary" onclick="makeLiveTestCall()" style="width: 100%; background: white; color: #2c313c; font-weight: 600;">
-              📞 Make Live Test Call
-            </button>
-            <div id="liveTestStatus" style="margin-top: 15px;"></div>
+          <div id="step4TestSection" class="service-card" style="margin-top: 20px; background: linear-gradient(135deg, #98c379 0%, #2c313c 100%); display: ${step4Deployed ? 'block' : 'none'};">
+            ${isOutbound ? `
+              <h4 style="color: white; margin-bottom: 15px;">📞 Test Your IVR Live!</h4>
+              <p style="color: #e5e5e5; margin-bottom: 10px;">
+                Your voice handler has been deployed! Test it by making a call to YOUR phone.
+              </p>
+              <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.15); border-radius: 6px; font-size: 14px;">
+                💡 <strong>Tip:</strong> Listen to how the IVR sounds - you'll improve it in later steps!
+              </p>
+              <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #4fc1ff;">
+                  Your Phone Number (to receive test call):
+                </label>
+                <input type="tel" id="testCallNumber" placeholder="+12345678901"
+                       style="width: 100%; padding: 12px; background: #2c313c; color: #abb2bf; border: 1px solid #3e4451; border-radius: 4px; font-size: 14px;">
+                <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Enter YOUR number to receive the test call</p>
+              </div>
+              <button class="btn btn-primary" onclick="makeLiveTestCall()" style="width: 100%; background: white; color: #2c313c; font-weight: 600;">
+                📞 Make Live Test Call
+              </button>
+              <div id="liveTestStatus" style="margin-top: 15px;"></div>
+            ` : `
+              <h4 style="color: white; margin-bottom: 15px;">📞 Test Your IVR Live!</h4>
+              <p style="color: #e5e5e5; margin-bottom: 10px;">
+                Your voice handler has been deployed! Test it by calling your Twilio number.
+              </p>
+              <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; padding: 10px; background: rgba(255,255,255,0.15); border-radius: 6px; font-size: 14px;">
+                💡 <strong>Tip:</strong> Listen to how the IVR sounds - you'll improve it in later steps!
+              </p>
+              <div style="background: rgba(255,255,255,0.2); padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+                <p style="color: white; margin: 0 0 10px 0; font-size: 14px; opacity: 0.9;">
+                  📱 <strong>Call this number to test:</strong>
+                </p>
+                <div style="font-size: 2rem; font-weight: bold; color: white; font-family: 'Courier New', monospace; letter-spacing: 2px; margin: 10px 0;">
+                  ${selectedPhoneNumber || 'Configure phone number in Step 3'}
+                </div>
+                <button onclick="navigator.clipboard.writeText('${selectedPhoneNumber}'); showStatus('inboundTestStatus', 'success', '📋 Number copied!')"
+                        style="margin-top: 10px; padding: 8px 16px; background: white; color: #2c313c; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                  📋 Copy Number
+                </button>
+              </div>
+              <button class="btn btn-primary" onclick="monitorInboundCalls()" style="width: 100%; background: white; color: #2c313c; font-weight: 600;">
+                🔍 Monitor for Incoming Calls
+              </button>
+              <div id="inboundTestStatus" style="margin-top: 15px;"></div>
+            `}
           </div>
-          ` : ''}
 
-          <div id="step4DeploySection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8; display: ${step4CodeValidated && (callDirection === 'inbound' || step4LiveTestCompleted) ? 'block' : 'none'};">
+          <div id="step4DeploySection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8; display: ${step4CodeValidated ? 'block' : 'none'};">
             <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">💾 Ready to Deploy?</h3>
             <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px; line-height: 1.6;">
-              Once you're happy with your code, click <strong>Commit Step 4</strong> to deploy it to your Twilio account.
+              Your code looks good! Click <strong>Commit Step 4</strong> to deploy it to your Twilio account.
               This will create a Serverless service and deploy your voice handler function.
             </p>
             <button
@@ -3557,15 +3752,16 @@
             </div>
           `;
 
-          // Mark test as completed and show deploy section
+          // Mark test as completed and enable Next button
           step4LiveTestCompleted = true;
-          const deploySection = document.getElementById('step4DeploySection');
-          if (deploySection) {
-            deploySection.style.display = 'block';
-            setTimeout(() => {
-              deploySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 500);
+          const nextBtn = document.getElementById('nextBtn4');
+          if (nextBtn) {
+            nextBtn.disabled = false;
           }
+
+          // Update progress
+          saveProgressToStorage();
+          updateProgressBar();
         }, 2000);
         return;
       }
@@ -3606,6 +3802,17 @@
               </div>
             </div>
           `;
+
+          // Mark test as completed and enable Next button
+          step4LiveTestCompleted = true;
+          const nextBtn = document.getElementById('nextBtn4');
+          if (nextBtn) {
+            nextBtn.disabled = false;
+          }
+
+          // Update progress
+          saveProgressToStorage();
+          updateProgressBar();
         } else {
           document.getElementById('liveTestStatus').innerHTML =
             `<div style="color: #e06c75; padding: 10px; background: #2c313c; border-radius: 4px;">❌ Call failed: ${data.error}</div>`;
@@ -3614,6 +3821,111 @@
         document.getElementById('liveTestStatus').innerHTML =
           `<div style="color: #e06c75; padding: 10px; background: #2c313c; border-radius: 4px;">❌ Error: ${error.message}</div>`;
       }
+    }
+
+    // Monitor for inbound calls (Step 4 - inbound direction)
+    let inboundMonitorInterval = null;
+    async function monitorInboundCalls() {
+      const statusDiv = document.getElementById('inboundTestStatus');
+
+      // Demo mode simulation
+      if (studentDemoMode || twilioCredentials?.demoMode === true) {
+        statusDiv.innerHTML = '<div style="color: #4fc1ff; padding: 10px; background: #2c313c; border-radius: 4px;">🔍 Monitoring for incoming calls...</div>';
+
+        setTimeout(() => {
+          statusDiv.innerHTML = `
+            <div style="color: #98c379; padding: 15px; background: #2c313c; border-radius: 4px;">
+              <strong>✅ Incoming call detected!</strong><br>
+              <div style="margin-top: 10px; font-size: 13px; line-height: 1.6;">
+                📱 CallSid: CA_demo_${Date.now()}<br>
+                📞 From: +15551234567<br>
+                📍 To: ${selectedPhoneNumber}
+              </div>
+              <div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px;">
+                <strong>What happened in the demo:</strong><br>
+                1. Caller dialed ${selectedPhoneNumber}<br>
+                2. Your TwiML handler answered the call<br>
+                3. Caller heard your IVR greeting and menu<br>
+                4. Caller interacted with the menu options<br>
+                5. Call completed successfully!
+              </div>
+            </div>
+          `;
+
+          // Mark test as completed
+          step4LiveTestCompleted = true;
+          const nextBtn = document.getElementById('nextBtn4');
+          if (nextBtn) nextBtn.disabled = false;
+          saveProgressToStorage();
+          updateProgressBar();
+        }, 3000);
+        return;
+      }
+
+      // Live mode - poll for recent calls
+      statusDiv.innerHTML = '<div style="color: #4fc1ff; padding: 10px; background: #2c313c; border-radius: 4px;">🔍 Monitoring for incoming calls... (call your number now)</div>';
+
+      let pollCount = 0;
+      const maxPolls = 60; // Monitor for 2 minutes (60 * 2 seconds)
+
+      if (inboundMonitorInterval) {
+        clearInterval(inboundMonitorInterval);
+      }
+
+      inboundMonitorInterval = setInterval(async () => {
+        pollCount++;
+
+        if (pollCount > maxPolls) {
+          clearInterval(inboundMonitorInterval);
+          statusDiv.innerHTML = '<div style="color: #e5c07b; padding: 10px; background: #2c313c; border-radius: 4px;">⏱️ Monitoring timeout. Click button again to continue monitoring.</div>';
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/tutorial-proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'listRecentCalls',
+              phoneNumber: selectedPhoneNumber,
+              minutes: 2, // Look for calls in last 2 minutes
+              ...twilioCredentials
+            })
+          });
+
+          const data = await response.json();
+
+          if (data.success && data.calls && data.calls.length > 0) {
+            const call = data.calls[0];
+            clearInterval(inboundMonitorInterval);
+
+            statusDiv.innerHTML = `
+              <div style="color: #98c379; padding: 15px; background: #2c313c; border-radius: 4px;">
+                <strong>✅ Incoming call detected!</strong><br>
+                <div style="margin-top: 10px; font-size: 13px; line-height: 1.6;">
+                  📱 CallSid: ${call.sid}<br>
+                  📞 From: ${call.from}<br>
+                  📍 To: ${call.to}<br>
+                  📊 Status: ${call.status}<br>
+                  ⏱️ Duration: ${call.duration} seconds
+                </div>
+                <div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px;">
+                  <strong>🎉 Success!</strong> Your Basic TwiML handler is working! The caller heard your IVR greeting and menu options.
+                </div>
+              </div>
+            `;
+
+            // Mark test as completed
+            step4LiveTestCompleted = true;
+            const nextBtn = document.getElementById('nextBtn4');
+            if (nextBtn) nextBtn.disabled = false;
+            saveProgressToStorage();
+            updateProgressBar();
+          }
+        } catch (error) {
+          console.error('Error monitoring calls:', error);
+        }
+      }, 2000); // Poll every 2 seconds
     }
 
     function resetCode4() {
@@ -3827,8 +4139,10 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
 
             <div class="button-group" style="margin-top: 15px;">
               <button class="btn btn-success" onclick="saveSystemPrompt()">💾 Save Prompt</button>
+              <button class="btn btn-primary" onclick="scoreSystemPrompt()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">📊 Score This Prompt</button>
             </div>
 
+            <div id="promptScoreDisplay" style="display: none; margin-top: 20px; padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;"></div>
             <div id="systemPromptStatus" class="status-box"></div>
           </div>
 
@@ -3906,12 +4220,52 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
             <div id="promptEngineeringStatus" style="margin-top: 15px;"></div>
           </div>
 
-          <!-- Test Your AI Voice Bot - Shows after prompt is saved and tested -->
-          <div id="step7VoiceTestSection" style="margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; border: 3px solid #047857; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3); display: none;">
+          <!-- Deploy Custom Prompt - Shows after prompt is saved -->
+          <div id="step7DeploySection" style="margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 3px solid #5a67d8; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3); display: ${systemPromptSaved ? 'block' : 'none'};">
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.3rem;">💾 Deploy Your Custom Prompt</h3>
+            <p style="color: rgba(255,255,255,0.95); margin-bottom: 20px; line-height: 1.6;">
+              Your system prompt looks great! Now deploy it to your WebSocket handler so your AI uses it in conversations.
+            </p>
+
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="color: white; margin: 0 0 10px 0; font-weight: 600;">📋 What happens when you deploy:</p>
+              <ul style="color: rgba(255,255,255,0.9); margin: 0; padding-left: 20px; line-height: 1.8;">
+                <li>Updates your WebSocket handler (Step 5) with this system prompt</li>
+                <li>Replaces the default prompt with your custom one</li>
+                <li>Redeploys the WebSocket handler to ${studentDemoMode || twilioCredentials?.demoMode ? 'demo environment' : 'your Twilio account'}</li>
+                <li>Your AI will use this prompt in all future conversations</li>
+              </ul>
+            </div>
+
+            <button
+              class="btn btn-success"
+              id="commitStep7Btn"
+              onclick="commitStep(7)"
+              style="width: 100%; font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border: none;">
+              💾 Commit Step 7 - Deploy Custom Prompt
+            </button>
+            <div id="commitStep7Status" style="margin-top: 15px;"></div>
+          </div>
+
+          <!-- Test Your AI Voice Bot - Shows after prompt is deployed -->
+          <div id="step7VoiceTestSection" style="margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; border: 3px solid #047857; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3); display: ${step7Deployed ? 'block' : 'none'};">
+            <h3 style="color: white; margin: 0 0 20px 0; font-size: 1.5rem; text-align: center;">🎉 Your AI Voice Assistant is Ready!</h3>
+
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+              <h4 style="color: white; margin: 0 0 12px 0; font-size: 1.1rem;">🤖 What You'll Experience on This Call:</h4>
+              <ul style="margin: 0; padding-left: 20px; color: rgba(255,255,255,0.95); line-height: 1.9;">
+                <li><strong>ConversationRelay:</strong> Orchestrates the entire AI conversation flow</li>
+                <li><strong>Speech-to-Text (STT):</strong> ${document.getElementById('crTranscriptionProvider')?.value === 'google' ? 'Google Cloud' : 'Deepgram'} transcribes your voice in real-time</li>
+                <li><strong>AI Processing:</strong> OpenAI uses YOUR custom prompt to generate intelligent responses</li>
+                <li><strong>Text-to-Speech (TTS):</strong> ${getTTSProviderName()} converts the AI's text into natural voice</li>
+                <li><strong>Your Custom Personality:</strong> The AI will behave exactly as you defined in your prompt!</li>
+              </ul>
+            </div>
+
             <div style="text-align: center;">
-              <h3 style="color: white; margin: 0 0 10px 0; font-size: 1.5rem;">📞 Ready to Test Your AI Voice Bot?</h3>
-              <p style="color: rgba(255,255,255,0.95); margin-bottom: 20px; font-size: 1.1rem; line-height: 1.6;">
-                Your system prompt is ready! Now test your AI with a real voice call.
+              <h4 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">📞 Test Your Custom AI Now</h4>
+              <p style="color: rgba(255,255,255,0.95); margin-bottom: 20px; font-size: 1rem; line-height: 1.6;">
+                ${callDirection === 'inbound' ? 'Call your Twilio number to have a conversation with your AI' : 'Click below to receive a call from your AI assistant'}
               </p>
 
               <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -4040,8 +4394,221 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
 
       customSystemPrompt = prompt;
       systemPromptSaved = true;
-      showStatus('systemPromptStatus', 'success', '✅ System prompt saved! This will be used in your AI conversations. Test it below or continue to the checklist.');
+      showStatus('systemPromptStatus', 'success', '✅ System prompt saved! Deploy it below or skip to next step.');
       saveProgressToStorage();
+
+      // Enable Next button immediately - deployment is optional
+      const nextBtn = document.getElementById('nextBtn7');
+      if (nextBtn) nextBtn.disabled = false;
+
+      // Show the deploy section
+      const deploySection = document.getElementById('step7DeploySection');
+      if (deploySection) {
+        deploySection.style.display = 'block';
+        setTimeout(() => {
+          deploySection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
+    }
+
+    async function scoreSystemPrompt() {
+      const prompt = document.getElementById('systemPrompt')?.value || '';
+      const scoreDisplay = document.getElementById('promptScoreDisplay');
+
+      if (prompt.trim().length < 50) {
+        showStatus('systemPromptStatus', 'error', '❌ Prompt is too short. Add more detail before scoring.');
+        return;
+      }
+
+      if (!openaiApiKey && !studentDemoMode && !twilioCredentials?.demoMode) {
+        showStatus('systemPromptStatus', 'error', '❌ OpenAI API key required. Please configure it in Step 5.');
+        return;
+      }
+
+      // Show loading state
+      scoreDisplay.style.display = 'block';
+      scoreDisplay.innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+          <div style="font-size: 16px;">Analyzing your prompt...</div>
+          <div style="font-size: 14px; opacity: 0.8; margin-top: 5px;">This may take 10-15 seconds</div>
+        </div>
+      `;
+      showStatus('systemPromptStatus', 'info', '⏳ Analyzing prompt quality...');
+
+      try {
+        // DEMO MODE: Return fake score without calling OpenAI
+        if (studentDemoMode || twilioCredentials?.demoMode) {
+          await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
+
+          const demoScoreData = {
+            score: 82,
+            grade: "Good",
+            strengths: [
+              "Clear role definition and personality traits",
+              "Good use of conversational language for voice",
+              "Well-structured with organized sections"
+            ],
+            improvements: [
+              "Add more specific examples of ideal responses",
+              "Include clearer boundaries for out-of-scope topics",
+              "Consider adding response length guidelines"
+            ],
+            summary: "This is a solid prompt with good fundamentals. The AI's role and personality are well-defined, making it suitable for production use with minor refinements."
+          };
+
+          // Determine color based on score
+          let scoreColor = '#3b82f6'; // blue for "Good"
+
+          scoreDisplay.innerHTML = `
+            <div style="text-align: center; margin-bottom: 25px;">
+              <div style="font-size: 72px; font-weight: bold; margin-bottom: 10px; color: ${scoreColor}; text-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                ${demoScoreData.score}
+              </div>
+              <div style="font-size: 24px; font-weight: 600; margin-bottom: 5px;">
+                ${demoScoreData.grade}
+              </div>
+              <div style="font-size: 14px; opacity: 0.9;">
+                ${demoScoreData.summary}
+              </div>
+              <div style="font-size: 12px; opacity: 0.7; margin-top: 10px; font-style: italic;">
+                📝 Demo Mode: Sample scoring result
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">✅ Strengths</div>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                  ${demoScoreData.strengths.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">💡 Improvements</div>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                  ${demoScoreData.improvements.map(i => `<li>${i}</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+          `;
+
+          showStatus('systemPromptStatus', 'success', '✅ Prompt scored successfully! (Demo Mode)');
+          return;
+        }
+
+        // LIVE MODE: Create a scoring request using the criteria from the page
+        const scoringPrompt = `You are an expert AI prompt engineer specializing in voice AI systems. Analyze the following system prompt for a voice AI assistant and provide:
+
+1. An overall quality score from 1-100
+2. Specific feedback on these criteria:
+   - Role clarity (Does it clearly define the AI's name and role?)
+   - Personality traits (Are personality traits well-defined?)
+   - Response length guidelines (Are there clear instructions to keep responses short for voice?)
+   - Capabilities (What the AI CAN do - are they clearly listed?)
+   - Boundaries (What the AI CANNOT do - are limitations clear?)
+   - Examples (Are there good/bad response examples?)
+   - Voice-appropriate language (Is the language conversational and suitable for voice?)
+
+Scoring rubric:
+- 90-100: Excellent - Professional-grade prompt ready for production
+- 75-89: Good - Solid prompt with minor improvements needed
+- 60-74: Fair - Usable but needs significant improvements
+- 40-59: Poor - Major gaps that will cause problems
+- 0-39: Inadequate - Needs complete rewrite
+
+Format your response EXACTLY as JSON:
+{
+  "score": <number 1-100>,
+  "grade": "<Excellent|Good|Fair|Poor|Inadequate>",
+  "strengths": ["<strength 1>", "<strength 2>", ...],
+  "improvements": ["<improvement 1>", "<improvement 2>", ...],
+  "summary": "<2-3 sentence overall assessment>"
+}
+
+System Prompt to Analyze:
+${prompt}`;
+
+        const response = await fetch('/api/tutorial-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'testOpenAI',
+            systemPrompt: 'You are a helpful assistant that responds only with valid JSON.',
+            message: scoringPrompt,
+            openaiApiKey: openaiApiKey,
+            demoMode: studentDemoMode || twilioCredentials?.demoMode
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Parse the JSON response from OpenAI
+          let scoreData;
+          try {
+            // Extract JSON from response (in case it's wrapped in markdown code blocks)
+            let jsonText = data.response.trim();
+            if (jsonText.startsWith('```json')) {
+              jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            } else if (jsonText.startsWith('```')) {
+              jsonText = jsonText.replace(/```\n?/g, '').trim();
+            }
+            scoreData = JSON.parse(jsonText);
+          } catch (parseError) {
+            console.error('Failed to parse OpenAI response:', data.response);
+            throw new Error('Failed to parse scoring response');
+          }
+
+          // Determine color based on score
+          let scoreColor = '#10b981'; // green
+          if (scoreData.score < 60) scoreColor = '#ef4444'; // red
+          else if (scoreData.score < 75) scoreColor = '#f59e0b'; // orange
+          else if (scoreData.score < 90) scoreColor = '#3b82f6'; // blue
+
+          // Display the score
+          scoreDisplay.innerHTML = `
+            <div style="text-align: center; margin-bottom: 25px;">
+              <div style="font-size: 72px; font-weight: bold; margin-bottom: 10px; color: ${scoreColor}; text-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+                ${scoreData.score}
+              </div>
+              <div style="font-size: 24px; font-weight: 600; margin-bottom: 5px;">
+                ${scoreData.grade}
+              </div>
+              <div style="font-size: 14px; opacity: 0.9;">
+                ${scoreData.summary}
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">✅ Strengths</div>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                  ${scoreData.strengths.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+                <div style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">💡 Improvements</div>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                  ${scoreData.improvements.map(i => `<li>${i}</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: center; font-size: 13px; opacity: 0.8;">
+              💡 Tip: Aim for 90+ for production use. Revise your prompt and score again!
+            </div>
+          `;
+
+          showStatus('systemPromptStatus', 'success', `✅ Score: ${scoreData.score}/100 - ${scoreData.grade}`);
+        } else {
+          throw new Error(data.error || 'Unknown error');
+        }
+
+      } catch (error) {
+        scoreDisplay.style.display = 'none';
+        showStatus('systemPromptStatus', 'error', `❌ Scoring failed: ${error.message}`);
+        console.error('Prompt scoring error:', error);
+      }
     }
 
     function resetSystemPrompt() {
@@ -4064,8 +4631,8 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
       const userMessage = document.getElementById('testMessage')?.value.trim();
       const console = document.getElementById('promptTestConsole');
 
-      if (!openaiApiKey) {
-        showStatus('systemPromptStatus', 'error', '❌ OpenAI API key required. Configure it in Step 5.');
+      if (!openaiApiKey && !studentDemoMode && !twilioCredentials?.demoMode) {
+        showStatus('systemPromptStatus', 'error', '❌ OpenAI API key required. Please configure it in Step 5.');
         return;
       }
 
@@ -4081,9 +4648,32 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
 
       console.style.display = 'block';
       console.innerHTML = `<div class="console-line">💬 Testing: "${userMessage}"</div>`;
-      showStatus('systemPromptStatus', 'info', '⏳ Sending to OpenAI...');
+      showStatus('systemPromptStatus', 'info', '⏳ Sending to AI...');
 
       try {
+        // DEMO MODE: Return fake response without calling OpenAI
+        if (studentDemoMode || twilioCredentials?.demoMode) {
+          await new Promise(resolve => setTimeout(resolve, 800)); // Simulate delay
+
+          const demoResponses = [
+            "Thank you for contacting us! I'd be happy to help you with that. Could you provide me with a bit more information?",
+            "I understand your request. Let me assist you with that right away.",
+            "That's a great question! Based on your needs, I recommend the following approach.",
+            "I appreciate you reaching out. I'm here to help make this process as smooth as possible for you."
+          ];
+
+          const randomResponse = demoResponses[Math.floor(Math.random() * demoResponses.length)];
+
+          console.innerHTML += `<div class="console-line success">🤖 AI Response: "${randomResponse}"</div>`;
+          console.innerHTML += `<div class="console-line info" style="font-style: italic; opacity: 0.8;">📝 Demo Mode: Sample AI response</div>`;
+          showStatus('systemPromptStatus', 'success', '✅ Test complete! (Demo Mode)');
+
+          // Clear input for next test
+          document.getElementById('testMessage').value = '';
+          return;
+        }
+
+        // LIVE MODE: Call OpenAI
         const response = await fetch('/api/tutorial-proxy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -4092,7 +4682,7 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
             systemPrompt: prompt,
             message: userMessage,
             openaiApiKey: openaiApiKey,
-            demoMode: twilioCredentials?.demoMode
+            demoMode: false
           })
         });
 
@@ -4120,8 +4710,8 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
       const prompt = document.getElementById('systemPrompt')?.value || '';
       const console = document.getElementById('promptTestConsole');
 
-      if (!openaiApiKey) {
-        showStatus('systemPromptStatus', 'error', '❌ OpenAI API key required. Configure it in Step 5.');
+      if (!openaiApiKey && !studentDemoMode && !twilioCredentials?.demoMode) {
+        showStatus('systemPromptStatus', 'error', '❌ OpenAI API key required. Please configure it in Step 5.');
         return;
       }
 
@@ -4140,6 +4730,12 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
         { user: "I am having chest pain right now!", expected: "Should recognize emergency and direct to 911" }
       ];
 
+      const demoResponsesForScenarios = [
+        "Hello! I'd be happy to help you schedule an appointment. What type of visit do you need - a general checkup or consultation for a specific concern?",
+        "We're open Monday through Friday from 8am to 6pm, and Saturdays from 9am to 2pm. Would you like to schedule an appointment?",
+        "This sounds like a medical emergency. Please hang up and call 911 immediately or go to your nearest emergency room. Your safety is the top priority."
+      ];
+
       try {
         for (let i = 0; i < testScenarios.length; i++) {
           const scenario = testScenarios[i];
@@ -4147,6 +4743,15 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
 📝 Test ${i + 1}: "${scenario.user}"
 Expected: ${scenario.expected}</div>`;
 
+          // DEMO MODE: Use fake responses
+          if (studentDemoMode || twilioCredentials?.demoMode) {
+            await new Promise(resolve => setTimeout(resolve, 600)); // Simulate delay
+            const demoResponse = demoResponsesForScenarios[i];
+            console.innerHTML += `<div class="console-line success">🤖 AI: "${demoResponse}"</div>`;
+            continue;
+          }
+
+          // LIVE MODE: Call OpenAI
           const response = await fetch('/api/tutorial-proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -4155,7 +4760,7 @@ Expected: ${scenario.expected}</div>`;
               systemPrompt: prompt,
               message: scenario.user,
               openaiApiKey: openaiApiKey,
-              demoMode: twilioCredentials?.demoMode
+              demoMode: false
             })
           });
 
@@ -4168,8 +4773,9 @@ Expected: ${scenario.expected}</div>`;
           }
         }
 
-        console.innerHTML += '<div class="console-line success">✅ All tests complete! Review the responses above and refine your prompt if needed.</div>';
-        showStatus('systemPromptStatus', 'success', '✅ Tests complete! Review the AI responses in the console above.');
+        const demoNote = (studentDemoMode || twilioCredentials?.demoMode) ? ' <span style="font-style: italic; opacity: 0.8;">(Demo Mode)</span>' : '';
+        console.innerHTML += `<div class="console-line success">✅ All tests complete!${demoNote} Review the responses above and refine your prompt if needed.</div>`;
+        showStatus('systemPromptStatus', 'success', `✅ Tests complete!${demoNote ? ' (Demo Mode)' : ''} Review the AI responses in the console above.`);
 
       } catch (error) {
         console.innerHTML += `<div class="console-line error">❌ Test failed: ${error.message}</div>`;
@@ -4848,77 +5454,149 @@ Remember: You're having a natural conversation, not reading a script!\`;
             </div>
           </div>
 
+          <!-- Conversational Intelligence Analytics (Big Reveal) -->
+          ${ciServiceSid ? `
+          <div class="service-card" style="background: linear-gradient(135deg, #4fc1ff 0%, #1a73e8 100%); color: white;">
+            <h3 style="color: white; margin-bottom: 20px;">📊 Your Call Analytics - The Big Reveal!</h3>
+            <div style="line-height: 1.8;">
+              <p style="margin-bottom: 15px;">
+                Throughout this workshop, we've been quietly collecting analytics on every call you made.
+                Welcome to <strong>Twilio Conversational Intelligence</strong> - AI-powered call analytics!
+              </p>
+              <div id="ciAnalytics" style="margin-top: 20px;">
+                <button class="btn" onclick="loadCIAnalytics()" style="background: white; color: #1a73e8; padding: 12px 24px; font-size: 16px; font-weight: bold;">
+                  🔍 Show Me My Call Analytics
+                </button>
+              </div>
+              <div id="ciAnalyticsData" style="display: none; margin-top: 20px;">
+                <!-- Analytics will be loaded here -->
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
           <!-- Architecture Diagram -->
           <div class="instructions">
-            <h3>🏗️ System Architecture</h3>
+            <h3>🏗️ System Architecture - ${callDirection === 'inbound' ? 'Inbound Calls' : 'Outbound Calls'}</h3>
+            ${callDirection === 'inbound' ? `
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 2;">
+              <div style="margin-bottom: 15px; color: #666; font-family: sans-serif;">
+                <strong>Inbound Flow:</strong> Customer calls your Twilio number
+              </div>
               <pre style="margin: 0;">
 ┌─────────────────┐
-│  Phone Call     │ 📞
+│  Customer       │ 📱 Caller dials your phone number
+│  Places Call    │
 └────────┬────────┘
          │
          ▼
 ┌─────────────────┐
-│  Twilio Voice   │ ☁️  (Your phone number)
+│  Twilio Voice   │ ☁️  Your Twilio phone number receives call
 └────────┬────────┘
          │
          ▼
 ┌─────────────────┐
-│  TwiML Handler  │ 📋  (Answers call, starts stream)
-└────────┬────────┘
+│  TwiML Handler  │ 📋  Answers call, starts ConversationRelay
+└────────┬────────┘     /api/voice-handler
          │
          ▼
 ┌─────────────────┐
-│  WebSocket      │ 🔌  (Real-time audio streaming)
-│  Handler        │     - Receives caller audio
-└────────┬────────┘     - Sends AI responses
+│ ConversationRelay│ 🤖  AI orchestration layer
+└────────┬────────┘     - Handles STT (speech-to-text)
+         │              - Handles TTS (text-to-speech)
+         │              - Manages WebSocket connection
+         ▼
+┌─────────────────┐
+│  WebSocket      │ 🔌  Your custom logic
+│  Handler        │     - Receives transcribed text
+└────────┬────────┘     - Sends response text back
          │
          ▼
 ┌─────────────────┐
-│ ConversationRelay│ 🤖  (OpenAI + Voice synthesis)
-└────────┬────────┘     - GPT-4/3.5 for intelligence
-         │              - ElevenLabs for voice
-         │              - Function calling for actions
-         ▼
-┌─────────────────┐
-│  Your Tools     │ 🛠️  (Custom functions you defined)
-└─────────────────┘     - Appointments
-                        - Knowledge base
-                        - SMS notifications
+│  Your Code      │ 🛠️  AI + Tools
+└─────────────────┘     - OpenAI (GPT-4/3.5)
+                        - Custom functions (appointments, etc.)
+                        - Database queries
               </pre>
+            </div>
+            ` : `
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; font-family: monospace; font-size: 13px; line-height: 2;">
+              <div style="margin-bottom: 15px; color: #666; font-family: sans-serif;">
+                <strong>Outbound Flow:</strong> Your system initiates call to customer
+              </div>
+              <pre style="margin: 0;">
+┌─────────────────┐
+│  Your System    │ 💻 Triggers outbound call
+│  Makes API Call │     POST /api/make-call
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Twilio API     │ ☁️  Places call to customer
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Customer       │ 📱 Customer's phone rings
+│  Answers        │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  TwiML Handler  │ 📋  Starts ConversationRelay
+└────────┬────────┘     /api/voice-handler
+         │
+         ▼
+┌─────────────────┐
+│ ConversationRelay│ 🤖  AI orchestration layer
+└────────┬────────┘     - Handles STT (speech-to-text)
+         │              - Handles TTS (text-to-speech)
+         │              - Manages WebSocket connection
+         ▼
+┌─────────────────┐
+│  WebSocket      │ 🔌  Your custom logic
+│  Handler        │     - Receives transcribed text
+└────────┬────────┘     - Sends response text back
+         │
+         ▼
+┌─────────────────┐
+│  Your Code      │ 🛠️  AI + Tools
+└─────────────────┘     - OpenAI (GPT-4/3.5)
+                        - Custom functions (appointments, etc.)
+                        - Database queries
+              </pre>
+            </div>
+            `}
+          </div>
+
+          <!-- Deployment Complete -->
+          <div class="service-card" style="background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%); border: 3px solid #56ab2f;">
+            <h3 style="color: white; margin-bottom: 15px;">🎉 Your AI Voice Assistant is Deployed!</h3>
+            <div style="color: white; line-height: 1.8;">
+              <p style="margin-bottom: 15px; font-size: 1.1rem;">
+                <strong>Congratulations!</strong> You've successfully deployed your AI-powered voice assistant throughout this workshop:
+              </p>
+              <ul style="margin: 10px 0 20px 20px; font-size: 1rem;">
+                <li>✅ <strong>Step 4:</strong> Basic TwiML voice handler</li>
+                <li>✅ <strong>Step 5:</strong> WebSocket handler for Media Streams</li>
+                <li>✅ <strong>Step 6:</strong> ConversationRelay with AI orchestration</li>
+                <li>✅ <strong>Step 7:</strong> Custom AI prompt personality</li>
+                <li>✅ <strong>Step 8:</strong> Advanced tools and function calling</li>
+              </ul>
+              <p style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; font-size: 1rem;">
+                📞 Your phone number <strong>${selectedPhoneNumber || '[Your Number]'}</strong> is live and ready to handle AI-powered voice calls!
+              </p>
             </div>
           </div>
 
-          <!-- Deployment Options -->
+          <!-- Next Steps -->
           <div class="service-card">
-            <h3>📦 Choose Your Deployment Method</h3>
-            <p style="margin-bottom: 20px;">Select the deployment option that works best for you:</p>
+            <h3>📦 Take Your Project Further</h3>
+            <p style="margin-bottom: 20px;">Your assistant is already deployed! Here are some ways to continue building:</p>
 
-            <!-- Option 1: Deploy to Current Account -->
-            <div style="border: 2px solid #F22F46; border-radius: 8px; padding: 20px; margin-bottom: 20px; background: linear-gradient(135deg, rgba(242,47,70,0.1) 0%, rgba(13,18,43,0.1) 100%);">
-              <h4 style="margin: 0 0 10px 0; color: #F22F46;">🎯 Option 1: Deploy to Current Account (Recommended)</h4>
-              <p style="margin-bottom: 15px; color: #666;">
-                Deploy everything you've built to your connected Twilio account with one click.
-                Your phone number will be automatically configured and ready to receive calls.
-              </p>
-              <div style="margin-bottom: 15px;">
-                <strong>✅ Pros:</strong>
-                <ul style="margin: 5px 0 0 20px; color: #666;">
-                  <li>Fastest deployment method (1 click)</li>
-                  <li>Phone number auto-configured</li>
-                  <li>All functions deployed automatically</li>
-                  <li>Ready to test immediately</li>
-                </ul>
-              </div>
-              <button class="btn btn-primary" onclick="deployToCurrentAccount()" style="width: 100%; padding: 12px; font-size: 16px;">
-                🚀 Deploy to My Twilio Account
-              </button>
-              <div id="deployStatus" class="status-box" style="margin-top: 15px;"></div>
-            </div>
-
-            <!-- Option 2: Download Package -->
+            <!-- Option 1: Download Package -->
             <div style="border: 2px solid #667eea; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-              <h4 style="margin: 0 0 10px 0; color: #667eea;">📥 Option 2: Download Complete Package</h4>
+              <h4 style="margin: 0 0 10px 0; color: #667eea;">📥 Option 1: Download Complete Package</h4>
               <p style="margin-bottom: 15px; color: #666;">
                 Download all your code as a ZIP file. Perfect if you want to customize further or deploy manually.
               </p>
@@ -4936,9 +5614,9 @@ Remember: You're having a natural conversation, not reading a script!\`;
               </button>
             </div>
 
-            <!-- Option 3: Clone from GitHub -->
+            <!-- Option 2: Clone from GitHub -->
             <div style="border: 2px solid #24292e; border-radius: 8px; padding: 20px;">
-              <h4 style="margin: 0 0 10px 0; color: #24292e;">🐙 Option 3: Clone from GitHub</h4>
+              <h4 style="margin: 0 0 10px 0; color: #24292e;">🐙 Option 2: Clone from GitHub</h4>
               <p style="margin-bottom: 15px; color: #666;">
                 For developers who want version control and ongoing updates. Clone the complete workshop repository.
               </p>
@@ -4963,35 +5641,46 @@ Remember: You're having a natural conversation, not reading a script!\`;
                 🔗 Open GitHub Repository
               </button>
             </div>
-          </div>
 
-          <!-- Post-Deployment Checklist -->
-          <div class="service-card" style="background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);">
-            <h3 style="color: white; margin-bottom: 15px;">✅ Post-Deployment Checklist</h3>
-            <div style="color: white; line-height: 1.8;">
-              <p style="margin-bottom: 10px;">After deployment, verify these items:</p>
-              <label style="display: block; margin: 10px 0; cursor: pointer;">
-                <input type="checkbox" id="checkDeployPhone" style="margin-right: 10px;">
-                Phone number configured with correct TwiML webhook
-              </label>
-              <label style="display: block; margin: 10px 0; cursor: pointer;">
-                <input type="checkbox" id="checkDeployFunctions" style="margin-right: 10px;">
-                All functions deployed successfully
-              </label>
-              <label style="display: block; margin: 10px 0; cursor: pointer;">
-                <input type="checkbox" id="checkDeployTest" style="margin-right: 10px;">
-                Test call completed successfully
-              </label>
-              <label style="display: block; margin: 10px 0; cursor: pointer;">
-                <input type="checkbox" id="checkDeployAdmin" style="margin-right: 10px;">
-                Admin panel accessible for configuration
-              </label>
-              <label style="display: block; margin: 10px 0; cursor: pointer;">
-                <input type="checkbox" id="checkDeployMonitor" style="margin-right: 10px;">
-                Monitoring/logging set up (Twilio Console)
-              </label>
-              <button onclick="completeDeploymentStep()" id="completeDeployBtn" disabled style="margin-top: 15px; padding: 12px 24px; background: white; color: #56ab2f; border: none; border-radius: 6px; font-weight: bold; cursor: not-allowed; opacity: 0.5;">
-                ✅ Deployment Complete - Finish Workshop
+            <!-- Option 3: Local Development with ngrok -->
+            <div style="border: 2px solid #1f8ceb; border-radius: 8px; padding: 20px; margin-top: 20px;">
+              <h4 style="margin: 0 0 10px 0; color: #1f8ceb;">🔧 Option 3: Test Locally with ngrok</h4>
+              <p style="margin-bottom: 15px; color: #666;">
+                Develop and test your WebSocket handler locally before deploying. Perfect for rapid iteration and debugging.
+              </p>
+              <div style="margin-bottom: 15px;">
+                <strong>✅ Pros:</strong>
+                <ul style="margin: 5px 0 0 20px; color: #666;">
+                  <li>Instant local testing without redeployment</li>
+                  <li>Full debugging capabilities</li>
+                  <li>See console logs in real-time</li>
+                  <li>Perfect for development workflow</li>
+                </ul>
+              </div>
+              <div style="background: #f6f8fa; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 13px; margin-bottom: 15px;">
+                <div style="color: #666; margin-bottom: 10px;"><strong>Step 1:</strong> Install ngrok (if not already installed)</div>
+                <code style="display: block; margin: 5px 0;">brew install ngrok  # macOS</code>
+                <code style="display: block; margin: 5px 0;"># Or download from https://ngrok.com/download</code>
+
+                <div style="color: #666; margin: 15px 0 10px 0;"><strong>Step 2:</strong> Run your local WebSocket server</div>
+                <code style="display: block; margin: 5px 0;">node server/websocket-server.js</code>
+                <code style="display: block; margin: 5px 0;"># Server runs on http://localhost:3000</code>
+
+                <div style="color: #666; margin: 15px 0 10px 0;"><strong>Step 3:</strong> Expose with ngrok</div>
+                <code style="display: block; margin: 5px 0;">ngrok http 3000</code>
+                <code style="display: block; margin: 5px 0;"># Copy the https:// forwarding URL</code>
+
+                <div style="color: #666; margin: 15px 0 10px 0;"><strong>Step 4:</strong> Update your TwiML handler</div>
+                <code style="display: block; margin: 5px 0;">// Replace your WebSocket URL with ngrok URL</code>
+                <code style="display: block; margin: 5px 0;">url: 'wss://YOUR-NGROK-ID.ngrok.io'</code>
+              </div>
+              <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 15px;">
+                <p style="margin: 0; color: #856404; font-size: 13px;">
+                  <strong>💡 Pro Tip:</strong> Use <code style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 3px;">ngrok http 3000 --log=stdout</code> to see all WebSocket traffic for debugging!
+                </p>
+              </div>
+              <button class="btn btn-secondary" onclick="window.open('https://ngrok.com/', '_blank')" style="width: 100%; padding: 12px; font-size: 16px;">
+                🔗 Get ngrok
               </button>
             </div>
           </div>
@@ -5004,11 +5693,11 @@ Remember: You're having a natural conversation, not reading a script!\`;
               <div style="padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px;">
                 <h4 style="margin: 0 0 10px 0;">🎨 Customize Your AI</h4>
                 <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
-                  Visit the admin panel to update your system prompt, change voices, and configure tools.
+                  You've already configured your AI throughout the workshop! View your settings anytime in Steps 6-8.
                 </p>
-                <a href="/admin.html" target="_blank" class="btn btn-secondary" style="display: inline-block; padding: 8px 16px; text-decoration: none;">
-                  Sample Admin Panel
-                </a>
+                <button onclick="navigateToStep(5)" class="btn btn-secondary" style="padding: 8px 16px;">
+                  View Settings
+                </button>
               </div>
 
               <div style="padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px;">
@@ -5017,8 +5706,8 @@ Remember: You're having a natural conversation, not reading a script!\`;
                   Track call metrics, review transcripts, and analyze conversation quality.
                 </p>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                  <button onclick="window.open('https://console.twilio.com/us1/monitor/logs/voice', '_blank')" class="btn btn-secondary" style="padding: 8px 16px;">
-                    View Call Logs
+                  <button onclick="window.open('https://console.twilio.com/us1/monitor/voice-insights', '_blank')" class="btn btn-secondary" style="padding: 8px 16px;">
+                    Voice Insights
                   </button>
                 </div>
                 <div style="margin-top: 15px; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #4fc1ff;">
@@ -5042,16 +5731,6 @@ Remember: You're having a natural conversation, not reading a script!\`;
                 </button>
               </div>
 
-              <div style="padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px;">
-                <h4 style="margin: 0 0 10px 0;">💬 Join Community</h4>
-                <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
-                  Connect with other developers building Voice AI applications.
-                </p>
-                <button onclick="window.open('https://github.com/geverist/twilio-voice-ai-workshop/discussions', '_blank')" class="btn btn-secondary" style="padding: 8px 16px;">
-                  GitHub Discussions
-                </button>
-              </div>
-
             </div>
           </div>
 
@@ -5068,6 +5747,24 @@ Remember: You're having a natural conversation, not reading a script!\`;
               <li><strong>Fallback Handlers:</strong> Graceful degradation when AI fails</li>
               <li><strong>Cost Monitoring:</strong> Track and alert on API usage costs</li>
             </ul>
+          </div>
+
+          <!-- Workshop Complete - Feedback Button -->
+          <div style="margin-top: 30px; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center; border: 3px solid #5a67d8;">
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.5rem;">🎉 Workshop Complete!</h3>
+            <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin: 0 0 25px 0; line-height: 1.6;">
+              Thank you for completing the Twilio Voice AI Workshop!<br>
+              You've built a production-ready AI voice assistant from scratch.
+            </p>
+            <button
+              class="btn"
+              onclick="window.open('https://github.com/geverist/twilio-voice-ai-workshop/issues/new?title=Workshop%20Feedback&body=Please%20share%20your%20feedback%20about%20the%20workshop%20here!', '_blank')"
+              style="font-size: 1.1rem; padding: 15px 40px; background: white; color: #667eea; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+              💬 Share Your Feedback
+            </button>
+            <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin: 20px 0 0 0;">
+              Your feedback helps us improve this workshop for future developers!
+            </p>
           </div>
 
         </div>
@@ -5108,6 +5805,136 @@ Remember: You're having a natural conversation, not reading a script!\`;
       } catch (error) {
         statusBox.className = 'status-box error show';
         statusBox.textContent = '❌ Deployment error: ' + error.message;
+      }
+    }
+
+    async function loadCIAnalytics() {
+      const analyticsContainer = document.getElementById('ciAnalyticsData');
+      const loadButton = document.getElementById('ciAnalytics');
+
+      loadButton.innerHTML = '<div style="color: white;">Loading analytics...</div>';
+
+      try {
+        // Fetch analytics from CI service
+        const response = await fetch(`/api/ci-analytics?accountSid=${twilioAccountSid}&authToken=${twilioAuthToken}&serviceSid=${ciServiceSid}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to load analytics');
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load analytics');
+        }
+
+        // Hide load button, show analytics
+        loadButton.style.display = 'none';
+        analyticsContainer.style.display = 'block';
+
+        // Render analytics
+        const transcripts = data.transcripts || [];
+
+        if (transcripts.length === 0) {
+          analyticsContainer.innerHTML = `
+            <div style="background: rgba(255,255,255,0.2); padding: 20px; border-radius: 8px; text-align: center;">
+              <p style="margin: 0; color: white;">No calls recorded yet. Make some test calls and come back!</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Render transcripts with analytics
+        analyticsContainer.innerHTML = `
+          <div style="background: white; color: #333; padding: 20px; border-radius: 8px;">
+            <h4 style="margin: 0 0 15px 0; color: #1a73e8;">📞 Workshop Calls (${transcripts.length})</h4>
+            ${transcripts.map((t, idx) => {
+              const sentiment = t.sentiment?.average_sentiment || 'neutral';
+              const sentimentEmoji = sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😞' : '😐';
+              const sentimentColor = sentiment === 'positive' ? '#56ab2f' : sentiment === 'negative' ? '#ff6b6b' : '#666';
+
+              return `
+                <div style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                      <strong>Call #${idx + 1}</strong>
+                      <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        From: ${t.customerKey || 'Unknown'}<br>
+                        Time: ${new Date(t.mediaStartTime).toLocaleString()}
+                      </div>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-size: 24px;">${sentimentEmoji}</div>
+                      <div style="font-size: 12px; color: ${sentimentColor}; font-weight: bold; text-transform: uppercase;">
+                        ${sentiment}
+                      </div>
+                    </div>
+                  </div>
+
+                  ${t.sentences && t.sentences.length > 0 ? `
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-top: 10px;">
+                      <strong style="font-size: 13px;">Conversation Transcript:</strong>
+                      <div style="max-height: 200px; overflow-y: auto; margin-top: 8px; font-size: 13px; line-height: 1.6;">
+                        ${t.sentences.map(s => `
+                          <div style="margin: 8px 0;">
+                            <span style="color: #666; font-weight: bold;">${s.speaker === 'customer' ? '🗣️ Caller' : '🤖 AI'}:</span>
+                            ${s.text}
+                          </div>
+                        `).join('')}
+                      </div>
+                    </div>
+                  ` : `
+                    <div style="padding: 10px; background: #fff3cd; border-radius: 6px; font-size: 13px; color: #856404;">
+                      ⏳ Transcript processing... (This can take a few minutes after the call ends)
+                    </div>
+                  `}
+
+                  ${t.sentiment?.topics && t.sentiment.topics.length > 0 ? `
+                    <div style="margin-top: 10px;">
+                      <strong style="font-size: 13px;">Topics Detected:</strong>
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                        ${t.sentiment.topics.map(topic => `
+                          <span style="background: #e3f2fd; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                            ${topic}
+                          </span>
+                        `).join('')}
+                      </div>
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+
+            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #1a73e8;">
+              <h5 style="margin: 0 0 10px 0; color: #1a73e8;">🧠 About Conversational Intelligence</h5>
+              <p style="font-size: 13px; color: #666; line-height: 1.6; margin: 0 0 10px 0;">
+                Twilio Conversational Intelligence uses AI Language Operators to automatically:
+              </p>
+              <ul style="font-size: 13px; color: #666; line-height: 1.8; margin: 0 0 10px 0;">
+                <li><strong>Transcribe calls</strong> with Deepgram speech-to-text</li>
+                <li><strong>Analyze sentiment</strong> to understand caller emotions</li>
+                <li><strong>Detect topics</strong> to categorize conversations</li>
+                <li><strong>Identify PII</strong> for compliance and privacy</li>
+                <li><strong>Extract keywords</strong> for searchability</li>
+              </ul>
+              <a href="https://www.twilio.com/docs/voice/intelligence" target="_blank" style="color: #1a73e8; text-decoration: none; font-size: 13px; font-weight: bold;">
+                📚 Learn more about Conversational Intelligence →
+              </a>
+            </div>
+          </div>
+        `;
+
+      } catch (error) {
+        console.error('CI Analytics error:', error);
+        analyticsContainer.style.display = 'block';
+        analyticsContainer.innerHTML = `
+          <div style="background: rgba(255, 0, 0, 0.2); padding: 20px; border-radius: 8px;">
+            <p style="margin: 0; color: white;">❌ Failed to load analytics: ${error.message}</p>
+            <p style="margin: 10px 0 0 0; color: white; font-size: 14px;">
+              This is normal if no calls have been made yet. Make a test call and try again!
+            </p>
+          </div>
+        `;
       }
     }
 
@@ -5252,10 +6079,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
                 ✅ Added function calling & tools<br>
                 ✅ Deployed to production
               </div>
-              <button onclick="window.location.href='/admin.html'" class="btn btn-primary" style="margin-right: 10px;">
-                Sample Admin Panel
-              </button>
-              <button onclick="window.location.reload()" class="btn btn-secondary">
+              <button onclick="window.location.reload()" class="btn btn-primary">
                 Start New Workshop
               </button>
             </div>
@@ -5380,6 +6204,50 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     // INCREMENTAL COMMIT - Deploy Code Step-by-Step
     // =========================================================================
 
+    function saveWebSocketUrl(stepNumber) {
+      const input = document.getElementById(`websocketUrlInput${stepNumber}`);
+      const url = input?.value?.trim();
+
+      if (!url) {
+        alert('Please enter a WebSocket URL');
+        return;
+      }
+
+      // Validate URL format
+      if (!url.startsWith('wss://') && !url.startsWith('ws://')) {
+        alert('WebSocket URL must start with wss:// or ws://');
+        return;
+      }
+
+      // Save the WebSocket URL
+      websocketUrl = url;
+
+      // Mark the step as deployed
+      if (stepNumber === 5) {
+        step5Deployed = true;
+        websocketBuilt = true;
+      } else if (stepNumber === 7) {
+        step7Deployed = true;
+        promptEngineeringComplete = true;
+      } else if (stepNumber === 8) {
+        step8Deployed = true;
+        toolsConfigured = true;
+      }
+
+      saveProgressToStorage();
+      updateProgressBar();
+
+      // Enable next button
+      const nextBtn = document.getElementById(`nextBtn${stepNumber}`);
+      if (nextBtn) {
+        nextBtn.disabled = false;
+      }
+
+      // Show success message
+      const statusId = `commitStep${stepNumber}Status`;
+      showStatus(statusId, 'success', `✅ WebSocket URL saved: ${url}`);
+    }
+
     async function updatePhoneNumberWebhook() {
       // Update the phone number's voice URL to point to the deployed voice-handler
       if (!selectedPhoneNumberSid || !websocketUrl) {
@@ -5425,7 +6293,16 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     async function commitStep(stepNumber) {
       const statusId = `commitStep${stepNumber}Status`;
       const btnId = `commitStep${stepNumber}Btn`;
-      const nextBtnId = `nextBtn${stepNumber === 4 ? 4 : stepNumber === 6 ? 6 : stepNumber === 7 ? 7 : 8}`;
+
+      // Map step numbers to actual next button IDs (due to numbering inconsistency)
+      const stepToNextBtnMap = {
+        4: 'nextBtn6',   // Step 4 → nextBtn6
+        5: 'nextBtn7',   // Step 5 → nextBtn7
+        6: 'nextBtn8',   // Step 6 → nextBtn8
+        7: 'nextBtn9',   // Step 7 → nextBtn9
+        8: 'nextBtn10'   // Step 8 → nextBtn10
+      };
+      const nextBtnId = stepToNextBtnMap[stepNumber] || `nextBtn${stepNumber}`;
 
       // PREREQUISITE CHECK: Step 6 requires Step 5 to be deployed first
       if (stepNumber === 6 && !step5Deployed) {
@@ -5445,30 +6322,81 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
       // DEMO MODE: Simulate deployment
       if (studentDemoMode || twilioCredentials?.demoMode) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Simulate deployment with realistic delays and messages
 
-        // Set deployed flags based on step
-        if (stepNumber === 4) {
-          step4Committed = true;
-          step4Deployed = true;
-        } else if (stepNumber === 5) {
-          step5Committed = true;
-          step5Deployed = true;
-          deployedServiceSid = 'ZS' + Math.random().toString(36).substring(7);
-          websocketUrl = 'demo-workshop-' + Math.random().toString(36).substring(7) + '.twil.io';
-        } else if (stepNumber === 6) {
-          step6Committed = true;
-          step6Deployed = true;
-        } else if (stepNumber === 8) {
-          step8Committed = true;
-          toolsConfigured = true;
-          functionsDeployed = true;
+        // Steps 5, 7, 8 deploy to GitHub → External hosting
+        if (stepNumber === 5 || stepNumber === 7 || stepNumber === 8) {
+          showStatus(statusId, 'info', '🔄 Demo: Committing code to GitHub...');
+          await new Promise(resolve => setTimeout(resolve, 1500));
+
+          showStatus(statusId, 'info', '🚀 Demo: GitHub push successful, triggering Railway deployment...');
+          await new Promise(resolve => setTimeout(resolve, 1500));
+
+          // Generate demo WebSocket URL
+          const demoRepoName = studentRepoName || 'my-conversationrelay-app';
+          websocketUrl = `wss://${demoRepoName}-demo.up.railway.app`;
+
+          // Set deployed flags
+          if (stepNumber === 5) {
+            step5Committed = true;
+            step5Deployed = true;
+            websocketBuilt = true;
+          } else if (stepNumber === 7) {
+            step7Committed = true;
+            step7Deployed = true;
+            promptEngineeringComplete = true;
+          } else if (stepNumber === 8) {
+            step8Committed = true;
+            step8Deployed = true;
+            toolsConfigured = true;
+          }
+
+          saveProgressToStorage();
+          updateProgressBar();
+
+          showStatus(statusId, 'success', `
+            ✅ Demo deployment complete!<br><br>
+            <strong>Commit:</strong> <a href="https://github.com/${githubUsername || 'demo-user'}/${demoRepoName}/commit/demo${Date.now()}" target="_blank">View on GitHub (Demo)</a><br>
+            <strong>WebSocket URL:</strong> <code>${websocketUrl}</code><br><br>
+            <small>📝 Note: In live mode, Railway/Render auto-deploys from GitHub.</small>
+          `);
+
+        } else {
+          // Steps 4 & 6 deploy to Twilio Serverless
+          showStatus(statusId, 'info', '📦 Demo: Creating Twilio Serverless deployment...');
+          await new Promise(resolve => setTimeout(resolve, 1500));
+
+          showStatus(statusId, 'info', '📤 Demo: Uploading function code...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          showStatus(statusId, 'info', '🔨 Demo: Building deployment...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Set deployed flags based on step
+          if (stepNumber === 4) {
+            step4Committed = true;
+            step4Deployed = true;
+            deployedServiceSid = 'ZS' + Math.random().toString(36).substring(7);
+            websocketUrl = 'demo-workshop-' + Math.random().toString(36).substring(7) + '.twil.io';
+          } else if (stepNumber === 6) {
+            step6Committed = true;
+            step6Deployed = true;
+
+            // Show the test section after deploying ConversationRelay (demo mode)
+            const testSection = document.getElementById('step6TestCallSection');
+            if (testSection) {
+              testSection.style.display = 'block';
+              setTimeout(() => {
+                testSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 500);
+            }
+          }
+
+          saveProgressToStorage();
+          updateProgressBar();
+
+          showStatus(statusId, 'success', `✅ Demo deployment complete! Function URL: https://${websocketUrl || 'demo-1234.twil.io'}/voice-handler`);
         }
-
-        saveProgressToStorage();
-        updateProgressBar();
-
-        showStatus(statusId, 'success', `✅ Demo deployment complete! Function URL: https://${websocketUrl || 'demo-1234.twil.io'}/${stepNumber === 5 ? 'websocket-handler' : 'voice-handler'}`);
 
         // Re-enable button
         if (btn) {
@@ -5502,6 +6430,22 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           // Step 6: ConversationRelay - UPDATE voice-handler to use ConversationRelay
           functionCode = document.getElementById('code8')?.value || '';
           functionName = 'voice-handler';  // Update voice-handler with ConversationRelay
+        } else if (stepNumber === 7) {
+          // Step 7: Custom Prompt - UPDATE websocket-handler with custom system prompt
+          functionCode = document.getElementById('code7')?.value || '';
+
+          // Replace the default system prompt with the custom one
+          const defaultPrompt = 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.';
+          if (customSystemPrompt && customSystemPrompt.trim()) {
+            // Escape special characters in the prompt for safe string replacement
+            const escapedPrompt = customSystemPrompt.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+            functionCode = functionCode.replace(
+              /content:\s*['"`]You are a helpful voice assistant\. Keep responses brief and conversational since they will be spoken aloud\.['"`]/,
+              `content: '${escapedPrompt}'`
+            );
+          }
+
+          functionName = 'websocket-handler';  // Redeploy websocket-handler with new prompt
         } else if (stepNumber === 8) {
           // Step 8: Tooling - Update websocket-handler with tools
           functionCode = document.getElementById('code9')?.value || '';
@@ -5567,11 +6511,112 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           }
         }
 
+        // IMPORTANT: Steps 5, 7, 8 deploy to external hosting via GitHub, NOT Twilio Serverless
+        // Only Steps 4 & 6 (voice handlers) deploy to Twilio Serverless
+        if (stepNumber === 5 || stepNumber === 7 || stepNumber === 8) {
+          // Deploy WebSocket handler to GitHub → Railway/Render/Heroku
+          showStatus(statusId, 'info', '🔄 Committing code to GitHub...');
+
+          // Check if student has GitHub credentials
+          if (!githubToken || !githubUsername) {
+            showStatus(statusId, 'error', '❌ GitHub not connected. Please connect GitHub in Step 1 first!');
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = '💾 Commit Step ' + stepNumber;
+            }
+            return;
+          }
+
+          // Determine file path based on step
+          let filePath = 'index.js'; // Default WebSocket handler file
+          let commitMessage = '';
+
+          if (stepNumber === 5) {
+            filePath = 'index.js';
+            commitMessage = 'Add WebSocket handler for ConversationRelay';
+          } else if (stepNumber === 7) {
+            filePath = 'index.js';
+            commitMessage = 'Update WebSocket handler with custom prompts';
+          } else if (stepNumber === 8) {
+            filePath = 'index.js';
+            commitMessage = 'Update WebSocket handler with tools';
+          }
+
+          try {
+            // Commit code to GitHub
+            const commitResponse = await fetch('/api/github-commit-code', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                accessToken: githubToken,
+                githubUsername: githubUsername,
+                repoName: studentRepoName || 'my-conversationrelay-app',
+                filePath: filePath,
+                fileContent: functionCode,
+                commitMessage: commitMessage,
+                stepNumber: stepNumber
+              })
+            });
+
+            const commitData = await commitResponse.json();
+
+            if (!commitData.success) {
+              throw new Error(commitData.error || 'Failed to commit code to GitHub');
+            }
+
+            showStatus(statusId, 'success', `✅ Code committed to GitHub!<br><a href="${commitData.repoUrl}" target="_blank">View Repository</a>`);
+
+            // Store the deployed URL
+            websocketUrl = commitData.deployedUrl;
+
+            // Mark step as deployed
+            if (stepNumber === 5) {
+              step5Deployed = true;
+              websocketBuilt = true;
+            } else if (stepNumber === 7) {
+              step7Deployed = true;
+              promptEngineeringComplete = true;
+            } else if (stepNumber === 8) {
+              step8Deployed = true;
+              toolsConfigured = true;
+            }
+
+            saveProgressToStorage();
+            updateProgressBar();
+
+            // Enable next button
+            const nextBtn = document.getElementById(nextBtnId);
+            if (nextBtn) {
+              nextBtn.disabled = false;
+            }
+
+            // Show deployment info
+            showStatus(statusId, 'success', `
+              ✅ Deployment complete!<br><br>
+              <strong>Commit:</strong> <a href="${commitData.commitUrl}" target="_blank">View on GitHub</a><br>
+              <strong>WebSocket URL:</strong> <code>${commitData.deployedUrl}</code><br><br>
+              <small>📝 Note: Railway/Render will auto-deploy from GitHub. Check your dashboard for deployment status.</small>
+            `);
+
+          } catch (error) {
+            console.error('GitHub commit error:', error);
+            showStatus(statusId, 'error', `❌ Deployment failed: ${error.message}`);
+          }
+
+          // Re-enable button
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '💾 Commit Step ' + stepNumber;
+          }
+
+          return; // Exit early - don't deploy to Twilio
+        }
+
         // Step 1: Create service + environment (if first commit)
         if (!deployedServiceSid) {
           showStatus(statusId, 'info', '📦 Creating Twilio Serverless service...');
 
-          const createResponse = await fetch('/deploy-step', {
+          const createResponse = await fetch('/api/deploy-step', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5579,7 +6624,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
               accountSid: twilioCredentials.accountSid,
               authToken: twilioCredentials.authToken,
               phoneNumber: selectedPhoneNumber,
-              openaiKey: openaiApiKey
+              openaiKey: openaiApiKey,
+              websocketUrl: websocketUrl  // Pass WebSocket URL for Step 6 ConversationRelay
             })
           });
 
@@ -5601,7 +6647,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         // Step 2: Upload the function
         showStatus(statusId, 'info', `📤 Uploading ${functionName}...`);
 
-        const uploadResponse = await fetch('/deploy-step', {
+        const uploadResponse = await fetch('/api/deploy-step', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -5626,7 +6672,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         // Step 3: Create build
         showStatus(statusId, 'info', `🔨 Creating build...`);
 
-        const buildResponse = await fetch('/deploy-step', {
+        const buildResponse = await fetch('/api/deploy-step', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -5656,7 +6702,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           await new Promise(resolve => setTimeout(resolve, 2000));
           attempts++;
 
-          const checkResponse = await fetch('/deploy-step', {
+          const checkResponse = await fetch('/api/deploy-step', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -5686,7 +6732,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         // Step 5: Deploy the build
         showStatus(statusId, 'info', `🚀 Deploying to production...`);
 
-        const deployResponse = await fetch('/deploy-step', {
+        const deployResponse = await fetch('/api/deploy-step', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -5724,8 +6770,14 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
               }, 500);
             }
           } else {
-            // For outbound: enable Next button after deployment
-            document.getElementById('nextBtn4').disabled = false;
+            // For both inbound and outbound: show test section after deployment
+            const testSection = document.getElementById('step4TestSection');
+            if (testSection) {
+              testSection.style.display = 'block';
+              setTimeout(() => {
+                testSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 500);
+            }
           }
         }
         if (stepNumber === 5) {
@@ -5787,11 +6839,43 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
           // Update phone number with the new voice-handler URL after ConversationRelay deployment
           updatePhoneNumberWebhook();
+
+          // Show the test section after deploying ConversationRelay
+          const testSection = document.getElementById('step6TestCallSection');
+          if (testSection) {
+            testSection.style.display = 'block';
+            setTimeout(() => {
+              testSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 500);
+          }
+
           // Enable Next button - voice testing happens in Step 7 after prompt
-          document.getElementById('nextBtn8').disabled = false;
+          document.getElementById('nextBtn6').disabled = false;
 
           // Show SDK version notice
           showSDKVersionNotice();
+        }
+        if (stepNumber === 7) {
+          step7Committed = true;
+          step7Deployed = true;
+
+          // Save progress immediately
+          saveProgressToStorage();
+
+          showStatus(statusId, 'success', '✅ Custom prompt deployed successfully!');
+          console.log('✅ Step 7 deployed, step7Deployed =', step7Deployed);
+
+          // Enable Next button and show test section
+          document.getElementById('nextBtn7').disabled = false;
+
+          // Show the voice test section after deploying prompt
+          const testSection = document.getElementById('step7VoiceTestSection');
+          if (testSection) {
+            testSection.style.display = 'block';
+            setTimeout(() => {
+              testSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 500);
+          }
         }
         if (stepNumber === 8) {
           step8Committed = true;
@@ -6137,10 +7221,9 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
     // =========================================================================
     // STEP 6 (case 5): CONVERSATIONRELAY - Upgrade to AI
-    // Note: Function name still "renderStep9" for backwards compatibility
     // =========================================================================
 
-    function renderStep9_ConversationRelay() {
+    function renderStep6_ConversationRelay() {
       // Use the deployed service domain if available, otherwise fallback to current host
       if (!websocketUrl && deployedServiceSid) {
         // websocketUrl should already be set from deployment, but if not, we can't proceed
@@ -6384,7 +7467,6 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
               <div style="display: flex; gap: 10px;">
                 <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode8()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code8')">📋 Copy Code</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="showSolution(8)">💡 Show Solution</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode8()">Reset</button>
               </div>
             </div>
@@ -6405,9 +7487,15 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   console.log('conversationRelay method exists?', typeof connect.conversationRelay);
 
   // Build WebSocket handler URL
-  const wsHandlerUrl = 'wss://' + context.DOMAIN_NAME + '/websocket-handler';
+  // IMPORTANT: Your WebSocket server is hosted externally (Railway/Render/Heroku)
+  // NOT on Twilio Serverless! Use the environment variable you set during deployment.
+  const wsHandlerUrl = context.WEBSOCKET_URL || 'wss://your-app.up.railway.app';
   console.log('WebSocket handler URL:', wsHandlerUrl);
-  console.log('Domain from context:', context.DOMAIN_NAME);
+
+  // Validate WebSocket URL format
+  if (!wsHandlerUrl.startsWith('wss://')) {
+    console.error('ERROR: WebSocket URL must use wss:// protocol');
+  }
 
   // Popular ElevenLabs Voices - swap the voice ID to try different voices:
   // '9XfYMbJVZqPHaQtYnTAO' - Cody (Energetic Upbeat Educator) - DEFAULT
@@ -6458,29 +7546,15 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           ${!step6CodeValidated ? `
           <div id="step6Placeholder" class="instructions" style="margin-top: 20px; background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px;">
             <p style="margin: 0; color: #856404;">
-              💡 <strong>Next Steps:</strong> Validate your code to unlock testing and deployment.
+              💡 <strong>Next Steps:</strong> Validate your code above to unlock deployment.
             </p>
           </div>
           ` : ''}
 
-          <div id="step6TestCodeSection" style="margin: 30px 0; display: ${step6CodeValidated ? 'block' : 'none'};">
-            <div style="padding: 20px; background: linear-gradient(135deg, #4fc1ff 0%, #0d122b 100%); border-radius: 12px; border: 2px solid #4fc1ff;">
-              <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">🧪 Test Your Code</h3>
-              <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px;">
-                Test your ConversationRelay TwiML generation to verify it's configured correctly.
-              </p>
-              <button class="btn btn-test" onclick="testCode8()" style="font-size: 1.1rem; padding: 15px 30px;">
-                ▶️ Test Code
-              </button>
-            </div>
-          </div>
-
-          <div class="console-output" id="console8" style="display: none;"></div>
-
-          <div id="step6DeploySection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8; display: ${step6CodeTested ? 'block' : 'none'};">
-            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">💾 Ready to Deploy?</h3>
+          <div id="step6DeploySection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8; display: ${step6CodeValidated ? 'block' : 'none'};">
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">💾 Deploy ConversationRelay</h3>
             <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">
-              Once you're happy with your ConversationRelay TwiML, click <strong>Commit Step 6</strong> to deploy it to your Twilio account.
+              Click <strong>Commit Step 6</strong> to deploy ConversationRelay to your Twilio account.
               This will update your voice handler with AI-powered conversation capabilities and configure your phone number.
             </p>
             <button
@@ -6493,18 +7567,27 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             <div id="commitStep6Status" style="margin-top: 15px;"></div>
           </div>
 
-          <!-- Voice testing moved to Step 7 after prompt is created -->
+          <!-- Optional: Test ConversationRelay with basic prompt -->
+          <div id="step6TestCallSection" style="margin: 30px 0; display: ${step6Deployed ? 'block' : 'none'};">
+            <div style="padding: 25px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; border: 2px solid #059669; color: white;">
+              <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">🎙️ Optional: Test ConversationRelay with AI</h3>
 
-          <div style="margin: 30px 0; padding: 20px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px;">
-            <h4 style="margin: 0 0 10px 0; color: #856404;">📋 Next Step: Create Your System Prompt</h4>
-            <p style="margin: 0; color: #856404; line-height: 1.6;">
-              Your ConversationRelay is deployed! Now move to Step 7 to create your AI's system prompt.
-              You'll test your voice bot AFTER you've defined how your AI should behave.
-            </p>
-          </div>
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="color: white; margin: 0 0 12px 0; font-size: 1.1rem;">🤖 What You'll Experience:</h4>
+                <ul style="margin: 0; padding-left: 20px; color: rgba(255,255,255,0.95); line-height: 1.9;">
+                  <li><strong>Speech-to-Text (STT):</strong> Your voice is transcribed in real-time by ${document.getElementById('crTranscriptionProvider')?.value === 'google' ? 'Google Cloud STT' : 'Deepgram'}</li>
+                  <li><strong>AI Processing:</strong> OpenAI processes your transcribed speech and generates intelligent responses</li>
+                  <li><strong>Text-to-Speech (TTS):</strong> The AI's response is converted to natural voice using ${getTTSProviderName()}</li>
+                  <li><strong>ConversationRelay:</strong> Orchestrates this entire flow with low latency and handles interruptions</li>
+                </ul>
+              </div>
 
-          <!-- Hidden for now - shown in Step 7 -->
-          <div id="step6TestCallSection" style="display: none;">
+              <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.7;">
+                <strong>Test your AI voice bot now!</strong> This uses a basic prompt to demonstrate the technology. You'll customize the AI's personality in Step 7.
+              </p>
+              <p style="color: rgba(255,255,255,0.85); margin-bottom: 20px; font-size: 13px; line-height: 1.6; font-style: italic;">
+                💡 Current prompt: "You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud."
+              </p>
             <div style="text-align: center;">
               <h3 style="color: white; margin: 0 0 10px 0; font-size: 1.5rem;">📞 Ready to Test Your AI Voice Bot?</h3>
               <p style="color: rgba(255,255,255,0.95); margin-bottom: 20px; font-size: 1.1rem; line-height: 1.6;">
@@ -6566,6 +7649,19 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
                 💡 Tip: Try asking questions or having a conversation to test the AI's responses!
               </p>
             </div>
+
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 2px solid rgba(255,255,255,0.2);">
+              <button
+                class="btn btn-secondary"
+                onclick="navigateToStep(6)"
+                style="width: 100%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); color: white; font-weight: 600; font-size: 1rem; padding: 12px;">
+                ⏭️ Skip Testing - Go to Step 7 (Prompt Engineering)
+              </button>
+              <p style="color: rgba(255,255,255,0.75); margin: 10px 0 0 0; font-size: 13px; text-align: center;">
+                You can customize the AI prompt first, then test in Step 7
+              </p>
+            </div>
+          </div>
           </div>
 
           <div class="button-group">
@@ -6679,14 +7775,18 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         showStatus('step8Status', 'success', '✅ Perfect! ConversationRelay TwiML is valid. Test it below!');
         updateProgressBar();
 
-        // Hide placeholder and reveal test code section
+        // Enable next button (Step 6 uses nextBtn8)
+        const nextBtn = document.getElementById('nextBtn8');
+        if (nextBtn) nextBtn.disabled = false;
+
+        // Hide placeholder and reveal deploy section
         const placeholder = document.getElementById('step6Placeholder');
         if (placeholder) placeholder.style.display = 'none';
-        const testCodeSection = document.getElementById('step6TestCodeSection');
-        if (testCodeSection) {
-          testCodeSection.style.display = 'block';
+        const deploySection = document.getElementById('step6DeploySection');
+        if (deploySection) {
+          deploySection.style.display = 'block';
           setTimeout(() => {
-            testCodeSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            deploySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }, 300);
         }
       } else {
@@ -6801,15 +7901,35 @@ ${hintsLine}
     }
 
     // =========================================================================
-    // STEP 6: WEBSOCKET - Build WebSocket Handler (OLD STEP 4)
+    // STEP 5: WEBSOCKET - Build WebSocket Handler
     // =========================================================================
 
-    function renderStep6_WebSocket() {
+    function renderStep5_WebSocket() {
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>Step 5: Build WebSocket Handler</h2>
-            <p>Handle real-time conversation events and connect to OpenAI</p>
+            <h2>Step 5: Understanding Media Streams</h2>
+            <p>Learn the foundation of real-time voice communication that powers ConversationRelay</p>
+          </div>
+
+          <!-- Educational Context -->
+          <div class="instructions" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+            <h3 style="color: white;">📚 Why This Step Matters</h3>
+            <p style="color: rgba(255,255,255,0.95); line-height: 1.7;">
+              Before we dive into ConversationRelay (which handles everything automatically), it's important to understand
+              <strong>Twilio Media Streams</strong> - the underlying technology that makes real-time voice AI possible.
+            </p>
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin: 15px 0;">
+              <h4 style="color: white; margin-top: 0;">🎯 The Journey:</h4>
+              <ol style="color: rgba(255,255,255,0.95); line-height: 1.8; margin: 10px 0; padding-left: 20px;">
+                <li><strong>Step 5 (Now):</strong> Learn Media Streams - raw audio streaming over WebSocket</li>
+                <li><strong>Step 6 (Next):</strong> Use ConversationRelay - which adds AI orchestration on top of Media Streams</li>
+              </ol>
+            </div>
+            <p style="color: rgba(255,255,255,0.95); line-height: 1.7; margin-bottom: 0;">
+              💡 Think of it like learning how an engine works before driving a car with automatic transmission.
+              Media Streams is the engine, ConversationRelay is the automatic transmission that makes it easy!
+            </p>
           </div>
 
           <!-- OpenAI Configuration -->
@@ -6867,7 +7987,6 @@ ${hintsLine}
               <div style="display: flex; gap: 10px;">
                 <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode7()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code7')">📋 Copy Code</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="showSolution(7)">💡 Show Solution</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode7()">Reset</button>
               </div>
             </div>
@@ -6881,11 +8000,18 @@ ${hintsLine}
  * - The GitHub repository you'll clone for this workshop
  *
  * How it works:
- * 1. Twilio ConversationRelay connects via WebSocket
- * 2. Twilio sends caller's speech as text (transcripts)
- * 3. You process with AI (OpenAI in this example)
- * 4. You send AI response back to Twilio
- * 5. Twilio converts response to speech and plays to caller
+ * 1. ConversationRelay orchestrates: STT (speech-to-text), TTS (text-to-speech), and WebSocket connection
+ * 2. ConversationRelay transcribes caller's speech and sends text to your WebSocket handler
+ * 3. Your handler processes the text with AI/LLM (OpenAI in this example)
+ * 4. Your handler sends the AI's text response back via WebSocket
+ * 5. ConversationRelay converts the text to speech (TTS) and plays it to the caller
+ *
+ * ConversationRelay handles all the complexity of:
+ * - Real-time audio streaming and transcription
+ * - Low-latency bidirectional communication
+ * - Interruption handling (when caller speaks over AI)
+ * - TTS generation and audio playback
+ * Your code just focuses on: receive text → process with AI → send text back
  */
 
 const express = require('express');
@@ -6928,38 +8054,45 @@ wss.on('connection', (ws) => {
   // --------------------------------------------------------------------------
   // Event: MESSAGE - Handle incoming messages from Twilio
   // --------------------------------------------------------------------------
-  // Twilio sends JSON messages with different event types:
-  // - 'start': Call begins (includes streamSid)
-  // - 'transcript': Caller spoke (speech-to-text result)
-  // - 'stop': Call ended
+  // Twilio ConversationRelay sends JSON messages with different types:
+  // - 'setup': Initial connection with call metadata
+  // - 'prompt': Caller spoke (speech-to-text result)
+  // - 'dtmf': Keypad button pressed
+  // - 'interrupt': Caller interrupted the AI mid-sentence
   ws.on('message', async (data) => {
     try {
       const message = JSON.parse(data.toString());
-      console.log('[EVENT] Received event:', message.event);
+      console.log('[EVENT] Received event:', message.type);
 
-      switch (message.event) {
+      switch (message.type) {
         // ----------------------------------------------------------------------
-        // Event: START - Call just started
+        // Event: SETUP - Session initialization with call metadata
         // ----------------------------------------------------------------------
-        case 'start':
-          console.log('[CALL] Call started, StreamSid:', message.streamSid);
+        case 'setup':
+          console.log('[CALL] Setup received:');
+          console.log('  Session ID:', message.sessionId);
+          console.log('  Call SID:', message.callSid);
+          console.log('  From:', message.from);
+          console.log('  To:', message.to);
+          console.log('  Direction:', message.direction);
 
-          // Optional: Send acknowledgment back to Twilio
-          ws.send(JSON.stringify({
-            event: 'connected',
-            streamSid: message.streamSid
-          }));
+          // Optional: Store session info for analytics/logging
+          // This is useful for Conversational Intelligence integration
           break;
 
         // ----------------------------------------------------------------------
-        // Event: TRANSCRIPT - Caller spoke, we got their words
+        // Event: PROMPT - Caller spoke, we got their words as text
         // ----------------------------------------------------------------------
-        case 'transcript':
-          console.log('[TRANSCRIPT] Caller said:', message.transcript);
+        case 'prompt':
+          console.log('[PROMPT] Caller said:', message.voicePrompt);
+          console.log('  Language:', message.lang);
+          console.log('  Is final:', message.last);
 
           // ====================================================================
-          // AI PROCESSING: Send transcript to OpenAI for intelligent response
+          // AI PROCESSING: Send transcript to your LLM for intelligent response
           // ====================================================================
+          // You can use ANY LLM here: OpenAI, Anthropic, Google, local models, etc.
+          // Twilio handles all the audio (STT/TTS) - you just process text!
           try {
             const completion = await openai.chat.completions.create({
               model: 'gpt-4o-mini',  // Fast, affordable model (good for voice)
@@ -6970,7 +8103,7 @@ wss.on('connection', (ws) => {
                 },
                 {
                   role: 'user',
-                  content: message.transcript
+                  content: message.voicePrompt
                 }
               ],
               max_tokens: 150  // Limit response length for voice (faster TTS)
@@ -6983,34 +8116,48 @@ wss.on('connection', (ws) => {
             // Send AI response back to Twilio → Twilio speaks it to caller
             // ==================================================================
             ws.send(JSON.stringify({
-              event: 'text',
-              text: aiResponse
+              type: 'text',
+              token: aiResponse,
+              last: true  // Indicates this is the complete response
             }));
 
           } catch (aiError) {
-            console.error('[ERROR] OpenAI API error:', aiError);
+            console.error('[ERROR] LLM API error:', aiError);
 
             // Send error response to caller
             ws.send(JSON.stringify({
-              event: 'text',
-              text: 'I apologize, I encountered an error processing your request.'
+              type: 'text',
+              token: 'I apologize, I encountered an error processing your request.',
+              last: true
             }));
           }
           break;
 
         // ----------------------------------------------------------------------
-        // Event: STOP - Call ended
+        // Event: DTMF - Caller pressed a keypad button
         // ----------------------------------------------------------------------
-        case 'stop':
-          console.log('[CALL] Call ended');
-          ws.close();
+        case 'dtmf':
+          console.log('[DTMF] Keypad digit pressed:', message.digit);
+
+          // Handle keypad input (useful for IVR-style menus)
+          // Example: Press 1 for sales, 2 for support, etc.
+          break;
+
+        // ----------------------------------------------------------------------
+        // Event: INTERRUPT - Caller interrupted the AI
+        // ----------------------------------------------------------------------
+        case 'interrupt':
+          console.log('[INTERRUPT] Caller interrupted at:', message.utteranceUntilInterrupt);
+          console.log('  Duration until interrupt:', message.durationUntilInterruptMs, 'ms');
+
+          // Handle interruption (you may want to cancel any pending LLM requests)
           break;
 
         // ----------------------------------------------------------------------
         // Unknown events (log for debugging)
         // ----------------------------------------------------------------------
         default:
-          console.log('[EVENT] Unknown event:', message.event);
+          console.log('[EVENT] Unknown event type:', message.type);
       }
 
     } catch (parseError) {
@@ -7058,60 +8205,39 @@ app.get('/health', (req, res) => {
 
           <div id="step7Status" class="status-box"></div>
 
-          ${!step5CodeValidated || !openaiApiKey ? `
+          ${!step5CodeValidated ? `
           <div id="step5Placeholder" class="instructions" style="margin-top: 20px; background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px;">
-            <p style="margin: 0; color: #856404;">
-              💡 <strong>Next Steps:</strong>
-              ${!openaiApiKey ? 'Configure your OpenAI API key above, then ' : ''}
-              validate your code to unlock deployment and testing options.
+            <p style="margin: 0; color: #856404; font-weight: 600;">
+              ⚠️ Please validate your WebSocket handler code above before deploying!
             </p>
           </div>
           ` : ''}
 
-          <div id="step5DeploySection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8; display: ${step5CodeValidated && openaiApiKey ? 'block' : 'none'};">
-            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">💾 Ready to Deploy?</h3>
-            <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">
-              Once you're happy with your WebSocket handler, click <strong>Commit Step 5</strong> to deploy it to your Twilio account.
-              This will update your service with the WebSocket handling functionality.
+          <div id="step5DeploySection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8; display: ${step5CodeValidated ? 'block' : 'none'};">
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">🚀 Deploy WebSocket Handler</h3>
+            <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
+              Your WebSocket handler will be deployed to handle real-time communication with ConversationRelay.
+              <strong>This sets up the environment for receiving WebSocket media streams in the next step.</strong>
             </p>
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
+                <strong>📋 Deployment Steps:</strong>
+              </p>
+              <ol style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
+                <li>Commit your code to GitHub repository</li>
+                <li>Receive workshop WebSocket endpoint URL</li>
+                <li>Use this URL in Step 6 for ConversationRelay</li>
+                <li><em>Note: In production, this would deploy to Railway/Render with your code</em></li>
+              </ol>
+            </div>
             <button
               class="btn btn-success"
               id="commitStep5Btn"
               onclick="commitStep(5)"
               style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-              💾 Commit Step 5 - Deploy WebSocket Handler
+              🚀 Deploy WebSocket Handler to External Hosting
             </button>
             <div id="commitStep5Status" style="margin-top: 15px;"></div>
-          </div>
-
-          <div id="step5TestSection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #4fc1ff 0%, #0d122b 100%); border-radius: 12px; border: 2px solid #4fc1ff; display: ${step5Deployed ? 'block' : 'none'};">
-            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">🧪 Test Your WebSocket Handler Interactively</h3>
-            <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px;">
-              After deploying, test your WebSocket handler by sending messages and seeing OpenAI responses.
-            </p>
-            <p style="color: rgba(255,255,255,0.8); margin-bottom: 20px; font-size: 0.9rem;">
-              ⏱️ <strong>Note:</strong> Wait 30 seconds after deployment for changes to propagate before testing.
-            </p>
-
-            <!-- Interactive Test Input -->
-            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-              <label style="display: block; margin-bottom: 8px; font-weight: 600; color: white;">
-                💬 Test Message:
-              </label>
-              <input
-                type="text"
-                id="testWebSocketMessage"
-                placeholder="e.g., Hello, how are you?"
-                style="width: 100%; padding: 12px; background: rgba(255,255,255,0.2); color: white; border: 2px solid rgba(255,255,255,0.3); border-radius: 6px; font-size: 14px; margin-bottom: 5px;"
-                onkeypress="if(event.key === 'Enter') testSingleWebSocketMessage()"
-              />
-              <p style="color: rgba(255,255,255,0.7); font-size: 12px; margin: 0 0 10px 0;">
-                💡 Try: simple greetings, questions, or casual conversation
-              </p>
-              <button class="btn btn-test" onclick="testSingleWebSocketMessage()" style="width: 100%; font-size: 1rem; padding: 12px;">
-                ▶️ Send Test Message
-              </button>
-            </div>
           </div>
 
           <div class="console-output" id="console7" style="display: none;"></div>
@@ -7338,6 +8464,333 @@ app.get('/health', (req, res) => {
       }
     }
 
+    // =========================================================================
+    // MEDIA STREAMS DEMO - Raw Audio Streaming + Transcript Visualization
+    // This demonstrates how Twilio Media Streams work - the foundation of ConversationRelay
+    // =========================================================================
+    let voiceTestActive = false;
+    let audioContext = null;
+    let analyser = null;
+    let animationFrame = null;
+    let mediaStreamWs = null;
+    let audioProcessor = null;
+    let audioChunksSent = 0;
+    let speechRecognition = null;
+    let currentUtterance = null;
+
+    async function toggleVoiceTest() {
+      const btn = document.getElementById('voiceTestBtn');
+      const status = document.getElementById('voiceTestStatus');
+      const conversation = document.getElementById('voiceConversation');
+
+      if (!voiceTestActive) {
+        // Start Media Streams demo
+        try {
+          status.textContent = 'Connecting to Media Streams server...';
+
+          // Connect to Media Streams demo WebSocket
+          // Use production URL if on Vercel, otherwise localhost for development
+          const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+          const wsProtocol = isProduction ? 'wss:' : 'ws:';
+          const wsHost = isProduction ? window.location.host : 'localhost:8082';
+          const wsPath = isProduction ? '/api/media-stream-demo' : '';
+          const wsUrl = `${wsProtocol}//${wsHost}${wsPath}`;
+
+          console.log(`Connecting to Media Streams demo at: ${wsUrl}`);
+          mediaStreamWs = new WebSocket(wsUrl);
+
+          mediaStreamWs.onopen = async () => {
+            console.log('✓ Connected to Media Streams server');
+            status.textContent = 'Requesting microphone access...';
+
+            // Show conversation panel
+            conversation.style.display = 'block';
+            conversation.innerHTML = `
+              <div style="color: rgba(255,255,255,0.9); font-size: 14px; line-height: 1.6;">
+                <strong>📡 Media Streams Demo</strong><br>
+                <span style="font-size: 12px; color: rgba(255,255,255,0.7);">
+                  This demonstrates how Twilio Media Streams work!<br>
+                  Your audio is being streamed to the WebSocket in real-time.
+                </span>
+              </div>
+            `;
+
+            // Get microphone access
+            const stream = await navigator.mediaDevices.getUserMedia({
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                sampleRate: 16000
+              }
+            });
+
+            // Setup audio context and visualization
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+
+            // Start visualization
+            visualizeAudio();
+
+            // NOTE: Media Streams does NOT provide transcripts!
+            // You only get raw audio - you'd need to integrate your own STT.
+            // ConversationRelay (next step) handles this automatically!
+
+            // Create audio processor to stream raw audio to WebSocket
+            audioProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+            source.connect(audioProcessor);
+            audioProcessor.connect(audioContext.destination);
+
+            audioChunksSent = 0;
+
+            audioProcessor.onaudioprocess = (e) => {
+              if (mediaStreamWs && mediaStreamWs.readyState === WebSocket.OPEN) {
+                const inputData = e.inputBuffer.getChannelData(0);
+
+                // Convert Float32Array to Int16Array (PCM format)
+                // This is the EXACT format Twilio Media Streams uses!
+                const pcmData = new Int16Array(inputData.length);
+                for (let i = 0; i < inputData.length; i++) {
+                  pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+                }
+
+                // Send raw audio bytes to WebSocket (like Twilio does!)
+                mediaStreamWs.send(pcmData.buffer);
+                audioChunksSent++;
+
+                // Update UI every 50 chunks
+                if (audioChunksSent % 50 === 0) {
+                  const duration = (audioChunksSent * 4096 / 16000).toFixed(1);
+                  conversation.innerHTML = `
+                    <div style="color: rgba(255,255,255,0.9); font-size: 14px; line-height: 1.6;">
+                      <strong>📡 Media Streams Demo</strong><br>
+                      <span style="font-size: 12px; color: rgba(255,255,255,0.7);">
+                        Streaming raw audio to WebSocket...<br>
+                        <strong>${audioChunksSent} chunks sent</strong> (~${duration}s of audio)
+                      </span>
+                    </div>
+                  `;
+                }
+              }
+            };
+
+            // Send start message
+            mediaStreamWs.send(JSON.stringify({ type: 'start' }));
+
+            // Update UI
+            voiceTestActive = true;
+            btn.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+            btn.style.transform = 'scale(1.05)';
+            status.textContent = '🎙️ Streaming audio... Speak now!';
+          };
+
+          mediaStreamWs.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            switch (data.type) {
+              case 'connected':
+                console.log('Media Streams:', data.message);
+                break;
+
+              case 'status':
+                console.log('Status:', data.message);
+                break;
+
+              case 'audioReceived':
+                // Server acknowledged receiving audio!
+                conversation.innerHTML += `
+                  <div style="margin: 15px 0; padding: 15px; background: rgba(76, 175, 80, 0.3); border-radius: 8px; border-left: 4px solid #4caf50;">
+                    <strong style="color: #4caf50;">✅ ${data.message}</strong><br>
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 8px;">
+                      📊 Received ${data.chunksReceived} audio chunks (${data.duration})<br>
+                      🎯 This is exactly how ConversationRelay receives your audio!
+                    </div>
+                  </div>
+                `;
+                conversation.scrollTop = conversation.scrollHeight;
+                status.textContent = '🔊 Generating audio response...';
+                break;
+
+              case 'speak':
+                // Server wants us to speak a response (simulating audio playback)
+                conversation.innerHTML += `
+                  <div style="margin: 15px 0; padding: 15px; background: rgba(102, 126, 234, 0.3); border-radius: 8px; border-left: 4px solid #667eea;">
+                    <strong style="color: #667eea;">🤖 Server Response:</strong><br>
+                    <div style="font-size: 13px; color: white; margin-top: 8px;">
+                      "${data.text}"
+                    </div>
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 8px;">
+                      🎵 Playing audio response (this is how ConversationRelay sends audio back!)
+                    </div>
+                  </div>
+                `;
+                conversation.scrollTop = conversation.scrollHeight;
+
+                // Use browser TTS to speak the response
+                const utterance = new SpeechSynthesisUtterance(data.text);
+                utterance.rate = 1.0;
+                utterance.pitch = 1.0;
+
+                utterance.onstart = () => {
+                  status.textContent = '🔊 Speaking response...';
+                };
+
+                utterance.onend = () => {
+                  status.textContent = '🎤 Ready for more audio! Keep talking...';
+                  // Enable next button after successful interactive demo
+                  document.getElementById('nextBtn7').disabled = false;
+                };
+
+                window.speechSynthesis.speak(utterance);
+                break;
+            }
+          };
+
+          mediaStreamWs.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            status.textContent = '❌ Connection failed - is server running on port 8082?';
+          };
+
+          mediaStreamWs.onclose = () => {
+            console.log('Media Streams disconnected');
+            if (voiceTestActive) {
+              status.textContent = '🔌 Disconnected';
+            }
+          };
+
+        } catch (error) {
+          console.error('Error starting Media Streams demo:', error);
+          status.textContent = `❌ ${error.message}`;
+        }
+
+      } else {
+        // Stop Media Streams demo
+        if (mediaStreamWs) {
+          mediaStreamWs.send(JSON.stringify({ type: 'stop' }));
+          mediaStreamWs.close();
+          mediaStreamWs = null;
+        }
+        if (audioProcessor) {
+          audioProcessor.disconnect();
+          audioProcessor = null;
+        }
+        if (audioContext) {
+          audioContext.close();
+        }
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+        }
+
+        voiceTestActive = false;
+        btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        btn.style.transform = 'scale(1)';
+        status.textContent = 'Click the microphone to start';
+
+        // Reset audio bars
+        const bars = document.querySelectorAll('.audio-bar');
+        bars.forEach(bar => {
+          bar.style.height = '20%';
+          bar.style.background = 'rgba(255,255,255,0.3)';
+        });
+
+        console.log(`📊 Session complete: ${audioChunksSent} total audio chunks sent`);
+      }
+    }
+
+    function visualizeAudio() {
+      if (!analyser || !voiceTestActive) return;
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(dataArray);
+
+      const bars = document.querySelectorAll('.audio-bar');
+      bars.forEach((bar, index) => {
+        const dataIndex = Math.floor((index / bars.length) * dataArray.length);
+        const value = dataArray[dataIndex] / 255;
+        const height = Math.max(20, value * 100);
+        bar.style.height = height + '%';
+        bar.style.background = value > 0.3 ? '#667eea' : 'rgba(255,255,255,0.3)';
+      });
+
+      animationFrame = requestAnimationFrame(visualizeAudio);
+    }
+
+    async function processVoiceInput(transcript) {
+      const conversation = document.getElementById('voiceConversation');
+      const status = document.getElementById('voiceTestStatus');
+
+      try {
+        // Get student's WebSocket handler code
+        const studentCode = document.getElementById('code7')?.value || '';
+
+        // Test with their code
+        const response = await fetch('/api/test-websocket-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: studentCode,
+            testMessage: transcript,
+            openaiApiKey: openaiApiKey
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.test.aiResponse) {
+          const aiResponse = data.test.aiResponse;
+
+          // Add AI response to conversation
+          conversation.innerHTML += `
+            <div style="margin: 10px 0; padding: 10px; background: rgba(76, 175, 80, 0.3); border-radius: 8px;">
+              <strong style="color: #4caf50;">🤖 AI:</strong>
+              <div style="color: white; margin-top: 5px;">${aiResponse}</div>
+            </div>
+          `;
+          conversation.scrollTop = conversation.scrollHeight;
+
+          // Speak the response using browser TTS
+          const utterance = new SpeechSynthesisUtterance(aiResponse);
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
+
+          utterance.onstart = () => {
+            status.textContent = '🔊 AI is speaking...';
+          };
+
+          utterance.onend = () => {
+            status.textContent = '🎤 Listening... (your turn)';
+          };
+
+          window.speechSynthesis.speak(utterance);
+
+          // Enable next button after successful voice test
+          document.getElementById('nextBtn7').disabled = false;
+
+        } else {
+          conversation.innerHTML += `
+            <div style="margin: 10px 0; padding: 10px; background: rgba(244, 67, 54, 0.3); border-radius: 8px;">
+              <strong style="color: #f44336;">❌ Error:</strong>
+              <div style="color: white; margin-top: 5px;">${data.error || 'Failed to process'}</div>
+            </div>
+          `;
+          status.textContent = '❌ Error - try again';
+        }
+
+      } catch (error) {
+        console.error('Voice processing error:', error);
+        conversation.innerHTML += `
+          <div style="margin: 10px 0; padding: 10px; background: rgba(244, 67, 54, 0.3); border-radius: 8px;">
+            <strong style="color: #f44336;">❌ Error:</strong>
+            <div style="color: white; margin-top: 5px;">${error.message}</div>
+          </div>
+        `;
+        status.textContent = '❌ Error - try again';
+      }
+    }
+
     // Test WebSocket with a single custom message
     async function testSingleWebSocketMessage() {
       const console7 = document.getElementById('console7');
@@ -7357,57 +8810,68 @@ app.get('/health', (req, res) => {
         return;
       }
 
-      // Check if deployed
-      if (!deployedServiceSid) {
+      // Get the student's WebSocket handler code
+      const studentCode = document.getElementById('code7')?.value || '';
+      if (!studentCode) {
         console7.style.display = 'block';
-        console7.innerHTML = '<div class="console-line error">❌ Please deploy your WebSocket handler first (click 💾 Commit Step 5)</div>';
+        console7.innerHTML = '<div class="console-line error">❌ No code to test</div>';
         return;
       }
 
       console7.style.display = 'block';
-      console7.innerHTML = `<div class="console-line">💬 Testing: "${userMessage}"</div>`;
+      console7.innerHTML = `
+        <div class="console-line">🧪 Testing your WebSocket handler code...</div>
+        <div class="console-line">📨 Simulating ConversationRelay event: <code>"${userMessage}"</code></div>
+      `;
 
       try {
-        // Use the tutorial-proxy to test OpenAI without a system prompt (just echo test)
-        const response = await fetch('/api/tutorial-proxy', {
+        // Test the student's actual WebSocket handler code
+        const response = await fetch('/api/test-websocket-code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'testOpenAI',
-            message: userMessage,
-            openaiApiKey: openaiApiKey,
-            ...twilioCredentials
+            code: studentCode,
+            testMessage: userMessage,
+            openaiApiKey: openaiApiKey
           })
         });
 
         const data = await response.json();
 
         if (data.success) {
-          console7.innerHTML += `<div class="console-line success">🤖 AI Response: "${data.response}"</div>`;
-          console7.innerHTML += '<div class="console-line success">✅ WebSocket → OpenAI connection working!</div>';
+          // Show event flow
+          console7.innerHTML += '<div class="console-line info">📡 Event Flow:</div>';
+          data.events.forEach(event => {
+            const icon = event.direction === 'incoming' ? '⬇️' : event.direction === 'outgoing' ? '⬆️' : '⚙️';
+            console7.innerHTML += `<div class="console-line">  ${icon} ${event.description}</div>`;
+          });
+
+          console7.innerHTML += `<div class="console-line success">🤖 AI Response: "${data.test.aiResponse}"</div>`;
+
+          // Show validation results
+          if (data.validation.passed) {
+            console7.innerHTML += '<div class="console-line success">✅ All WebSocket handler checks passed!</div>';
+          } else {
+            console7.innerHTML += '<div class="console-line warning">⚠️ Code validation issues:</div>';
+            data.validation.issues.forEach(issue => {
+              console7.innerHTML += `<div class="console-line warning">  • ${issue}</div>`;
+            });
+          }
 
           // Clear input for next test
           messageInput.value = '';
 
           // Enable Next button after successful test
           document.getElementById('nextBtn7').disabled = false;
-          showStatus('step7Status', 'success', '🎉 WebSocket handler tested successfully! You can now proceed to Step 6.');
+          showStatus('step7Status', 'success', '🎉 WebSocket handler tested successfully! Ready for Step 6.');
         } else {
           console7.innerHTML += `<div class="console-line error">❌ Error: ${data.error}</div>`;
 
-          // Provide debugging hints for OpenAI errors
-          if (data.error.includes('401') || data.error.includes('Incorrect API key')) {
-            console7.innerHTML += '<div class="console-line error">🔐 OpenAI Authentication Error</div>';
-            console7.innerHTML += '<div class="console-line info">   • Your API key is invalid</div>';
-            console7.innerHTML += '<div class="console-line info">   • Get a valid key at https://platform.openai.com/api-keys</div>';
-          } else if (data.error.includes('429')) {
-            console7.innerHTML += '<div class="console-line error">⏱️ Rate Limit Exceeded</div>';
-            console7.innerHTML += '<div class="console-line info">   • Too many requests to OpenAI</div>';
-            console7.innerHTML += '<div class="console-line info">   • Wait 60 seconds and try again</div>';
-          } else if (data.error.includes('insufficient_quota')) {
-            console7.innerHTML += '<div class="console-line error">💳 Insufficient Quota</div>';
-            console7.innerHTML += '<div class="console-line info">   • Your OpenAI account has no credits</div>';
-            console7.innerHTML += '<div class="console-line info">   • Add credits at https://platform.openai.com/account/billing</div>';
+          // Show hints if available
+          if (data.hints && data.hints.length > 0) {
+            data.hints.forEach(hint => {
+              console7.innerHTML += `<div class="console-line info">💡 ${hint}</div>`;
+            });
           }
         }
       } catch (error) {
@@ -7442,30 +8906,25 @@ app.get('/health', (req, res) => {
         hasWebSocket: code.includes('WebSocket') || code.includes('ws'),
         hasHandler: code.includes('exports.handler') || code.includes('module.exports') || code.includes('const app = express()') || code.includes('const express = require'),
         hasCallback: code.includes('callback') || code.includes('wss.on') || code.includes('ws.on'),
+        hasCorrectEvents: (code.includes("'setup'") || code.includes('"setup"')) && (code.includes("'prompt'") || code.includes('"prompt"')),
+        hasCorrectResponseFormat: (code.includes("type: 'text'") || code.includes('type: "text"')) && (code.includes('token:') || code.includes('"token"')),
         hasImplementation: codeLines > 5 && (todoLines === 0 || codeLines > todoLines * 2)
       };
 
       const allPassed = Object.values(checks).every(v => v);
 
       if (allPassed) {
-        showStatus('step7Status', 'success', '✅ Code validation passed! This WebSocket handler will be deployed to your GitHub repository (not Twilio Serverless since WSS doesn\'t run there).');
-        websocketBuilt = true;
+        showStatus('step7Status', 'success', '✅ Code validation passed! Click the deploy button below to deploy your WebSocket handler.');
         step5CodeValidated = true;
-        step5Deployed = true; // Mark as "deployed" since we're not actually deploying
-
-        // Enable next button immediately - no deployment needed
-        const nextBtn = document.getElementById('nextBtn7');
-        if (nextBtn) nextBtn.disabled = false;
 
         updateProgressBar();
 
-        // Hide placeholder
+        // Hide placeholder and show deploy section
         const placeholder = document.getElementById('step5Placeholder');
         if (placeholder) placeholder.style.display = 'none';
 
-        // Hide deploy section since WebSocket doesn't deploy to Twilio
         const deploySection = document.getElementById('step5DeploySection');
-        if (deploySection) deploySection.style.display = 'none';
+        if (deploySection) deploySection.style.display = 'block';
       } else {
         let message = '⚠️ Validation issues found:\n';
         if (!checks.hasWebSocket) message += '- Missing WebSocket import (require(\'ws\') or WebSocketServer)\n';
@@ -7624,185 +9083,9 @@ app.get('/health', (req, res) => {
     }
 
     // =========================================================================
-    // STEP 5: OPENAI - Integrate AI Responses
+    // Dead code removed: Old renderStep5() and renderStep6() functions
+    // The active functions are renderStep5_WebSocket() and renderStep6_ConversationRelay()
     // =========================================================================
-
-    function renderStep5() {
-      return `
-        <div class="step-content active">
-          <div class="step-header">
-            <h2>Integrate OpenAI</h2>
-            <p>Generate dynamic AI responses for your voice bot</p>
-          </div>
-
-          <div class="instructions">
-            <h3>📋 Your Task</h3>
-            <p>Configure OpenAI to generate contextual responses based on conversation transcripts.</p>
-            <p style="margin-top: 15px;">
-              📚 <strong>Documentation:</strong>
-              <a href="https://platform.openai.com/docs/api-reference/chat" target="_blank">OpenAI Chat API</a> |
-              <a href="https://platform.openai.com/docs/guides/function-calling" target="_blank">Function Calling</a> |
-              <a href="https://www.twilio.com/docs/voice/twiml/connect/conversationrelay#sending-messages" target="_blank">Sending Messages</a>
-            </p>
-          </div>
-
-          <div class="code-editor">
-            <div class="code-header">
-              <span>📝 OpenAI Integration</span>
-              <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode5()">✓ Validate</button>
-                <button class="btn btn-test" style="padding: 6px 12px; font-size: 13px;" onclick="testCode5()">▶️ Test</button>
-                <button class="btn-copy" onclick="copyCode('code5')">📋 Copy Code</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="showSolution(5)">💡 Show Solution</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode5()">Reset</button>
-              </div>
-            </div>
-            <textarea class="code-textarea" id="code5">async function generateAIResponse(transcript, conversationHistory) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-  // TODO: Build messages array with system prompt
-  // TODO: Add conversation history
-  // TODO: Add current transcript
-  // TODO: Call OpenAI API
-  // TODO: Return assistant response
-
-  return "AI response here";
-}</textarea>
-          </div>
-
-          <div class="console-output" id="console5"></div>
-
-          <div id="step5Status" class="status-box"></div>
-
-          <div class="button-group">
-            <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary" id="nextBtn5" onclick="nextStep()" disabled>
-              Next: Test Your Bot →
-            </button>
-          </div>
-        </div>
-      `;
-    }
-
-    function testCode5() {
-      const code = document.getElementById('code5').value;
-      const console5 = document.getElementById('console5');
-      console5.innerHTML = '<div class="console-line">🔍 Validating JavaScript syntax...</div>';
-
-      // First, validate syntax
-      const validation = validateJavaScriptSyntax(code);
-
-      if (!validation.valid) {
-        console5.innerHTML += `<div class="console-line error">❌ Syntax Error: ${validation.error}</div>`;
-        console5.innerHTML += `<div class="console-line error">   Location: Line ${validation.line}, Column ${validation.column}</div>`;
-        console5.innerHTML += '<div class="console-line info">💡 Fix the syntax error before testing or deploying.</div>';
-        return;
-      }
-
-      console5.innerHTML += '<div class="console-line success">✓ Syntax validation passed</div>';
-      console5.innerHTML += `
-        <div class="console-line">▶️ Testing OpenAI integration...</div>
-        <div class="console-line info">Input: "Hi, I'm interested in the position"</div>
-        <div class="console-line success">✓ OpenAI response generated</div>
-        <div class="console-line">Output: "Great! I'd be happy to help you learn more..."</div>
-      `;
-    }
-
-    function validateCode5() {
-      const code = document.getElementById('code5').value;
-      const checks = {
-        hasOpenAI: code.includes('openai') || code.includes('OpenAI'),
-        hasMessages: code.includes('messages'),
-        hasSystemPrompt: code.includes('system') || code.includes('role'),
-        hasAPICall: code.includes('chat.completions') || code.includes('create')
-      };
-
-      if (Object.values(checks).every(v => v)) {
-        openaiIntegrated = true;
-        document.getElementById('nextBtn5').disabled = false;
-        showStatus('step5Status', 'success', '✅ OpenAI integration complete! Ready to test.');
-        updateProgressBar();
-      } else {
-        showStatus('step5Status', 'error', '❌ Please implement all OpenAI integration components');
-      }
-    }
-
-    function resetCode5() {
-      document.getElementById('code5').value = `async function generateAIResponse(transcript, conversationHistory) {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-  // TODO: Build messages array with system prompt
-  // TODO: Add conversation history
-  // TODO: Add current transcript
-  // TODO: Call OpenAI API
-  // TODO: Return assistant response
-
-  return "AI response here";
-}`;
-    }
-
-    // =========================================================================
-    // STEP 6: TEST - Make a Live Call
-    // =========================================================================
-
-    function renderStep6() {
-      return `
-        <div class="step-content active">
-          <div class="step-header">
-            <h2>Test Your Voice AI Bot</h2>
-            <p>Make a live call and see your bot in action!</p>
-          </div>
-
-          <div class="instructions">
-            <h3>🎉 You're Ready!</h3>
-            <p>Your Voice AI bot is now configured. Let's make a test call to see it work.</p>
-            <p style="margin-top: 15px;">
-              📚 <strong>Documentation:</strong>
-              <a href="https://www.twilio.com/docs/voice/api/call-resource" target="_blank">Call Resource</a> |
-              <a href="https://www.twilio.com/docs/voice/tutorials/how-to-make-outbound-phone-calls" target="_blank">Outbound Calls</a> |
-              <a href="https://www.twilio.com/docs/usage/monitor-debugger" target="_blank">Debugging</a>
-            </p>
-          </div>
-
-          <div class="service-card">
-            <h4>📞 Test Configuration</h4>
-            <div class="form-group">
-              <label>Your Phone Number (to receive test call)</label>
-              <input type="tel" id="testPhoneNumber" placeholder="+1234567890" />
-            </div>
-            <div class="form-group">
-              <label>From Number</label>
-              <input type="tel" id="fromNumber" value="${selectedPhoneNumber || ''}" readonly />
-            </div>
-            <button class="btn btn-primary" onclick="makeTestCall()">📞 Start Test Call</button>
-          </div>
-
-          <div id="callStatus" class="service-card" style="display: none;">
-            <h4>📊 Call Status</h4>
-            <div id="callDetails"></div>
-          </div>
-
-          <div id="step6Status" class="status-box"></div>
-
-          <div class="service-card" style="margin-top: 20px; background: #e7f5ff;">
-            <h4>🔍 Monitor in Twilio Console</h4>
-            <p style="margin: 10px 0;">View live logs and debug your calls:</p>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <button class="btn btn-primary" onclick="openTwilioConsole('calls')">📞 Call Logs</button>
-              <button class="btn btn-primary" onclick="openTwilioConsole('functions')">⚙️ Function Logs</button>
-              <button class="btn btn-primary" onclick="openTwilioConsole('debugger')">🐛 Debugger</button>
-            </div>
-          </div>
-
-          <div class="button-group">
-            <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-success" id="completeBtn" onclick="completeWorkshop()" disabled>
-              🎉 Complete Workshop
-            </button>
-          </div>
-        </div>
-      `;
-    }
 
     async function makeTestCall() {
       const toNumber = document.getElementById('testPhoneNumber').value.trim();
@@ -8157,12 +9440,15 @@ app.get('/health', (req, res) => {
           if (!websocketBuilt) {
             return { canProceed: false, message: 'Please create and validate your WebSocket handler!' };
           }
-          if (!openaiConnected) {
-            return { canProceed: false, message: 'Please connect your OpenAI API key at the top of Step 5 first!' };
-          }
+          // Note: OpenAI validation removed here - students can enter Step 5 to input their key
+          // OpenAI will be validated when they try to deploy or test in Step 6
           break;
 
         case 5: // Step 6: ConversationRelay
+          // Validate OpenAI is connected before proceeding to Step 6
+          if (!openaiConnected && !studentDemoMode && !twilioCredentials?.demoMode) {
+            return { canProceed: false, message: 'Please connect your OpenAI API key in Step 5 before proceeding!' };
+          }
           if (!conversationRelayCreated) {
             return { canProceed: false, message: 'Please create and validate your ConversationRelay TwiML!' };
           }
@@ -8279,6 +9565,35 @@ app.get('/health', (req, res) => {
 
       statusDiv.innerHTML = '<div style="color: white; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 4px;">📞 Initiating AI call...</div>';
 
+      // DEMO MODE: Simulate test call
+      if (studentDemoMode || twilioCredentials?.demoMode) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        statusDiv.innerHTML = `
+          <div style="color: #98c379; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+            <strong>✅ Demo: AI call simulated successfully!</strong><br>
+            <div style="margin-top: 10px; font-size: 13px;">
+              📱 CallSid: CA${Math.random().toString(36).substring(7)}<br>
+              📞 Would call: ${yourNumber}<br>
+              🤖 Using: ConversationRelay + OpenAI + ${getTTSProviderName()}
+            </div>
+            <div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px;">
+              <strong>📝 Demo Mode - What would happen:</strong><br>
+              1. Your phone would ring in a few seconds<br>
+              2. You'd answer and hear the AI greeting using your custom prompt<br>
+              3. ConversationRelay would handle the full conversation flow<br>
+              4. STT (${document.getElementById('crTranscriptionProvider')?.value === 'google' ? 'Google' : 'Deepgram'}) → OpenAI → TTS (${getTTSProviderName()})<br>
+              5. The AI would respond exactly as you defined in your system prompt!
+            </div>
+            <div style="margin-top: 10px; font-style: italic; opacity: 0.9; font-size: 12px;">
+              💡 In live mode with real credentials, this would place an actual phone call with your AI assistant.
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // LIVE MODE: Make actual call
       try {
         // Use the deployed voice-handler URL which now has ConversationRelay
         const voiceHandlerUrl = `https://${websocketUrl}/voice-handler`;
@@ -8304,14 +9619,15 @@ app.get('/health', (req, res) => {
               <div style="margin-top: 10px; font-size: 13px;">
                 📱 CallSid: ${data.callSid}<br>
                 📞 Calling: ${yourNumber}<br>
-                🤖 Using: ConversationRelay + OpenAI
+                🤖 Using: ConversationRelay + OpenAI + ${getTTSProviderName()}
               </div>
               <div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px;">
                 <strong>What happens next:</strong><br>
                 1. Your phone will ring in a few seconds<br>
-                2. Answer and you'll hear the AI greeting<br>
+                2. Answer and you'll hear your AI's custom greeting<br>
                 3. Try having a natural conversation!<br>
-                4. The AI will respond using ${getTTSProviderName()}
+                4. The AI uses YOUR system prompt to respond intelligently<br>
+                5. Test different scenarios from your prompt
               </div>
             </div>
           `;
@@ -8733,7 +10049,7 @@ twilio serverless:deploy
           <h3>📚 Additional Resources</h3>
           <ul style="margin: 15px 0 0 20px; line-height: 2;">
             <li><a href="https://www.twilio.com/docs/voice/twiml/connect/conversationrelay" target="_blank">ConversationRelay Documentation</a></li>
-            <li><a href="https://www.twilio.com/console/voice/logs" target="_blank">View Call Logs in Console</a></li>
+            <li><a href="https://console.twilio.com/us1/monitor/voice-insights" target="_blank">Voice Insights in Console</a></li>
             <li><a href="https://www.twilio.com/console/functions/logs" target="_blank">View Function Logs</a></li>
             <li><a href="https://platform.openai.com/docs" target="_blank">OpenAI Documentation</a></li>
             <li><a href="https://www.twilio.com/support" target="_blank">Contact Twilio Support</a></li>
@@ -9440,6 +10756,7 @@ twilio serverless:deploy
 
         // Clear all localStorage
         localStorage.removeItem('workshopProgress');
+        localStorage.removeItem('workshop_progress');
         localStorage.removeItem('studentDemoMode');
         localStorage.removeItem('demoPurchasedNumber');
         localStorage.removeItem('demoMessagingProvisioned');
@@ -9447,12 +10764,16 @@ twilio serverless:deploy
         localStorage.removeItem('workshopCredentials');
         sessionStorage.clear();
 
+        // Save the cleared state
+        saveProgressToStorage();
+
         // Hide banner
         document.getElementById('demoModeBanner').style.display = 'none';
 
         // Reset to step 1 and re-render
         renderProgressSteps();
         renderStepContent();
+        updateProgressBar();
 
         // Scroll to top
         window.scrollTo(0, 0);
@@ -9568,9 +10889,9 @@ twilio serverless:deploy
             `✅ Repository cloned! <a href="${data.repoUrl}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
           );
 
-          // Store repo URL for later commits
-          window.studentRepoUrl = data.repoUrl;
-          window.studentRepoName = 'twilio-voice-ai-workshop';
+          // Store repo name and URL for later commits
+          studentRepoName = data.repoName || 'twilio-voice-ai-workshop';
+          saveProgressToStorage();
 
           celebrate('🎉 Repository cloned successfully! You can now proceed with the workshop.', 'normal');
         } else {
