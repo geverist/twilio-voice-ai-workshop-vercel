@@ -6673,6 +6673,15 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             step4Deployed = true;
             deployedServiceSid = 'ZS' + Math.random().toString(36).substring(7);
             websocketUrl = 'demo-workshop-' + Math.random().toString(36).substring(7) + '.twil.io';
+
+            // Show the test section after deployment (demo mode)
+            const testSection = document.getElementById('step4TestSection');
+            if (testSection) {
+              testSection.style.display = 'block';
+              setTimeout(() => {
+                testSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 500);
+            }
           } else if (stepNumber === 6) {
             step6Committed = true;
             step6Deployed = true;
@@ -6690,7 +6699,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           saveProgressToStorage();
           updateProgressBar();
 
-          showStatus(statusId, 'success', `✅ Demo deployment complete! Function URL: https://${websocketUrl || 'demo-1234.twil.io'}/voice-handler`);
+          showStatus(statusId, 'success', `✅ Demo deployment complete! Test it below!`);
         }
 
         // Re-enable button
