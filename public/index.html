@@ -2415,11 +2415,23 @@
     async function loadServices() {
       // Handle demo mode
       if (studentDemoMode || twilioCredentials?.demoMode) {
+        // Check if we've "purchased" a third number
+        const demoNumbers = [
+          { phoneNumber: '+1 (555) 867-5309', sid: 'PNdemo001', friendlyName: 'Demo Workshop Number' },
+          { phoneNumber: '+1 (555) 123-4567', sid: 'PNdemo002', friendlyName: 'Demo Testing Number' }
+        ];
+
+        // Add purchased number if it exists (simulates persistence)
+        if (localStorage.getItem('demoPurchasedNumber')) {
+          demoNumbers.push({
+            phoneNumber: '+1 (555) 321-0987',
+            sid: 'PNdemo003',
+            friendlyName: 'Purchased Demo Number'
+          });
+        }
+
         displayServices({
-          phoneNumbers: [
-            { phoneNumber: '+1 (555) 867-5309', sid: 'PNdemo001', friendlyName: 'Demo Workshop Number' },
-            { phoneNumber: '+1 (555) 123-4567', sid: 'PNdemo002', friendlyName: 'Demo Testing Number' }
-          ],
+          phoneNumbers: demoNumbers,
           messagingService: { sid: 'MGdemo', friendlyName: 'Demo Messaging Service' },
           syncService: { sid: 'ISdemo', friendlyName: 'Demo Sync Service' }
         });
@@ -2612,12 +2624,17 @@
     }
 
     async function provisionPhone() {
-      if (twilioCredentials?.demoMode) {
-        showStatus('step3Status', 'info', '📝 Demo Mode: Simulating phone number provisioning...');
+      if (studentDemoMode || twilioCredentials?.demoMode) {
+        showStatus('step3Status', 'info', '📝 Demo Mode: Simulating phone number purchase...');
         setTimeout(() => {
-          showStatus('step3Status', 'success', '✅ Demo phone number provisioned!');
-          loadServices();
-        }, 1000);
+          // Mark as purchased in localStorage
+          localStorage.setItem('demoPurchasedNumber', 'true');
+          showStatus('step3Status', 'success', '✅ Demo phone number +1 (555) 321-0987 purchased successfully!');
+          // Reload services to show the new number
+          setTimeout(() => {
+            loadServices();
+          }, 500);
+        }, 1500);
         return;
       }
 
@@ -9278,6 +9295,7 @@ twilio serverless:deploy
         // Clear storage
         localStorage.removeItem('workshopProgress');
         localStorage.removeItem('studentDemoMode');
+        localStorage.removeItem('demoPurchasedNumber');
         sessionStorage.clear();
 
         // Hide banner
