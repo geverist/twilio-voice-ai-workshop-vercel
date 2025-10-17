@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Workshop Instructor Dashboard | Twilio Voice AI Workshop</title>
+  <title>Workshop Instructor Dashboard | Send Student Invitations</title>
   <style>
     * {
       margin: 0;
@@ -19,320 +19,60 @@
     }
 
     .container {
-      max-width: 1400px;
+      max-width: 1200px;
       margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
     }
 
     .header {
-      text-align: center;
+      background: linear-gradient(135deg, #F22F46 0%, #0d122b 100%);
+      padding: 40px;
       color: white;
-      margin-bottom: 30px;
+      text-align: center;
     }
 
     .header h1 {
-      font-size: 2.5rem;
+      font-size: 2rem;
       margin-bottom: 10px;
     }
 
     .header p {
-      font-size: 1.1rem;
-      opacity: 0.9;
-    }
-
-    .refresh-indicator {
-      text-align: center;
-      color: white;
-      font-size: 0.9rem;
-      margin-bottom: 20px;
-      opacity: 0.8;
-    }
-
-    .pulse {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #22c55e;
-      margin-right: 8px;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-
-    .metric-card {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 12px;
-      padding: 25px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      transition: transform 0.3s;
-    }
-
-    .metric-card:hover {
-      transform: translateY(-5px);
-    }
-
-    .metric-label {
-      color: #666;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-
-    .metric-value {
-      font-size: 3rem;
-      font-weight: bold;
-      color: #F22F46;
-      line-height: 1;
-    }
-
-    .metric-subtext {
-      font-size: 0.85rem;
-      color: #999;
-      margin-top: 8px;
-    }
-
-    .chart-section {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 12px;
-      padding: 30px;
-      margin-bottom: 30px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    }
-
-    .chart-title {
-      font-size: 1.5rem;
-      color: #333;
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .refresh-btn {
-      background: #F22F46;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 600;
-      transition: all 0.3s;
-    }
-
-    .refresh-btn:hover {
-      background: #d11f3a;
-      transform: translateY(-2px);
-    }
-
-    .step-bar {
-      display: flex;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
-    .step-label {
-      width: 150px;
-      font-weight: 500;
-      color: #666;
-      font-size: 0.95rem;
-    }
-
-    .step-progress {
-      flex: 1;
-      height: 30px;
-      background: #f0f0f0;
-      border-radius: 15px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .step-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #F22F46, #ff6b6b);
-      transition: width 1s ease;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding-right: 10px;
-      color: white;
-      font-weight: bold;
-      font-size: 0.9rem;
-    }
-
-    .student-list {
-      background: white;
-      border-radius: 8px;
-      padding: 0;
-      overflow: hidden;
-    }
-
-    .student-row {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1.5fr 1.5fr 1fr;
-      gap: 15px;
-      padding: 15px 20px;
-      border-bottom: 1px solid #e0e0e0;
-      align-items: center;
-    }
-
-    .student-row:hover {
-      background: #f9fafb;
-    }
-
-    .student-row:first-child {
-      font-weight: bold;
-      color: #F22F46;
-      border-bottom: 2px solid #F22F46;
-      background: #fff;
-    }
-
-    .student-row:first-child:hover {
-      background: #fff;
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 8px;
-      background: #e0e0e0;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #F22F46, #ff6b6b);
-      transition: width 0.5s;
-    }
-
-    .status-badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      font-weight: 500;
-    }
-
-    .status-active {
-      background: #d1fae5;
-      color: #065f46;
-    }
-
-    .status-completed {
-      background: #dbeafe;
-      color: #1e40af;
-    }
-
-    .status-inactive {
-      background: #f3f4f6;
-      color: #6b7280;
-    }
-
-    .health-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
-      margin-bottom: 30px;
-    }
-
-    .health-card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .health-card h3 {
-      color: #333;
-      margin-bottom: 15px;
+      opacity: 0.95;
       font-size: 1.1rem;
     }
 
-    .health-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    .health-item:last-child {
-      border-bottom: none;
-    }
-
-    .health-label {
-      color: #666;
-      font-size: 0.9rem;
-    }
-
-    .health-value {
-      font-weight: 600;
-      color: #333;
-    }
-
-    .health-good {
-      color: #22c55e;
-    }
-
-    .health-warning {
-      color: #f59e0b;
-    }
-
-    .health-poor {
-      color: #ef4444;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #999;
-    }
-
-    .empty-state-icon {
-      font-size: 4rem;
-      margin-bottom: 20px;
-      opacity: 0.3;
+    .content {
+      padding: 40px;
     }
 
     .tabs {
       display: flex;
-      justify-content: center;
-      gap: 10px;
+      border-bottom: 2px solid #e0e0e0;
       margin-bottom: 30px;
     }
 
-    .tab-btn {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: none;
+    .tab {
       padding: 15px 30px;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
       cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 1rem;
+      color: #666;
+      border-bottom: 3px solid transparent;
       transition: all 0.3s;
     }
 
-    .tab-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: translateY(-2px);
+    .tab.active {
+      color: #F22F46;
+      border-bottom-color: #F22F46;
+      font-weight: 600;
     }
 
-    .tab-btn.active {
-      background: white;
+    .tab:hover {
       color: #F22F46;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .tab-content {
@@ -344,11 +84,16 @@
     }
 
     .form-section {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 12px;
+      background: #f8f9fa;
       padding: 30px;
+      border-radius: 12px;
       margin-bottom: 30px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-section h2 {
+      color: #0d122b;
+      margin-bottom: 20px;
+      font-size: 1.5rem;
     }
 
     .form-group {
@@ -379,7 +124,7 @@
     }
 
     .form-group textarea {
-      min-height: 100px;
+      min-height: 120px;
       resize: vertical;
       font-family: inherit;
     }
@@ -390,11 +135,11 @@
       margin-top: 5px;
     }
 
-    .btn {
+    .button {
       background: #F22F46;
       color: white;
-      border: none;
       padding: 15px 30px;
+      border: none;
       border-radius: 8px;
       font-size: 1rem;
       font-weight: 600;
@@ -402,23 +147,23 @@
       transition: all 0.3s;
     }
 
-    .btn:hover {
+    .button:hover {
       background: #d11f3a;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(242, 47, 70, 0.3);
     }
 
-    .btn:disabled {
+    .button:disabled {
       background: #ccc;
       cursor: not-allowed;
       transform: none;
     }
 
-    .btn-secondary {
+    .button.secondary {
       background: #6c757d;
     }
 
-    .btn-secondary:hover {
+    .button.secondary:hover {
       background: #5a6268;
     }
 
@@ -441,48 +186,150 @@
       color: #721c24;
     }
 
-    .info-box {
-      background: rgba(255, 255, 255, 0.15);
-      border-left: 4px solid white;
+    .alert.info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+
+    .invitation-list {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+    }
+
+    .invitation-item {
+      padding: 15px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .invitation-item:last-child {
+      border-bottom: none;
+    }
+
+    .invitation-info {
+      flex: 1;
+    }
+
+    .invitation-info .name {
+      font-weight: 600;
+      color: #0d122b;
+      margin-bottom: 5px;
+    }
+
+    .invitation-info .email {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .invitation-status {
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .invitation-status.sent {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .invitation-status.pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .invitation-status.failed {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .bulk-section {
+      background: #e9ecef;
       padding: 20px;
       border-radius: 8px;
-      color: white;
+      margin-top: 20px;
+    }
+
+    .bulk-section h3 {
+      margin-bottom: 15px;
+      color: #0d122b;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card .number {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #F22F46;
+      margin-bottom: 5px;
+    }
+
+    .stat-card .label {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .info-box {
+      background: #d1ecf1;
+      border-left: 4px solid #0c5460;
+      padding: 20px;
+      border-radius: 8px;
       margin-bottom: 30px;
     }
 
     .info-box h3 {
+      color: #0c5460;
       margin-bottom: 10px;
     }
 
-    .info-box ul {
-      margin: 10px 0;
-      padding-left: 20px;
+    .info-box p {
+      color: #0c5460;
+      line-height: 1.6;
+      margin: 5px 0;
     }
 
     .info-box code {
-      background: rgba(255, 255, 255, 0.2);
+      background: #bee5eb;
       padding: 2px 6px;
       border-radius: 3px;
       font-family: monospace;
     }
 
     @media (max-width: 768px) {
-      .student-row {
-        grid-template-columns: 1fr;
-        gap: 8px;
-      }
-
-      .metrics-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      .content {
+        padding: 20px;
       }
 
       .tabs {
-        flex-wrap: wrap;
+        overflow-x: auto;
       }
 
-      .tab-btn {
-        padding: 10px 20px;
-        font-size: 0.9rem;
+      .tab {
+        white-space: nowrap;
+      }
+
+      .invitation-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
       }
     }
   </style>
@@ -491,372 +338,732 @@
   <div class="container">
     <div class="header">
       <h1>👨‍🏫 Workshop Instructor Dashboard</h1>
-      <p>Manage workshops, send invitations, and track student progress</p>
+      <p>Send workshop invitations and manage student access</p>
     </div>
 
-    <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('analytics')">📊 Analytics</button>
-      <button class="tab-btn" onclick="switchTab('invitations')">📧 Invitations</button>
-      <button class="tab-btn" onclick="switchTab('setup')">⚙️ Setup</button>
-    </div>
-
-    <!-- Analytics Tab -->
-    <div id="analyticsTab" class="tab-content active">
-      <div class="refresh-indicator">
-        <span class="pulse"></span> Auto-refreshing every 30 seconds
+    <div class="content">
+      <!-- Configuration Check -->
+      <div class="info-box" id="configInfo">
+        <h3>⚙️ Configuration Required</h3>
+        <p>To use this dashboard, you need to configure the following environment variables in your <code>.env</code> file:</p>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+          <li><code>SENDGRID_API_KEY</code> - Your SendGrid API key (<a href="https://app.sendgrid.com/settings/api_keys" target="_blank">Get one here</a>)</li>
+          <li><code>WORKSHOP_URL</code> - Your deployed workshop URL (e.g., https://your-service-dev.twil.io)</li>
+          <li><code>INSTRUCTOR_EMAIL</code> - Email address invitations should come from</li>
+          <li><code>INSTRUCTOR_NAME</code> - Your name (optional)</li>
+          <li><code>GITHUB_REPO_URL</code> - Workshop repository URL (optional)</li>
+        </ul>
+        <p style="margin-top: 15px;"><strong>After adding these variables, redeploy your Twilio Serverless project:</strong></p>
+        <p><code>twilio serverless:deploy</code></p>
       </div>
 
-    <!-- Key Metrics -->
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <div class="metric-label">Total Students</div>
-        <div class="metric-value" id="totalStudents">0</div>
-        <div class="metric-subtext">All time</div>
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('progress')">Student Progress</button>
+        <button class="tab" onclick="switchTab('single')">Send Single Invitation</button>
+        <button class="tab" onclick="switchTab('bulk')">Bulk Send</button>
+        <button class="tab" onclick="switchTab('history')">Invitation History</button>
       </div>
 
-      <div class="metric-card">
-        <div class="metric-label">Active Now</div>
-        <div class="metric-value" id="activeStudents">0</div>
-        <div class="metric-subtext">Last 24 hours</div>
-      </div>
+      <!-- Alert Messages -->
+      <div id="alertSuccess" class="alert success"></div>
+      <div id="alertError" class="alert error"></div>
 
-      <div class="metric-card">
-        <div class="metric-label">Completed</div>
-        <div class="metric-value" id="completedStudents">0</div>
-        <div class="metric-subtext">100% progress</div>
-      </div>
-
-      <div class="metric-card">
-        <div class="metric-label">Avg Progress</div>
-        <div class="metric-value" id="avgProgress">0%</div>
-        <div class="metric-subtext">Overall completion</div>
-      </div>
-
-      <div class="metric-card">
-        <div class="metric-label">Repos Created</div>
-        <div class="metric-value" id="reposCreated">0</div>
-        <div class="metric-subtext">GitHub repositories</div>
-      </div>
-
-      <div class="metric-card">
-        <div class="metric-label">Avg Time</div>
-        <div class="metric-value" id="avgTime">0h</div>
-        <div class="metric-subtext">To complete</div>
-      </div>
-    </div>
-
-    <!-- Workshop Health -->
-    <div class="health-grid">
-      <div class="health-card">
-        <h3>📊 Workshop Health</h3>
-        <div class="health-item">
-          <span class="health-label">Completion Rate</span>
-          <span class="health-value" id="healthCompletion">—</span>
-        </div>
-        <div class="health-item">
-          <span class="health-label">Drop-off Rate</span>
-          <span class="health-value" id="healthDropoff">—</span>
-        </div>
-        <div class="health-item">
-          <span class="health-label">Avg Time per Step</span>
-          <span class="health-value" id="healthTimePerStep">—</span>
-        </div>
-        <div class="health-item">
-          <span class="health-label">Success Rate</span>
-          <span class="health-value" id="healthSuccess">—</span>
-        </div>
-      </div>
-
-      <div class="health-card">
-        <h3>🚀 Deployment Stats</h3>
-        <div class="health-item">
-          <span class="health-label">Voice Handlers</span>
-          <span class="health-value" id="deployVoiceHandlers">0</span>
-        </div>
-        <div class="health-item">
-          <span class="health-label">WebSocket Handlers</span>
-          <span class="health-value" id="deployWebSocketHandlers">0</span>
-        </div>
-        <div class="health-item">
-          <span class="health-label">GitHub Repos</span>
-          <span class="health-value" id="deployGitHubRepos">0</span>
-        </div>
-        <div class="health-item">
-          <span class="health-label">Full Deployments</span>
-          <span class="health-value" id="deployFull">0</span>
-        </div>
-      </div>
-
-      <div class="health-card">
-        <h3>⚠️ Issues & Blockers</h3>
-        <div class="health-item">
-          <span class="health-label">Students Stuck</span>
-          <span class="health-value health-warning" id="issuesStuck">0</span>
-        </div>
-        <div class="health-item">
-          <span class="health-label">Validation Failures</span>
-          <span class="health-value health-poor" id="issuesValidation">0</span>
-        </div>
-        <div class="health-item">
-          <span class="health-label">Demo Mode Users</span>
-          <span class="health-value" id="issuesDemoMode">0</span>
-        </div>
-        <div class="health-item">
-          <span class="health-label">Avg Attempts/Step</span>
-          <span class="health-value" id="issuesAttempts">—</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Step Completion -->
-    <div class="chart-section">
-      <h2 class="chart-title">
-        📈 Step Completion Rates
-        <button class="refresh-btn" onclick="loadAnalytics()">🔄 Refresh</button>
-      </h2>
-      <div id="stepCompletionChart">
-        <div class="step-bar">
-          <div class="step-label">Step 1: Setup</div>
-          <div class="step-progress">
-            <div class="step-fill" style="width: 0%">0%</div>
+      <!-- Student Progress Tab -->
+      <div id="progressTab" class="tab-content active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="number" id="totalStudents">0</div>
+            <div class="label">Total Students</div>
+          </div>
+          <div class="stat-card">
+            <div class="number" id="avgCompletion">0%</div>
+            <div class="label">Avg Completion</div>
+          </div>
+          <div class="stat-card">
+            <div class="number" id="activeStudents">0</div>
+            <div class="label">Active (24h)</div>
+          </div>
+          <div class="stat-card">
+            <div class="number" id="completedStudents">0</div>
+            <div class="label">Completed 100%</div>
           </div>
         </div>
-        <div class="step-bar">
-          <div class="step-label">Step 2: Credentials</div>
-          <div class="step-progress">
-            <div class="step-fill" style="width: 0%">0%</div>
+
+        <div class="form-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;">📊 Student Progress Dashboard</h2>
+            <button class="button secondary" onclick="refreshProgressData()">🔄 Refresh</button>
+          </div>
+
+          <div id="studentProgressList" class="invitation-list">
+            <div class="invitation-item">
+              <div class="invitation-info">
+                <div class="email" style="color: #999;">Loading student progress...</div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="step-bar">
-          <div class="step-label">Step 3: Phone Setup</div>
-          <div class="step-progress">
-            <div class="step-fill" style="width: 0%">0%</div>
-          </div>
-        </div>
-        <div class="step-bar">
-          <div class="step-label">Step 4: Voice Handler</div>
-          <div class="step-progress">
-            <div class="step-fill" style="width: 0%">0%</div>
-          </div>
-        </div>
-        <div class="step-bar">
-          <div class="step-label">Step 5: WebSocket</div>
-          <div class="step-progress">
-            <div class="step-fill" style="width: 0%">0%</div>
-          </div>
-        </div>
-        <div class="step-bar">
-          <div class="step-label">Step 6: ConvRelay</div>
-          <div class="step-progress">
-            <div class="step-fill" style="width: 0%">0%</div>
-          </div>
-        </div>
-        <div class="step-bar">
-          <div class="step-label">Step 7: Test Call</div>
-          <div class="step-progress">
-            <div class="step-fill" style="width: 0%">0%</div>
-          </div>
-        </div>
-        <div class="step-bar">
-          <div class="step-label">Step 8: Production</div>
-          <div class="step-progress">
-            <div class="step-fill" style="width: 0%">0%</div>
-          </div>
-        </div>
-        <div class="step-bar">
-          <div class="step-label">Step 9: Complete</div>
-          <div class="step-progress">
-            <div class="step-fill" style="width: 0%">0%</div>
+
+        <div class="form-section" style="margin-top: 30px;">
+          <h2>📈 Exercise Completion Stats</h2>
+          <div id="exerciseStats" style="margin-top: 20px;">
+            <!-- Exercise stats will be populated here -->
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Student Progress -->
-    <div class="chart-section">
-      <h2 class="chart-title">
-        👥 Student Progress
-      </h2>
-      <div class="student-list" id="studentsList">
-        <div class="student-row">
-          <div>Student ID</div>
-          <div>Current Step</div>
-          <div>Progress</div>
-          <div>GitHub Repo</div>
-          <div>Last Active</div>
-          <div>Status</div>
+      <!-- Single Invitation Tab -->
+      <div id="singleTab" class="tab-content">
+        <div class="form-section">
+          <h2>📧 Send Workshop Invitation</h2>
+
+          <form id="invitationForm" onsubmit="sendInvitation(event)">
+            <div class="form-group">
+              <label for="studentEmail">Student Email Address *</label>
+              <input
+                type="email"
+                id="studentEmail"
+                required
+                placeholder="student@example.com"
+              />
+              <div class="hint">The email address where the invitation will be sent</div>
+            </div>
+
+            <div class="form-group">
+              <label for="studentName">Student Name</label>
+              <input
+                type="text"
+                id="studentName"
+                placeholder="John Doe"
+              />
+              <div class="hint">Optional - used to personalize the email</div>
+            </div>
+
+            <div class="form-group">
+              <label for="workshopDate">Workshop Date & Time</label>
+              <input
+                type="text"
+                id="workshopDate"
+                placeholder="January 15, 2025 at 2:00 PM EST"
+              />
+              <div class="hint">Optional - when the workshop will take place</div>
+            </div>
+
+            <div class="form-group">
+              <label for="additionalNotes">Additional Notes</label>
+              <textarea
+                id="additionalNotes"
+                placeholder="Any additional information for the student (Zoom link, special instructions, etc.)"
+              ></textarea>
+              <div class="hint">Optional - additional information included in the email</div>
+            </div>
+
+            <button type="submit" class="button" id="sendButton">
+              Send Invitation
+            </button>
+          </form>
         </div>
-        <div class="empty-state">
-          <div class="empty-state-icon">📚</div>
-          <p>No student data yet</p>
-          <p style="font-size: 0.9rem; margin-top: 10px;">Students will appear here once they start the workshop</p>
+      </div>
+
+      <!-- Bulk Invitation Tab -->
+      <div id="bulkTab" class="tab-content">
+        <div class="form-section">
+          <h2>📨 Bulk Send Invitations</h2>
+          <p style="margin-bottom: 20px;">Send invitations to multiple students at once.</p>
+
+          <div class="bulk-section">
+            <h3>CSV Format</h3>
+            <p>Upload a CSV file with the following columns:</p>
+            <pre style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0;">email,name
+student1@example.com,John Doe
+student2@example.com,Jane Smith</pre>
+          </div>
+
+          <form id="bulkForm" onsubmit="sendBulkInvitations(event)">
+            <div class="form-group">
+              <label for="csvFile">CSV File</label>
+              <input
+                type="file"
+                id="csvFile"
+                accept=".csv"
+                onchange="previewCSV(event)"
+              />
+              <div class="hint">Upload a CSV file with student emails and names</div>
+            </div>
+
+            <div class="form-group">
+              <label for="bulkWorkshopDate">Workshop Date & Time</label>
+              <input
+                type="text"
+                id="bulkWorkshopDate"
+                placeholder="January 15, 2025 at 2:00 PM EST"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="bulkNotes">Additional Notes</label>
+              <textarea
+                id="bulkNotes"
+                placeholder="Additional information for all students"
+              ></textarea>
+            </div>
+
+            <div id="csvPreview" style="display: none; margin: 20px 0;">
+              <h3>Preview (first 5 students):</h3>
+              <div id="csvPreviewList" class="invitation-list"></div>
+            </div>
+
+            <button type="submit" class="button" id="bulkSendButton" disabled>
+              Send All Invitations
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- History Tab -->
+      <div id="historyTab" class="tab-content">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="number" id="totalSent">0</div>
+            <div class="label">Total Sent</div>
+          </div>
+          <div class="stat-card">
+            <div class="number" id="totalPending">0</div>
+            <div class="label">Pending</div>
+          </div>
+          <div class="stat-card">
+            <div class="number" id="totalFailed">0</div>
+            <div class="label">Failed</div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>📋 Recent Invitations</h2>
+          <div id="invitationHistory" class="invitation-list">
+            <div class="invitation-item">
+              <div class="invitation-info">
+                <div class="email" style="color: #999;">No invitations sent yet</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    let analyticsData = null;
+    // Store invitation history in localStorage
+    const STORAGE_KEY = 'workshop_invitations';
 
-    // Load analytics data from API
-    async function loadAnalytics() {
+    // Switch between tabs
+    function switchTab(tabName) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+
+      // Remove active class from all tabs
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(tabName + 'Tab').classList.add('active');
+
+      // Set active tab
+      event.target.classList.add('active');
+
+      // Load history if switching to history tab
+      if (tabName === 'history') {
+        loadInvitationHistory();
+      }
+    }
+
+    // Show alert message
+    function showAlert(type, message) {
+      const alertElement = type === 'success' ?
+        document.getElementById('alertSuccess') :
+        document.getElementById('alertError');
+
+      alertElement.textContent = message;
+      alertElement.style.display = 'block';
+
+      // Hide after 5 seconds
+      setTimeout(() => {
+        alertElement.style.display = 'none';
+      }, 5000);
+    }
+
+    // Send single invitation
+    async function sendInvitation(event) {
+      event.preventDefault();
+
+      const button = document.getElementById('sendButton');
+      button.disabled = true;
+      button.textContent = 'Sending...';
+
+      const studentEmail = document.getElementById('studentEmail').value;
+      const studentName = document.getElementById('studentName').value;
+      const workshopDate = document.getElementById('workshopDate').value;
+      const additionalNotes = document.getElementById('additionalNotes').value;
+
       try {
-        const response = await fetch('/api/workshop-analytics');
+        const response = await fetch('/api/send-workshop-invitation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            studentEmail,
+            studentName,
+            workshopDate,
+            additionalNotes
+          })
+        });
+
         const data = await response.json();
 
         if (data.success) {
-          analyticsData = data;
-          renderDashboard(data);
+          showAlert('success', `✅ Invitation sent successfully to ${studentEmail}!`);
+
+          // Save to history
+          saveInvitationToHistory({
+            email: studentEmail,
+            name: studentName,
+            date: new Date().toISOString(),
+            status: 'sent'
+          });
+
+          // Reset form
+          document.getElementById('invitationForm').reset();
         } else {
-          console.error('Error loading analytics:', data.error);
+          showAlert('error', `❌ Error: ${data.error || 'Failed to send invitation'}`);
         }
       } catch (error) {
-        console.error('Error fetching analytics:', error);
+        console.error('Error sending invitation:', error);
+        showAlert('error', `❌ Error: ${error.message}`);
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Send Invitation';
       }
     }
 
-    // Render dashboard with data
-    function renderDashboard(data) {
-      // Update key metrics
-      document.getElementById('totalStudents').textContent = data.totalStudents || 0;
-      document.getElementById('activeStudents').textContent = data.activeStudents || 0;
-      document.getElementById('completedStudents').textContent = data.completedStudents || 0;
-      document.getElementById('avgProgress').textContent = (data.avgProgress || 0) + '%';
-      document.getElementById('reposCreated').textContent = data.reposCreated || 0;
+    // Preview CSV file
+    function previewCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
 
-      const avgTimeHours = data.avgCompletionTime ? (data.avgCompletionTime / 60).toFixed(1) : 0;
-      document.getElementById('avgTime').textContent = avgTimeHours + 'h';
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const rows = text.split('\n').filter(row => row.trim());
 
-      // Workshop health
-      const completionRate = data.totalStudents > 0 ?
-        ((data.completedStudents / data.totalStudents) * 100).toFixed(0) : 0;
-      const completionClass = completionRate >= 70 ? 'health-good' :
-                              completionRate >= 40 ? 'health-warning' : 'health-poor';
-      document.getElementById('healthCompletion').textContent = completionRate + '%';
-      document.getElementById('healthCompletion').className = `health-value ${completionClass}`;
+        // Skip header row
+        const students = rows.slice(1).map(row => {
+          const [email, name] = row.split(',');
+          return { email: email?.trim(), name: name?.trim() };
+        }).filter(s => s.email);
 
-      const dropoffRate = data.dropoffRate || 0;
-      const dropoffClass = dropoffRate < 20 ? 'health-good' :
-                          dropoffRate < 40 ? 'health-warning' : 'health-poor';
-      document.getElementById('healthDropoff').textContent = dropoffRate + '%';
-      document.getElementById('healthDropoff').className = `health-value ${dropoffClass}`;
+        if (students.length > 0) {
+          const previewList = document.getElementById('csvPreviewList');
+          previewList.innerHTML = students.slice(0, 5).map(student => `
+            <div class="invitation-item">
+              <div class="invitation-info">
+                <div class="name">${student.name || 'No name'}</div>
+                <div class="email">${student.email}</div>
+              </div>
+              <span class="invitation-status pending">Ready to send</span>
+            </div>
+          `).join('');
 
-      document.getElementById('healthTimePerStep').textContent = data.avgTimePerStep || '—';
-      document.getElementById('healthSuccess').textContent = (data.successRate || 0) + '%';
+          document.getElementById('csvPreview').style.display = 'block';
+          document.getElementById('bulkSendButton').disabled = false;
 
-      // Deployment stats
-      document.getElementById('deployVoiceHandlers').textContent = data.voiceHandlersDeployed || 0;
-      document.getElementById('deployWebSocketHandlers').textContent = data.websocketHandlersDeployed || 0;
-      document.getElementById('deployGitHubRepos').textContent = data.reposCreated || 0;
-      document.getElementById('deployFull').textContent = data.fullDeployments || 0;
+          // Store students data
+          window.bulkStudents = students;
+        }
+      };
+      reader.readAsText(file);
+    }
 
-      // Issues & blockers
-      document.getElementById('issuesStuck').textContent = data.studentsStuck || 0;
-      document.getElementById('issuesValidation').textContent = data.validationFailures || 0;
-      document.getElementById('issuesDemoMode').textContent = data.demoModeUsers || 0;
-      document.getElementById('issuesAttempts').textContent = data.avgAttemptsPerStep || '—';
+    // Send bulk invitations
+    async function sendBulkInvitations(event) {
+      event.preventDefault();
 
-      // Step completion chart
-      if (data.stepCompletion) {
-        renderStepCompletion(data.stepCompletion);
+      if (!window.bulkStudents || window.bulkStudents.length === 0) {
+        showAlert('error', '❌ No students to send invitations to');
+        return;
       }
 
-      // Student list
-      if (data.students && data.students.length > 0) {
-        renderStudentList(data.students);
+      const button = document.getElementById('bulkSendButton');
+      button.disabled = true;
+      button.textContent = 'Sending...';
+
+      const workshopDate = document.getElementById('bulkWorkshopDate').value;
+      const additionalNotes = document.getElementById('bulkNotes').value;
+
+      let successCount = 0;
+      let failCount = 0;
+
+      for (const student of window.bulkStudents) {
+        try {
+          const response = await fetch('/api/send-workshop-invitation', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+              studentEmail: student.email,
+              studentName: student.name,
+              workshopDate,
+              additionalNotes
+            })
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            successCount++;
+            saveInvitationToHistory({
+              email: student.email,
+              name: student.name,
+              date: new Date().toISOString(),
+              status: 'sent'
+            });
+          } else {
+            failCount++;
+            saveInvitationToHistory({
+              email: student.email,
+              name: student.name,
+              date: new Date().toISOString(),
+              status: 'failed'
+            });
+          }
+
+          // Update button text with progress
+          button.textContent = `Sending... (${successCount + failCount}/${window.bulkStudents.length})`;
+
+          // Small delay between sends to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+        } catch (error) {
+          console.error('Error sending to', student.email, error);
+          failCount++;
+        }
+      }
+
+      button.disabled = false;
+      button.textContent = 'Send All Invitations';
+
+      showAlert('success', `✅ Sent ${successCount} invitations successfully${failCount > 0 ? `, ${failCount} failed` : ''}!`);
+
+      // Reset form
+      document.getElementById('bulkForm').reset();
+      document.getElementById('csvPreview').style.display = 'none';
+      window.bulkStudents = [];
+    }
+
+    // Save invitation to history
+    function saveInvitationToHistory(invitation) {
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      history.unshift(invitation);
+
+      // Keep only last 100 invitations
+      if (history.length > 100) {
+        history.pop();
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    }
+
+    // Load invitation history
+    function loadInvitationHistory() {
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+      if (history.length === 0) {
+        return;
+      }
+
+      // Update stats
+      const sent = history.filter(h => h.status === 'sent').length;
+      const pending = history.filter(h => h.status === 'pending').length;
+      const failed = history.filter(h => h.status === 'failed').length;
+
+      document.getElementById('totalSent').textContent = sent;
+      document.getElementById('totalPending').textContent = pending;
+      document.getElementById('totalFailed').textContent = failed;
+
+      // Display history
+      const historyList = document.getElementById('invitationHistory');
+      historyList.innerHTML = history.map(invitation => {
+        const date = new Date(invitation.date);
+        return `
+          <div class="invitation-item">
+            <div class="invitation-info">
+              <div class="name">${invitation.name || 'No name provided'}</div>
+              <div class="email">${invitation.email} - ${date.toLocaleDateString()} ${date.toLocaleTimeString()}</div>
+            </div>
+            <span class="invitation-status ${invitation.status}">${invitation.status}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Load history on page load
+    loadInvitationHistory();
+
+    // =============================================
+    // STUDENT PROGRESS TRACKING
+    // =============================================
+
+    let studentProgressData = [];
+
+    // Load student progress data
+    async function loadStudentProgress() {
+      try {
+        const response = await fetch('/api/track-student-progress?getAllStudents=true');
+        const data = await response.json();
+
+        if (data.success) {
+          studentProgressData = data.students || [];
+          renderProgressDashboard();
+        } else {
+          console.error('Error loading student progress:', data.error);
+        }
+      } catch (error) {
+        console.error('Error fetching student progress:', error);
       }
     }
 
-    // Render step completion chart
-    function renderStepCompletion(stepData) {
-      const chart = document.getElementById('stepCompletionChart');
-      let html = '';
+    // Render progress dashboard
+    function renderProgressDashboard() {
+      // Calculate stats
+      const total = studentProgressData.length;
+      const avgCompletion = total > 0 ?
+        Math.round(studentProgressData.reduce((sum, s) => sum + (s.completionRate || 0), 0) / total) : 0;
 
-      for (let i = 1; i <= 9; i++) {
-        const stepName = [
-          'Step 1: Setup',
-          'Step 2: Credentials',
-          'Step 3: Phone Setup',
-          'Step 4: Voice Handler',
-          'Step 5: WebSocket',
-          'Step 6: ConvRelay',
-          'Step 7: Test Call',
-          'Step 8: Production',
-          'Step 9: Complete'
-        ][i - 1];
+      const now = Date.now();
+      const oneDayAgo = now - (24 * 60 * 60 * 1000);
+      const activeStudents = studentProgressData.filter(s =>
+        s.lastActivity && new Date(s.lastActivity).getTime() > oneDayAgo
+      ).length;
 
-        const step = stepData[`step${i}`] || { completed: 0, total: 0 };
-        const rate = step.total > 0 ? ((step.completed / step.total) * 100).toFixed(0) : 0;
+      const completedStudents = studentProgressData.filter(s => s.completionRate === 100).length;
 
-        html += `
-          <div class="step-bar">
-            <div class="step-label">${stepName}</div>
-            <div class="step-progress">
-              <div class="step-fill" style="width: ${rate}%">${rate}% (${step.completed}/${step.total})</div>
+      // Update stats cards
+      document.getElementById('totalStudents').textContent = total;
+      document.getElementById('avgCompletion').textContent = `${avgCompletion}%`;
+      document.getElementById('activeStudents').textContent = activeStudents;
+      document.getElementById('completedStudents').textContent = completedStudents;
+
+      // Render student list
+      const listContainer = document.getElementById('studentProgressList');
+
+      if (total === 0) {
+        listContainer.innerHTML = `
+          <div class="invitation-item">
+            <div class="invitation-info">
+              <div class="email" style="color: #999;">No student progress data yet. Students need to start the workshop.</div>
             </div>
           </div>
         `;
+        return;
       }
 
-      chart.innerHTML = html;
-    }
-
-    // Render student list
-    function renderStudentList(students) {
-      const list = document.getElementById('studentsList');
-
       // Sort by last activity (most recent first)
-      const sortedStudents = [...students].sort((a, b) => {
-        const aTime = a.lastActive ? new Date(a.lastActive).getTime() : 0;
-        const bTime = b.lastActive ? new Date(b.lastActive).getTime() : 0;
+      const sortedStudents = [...studentProgressData].sort((a, b) => {
+        const aTime = a.lastActivity ? new Date(a.lastActivity).getTime() : 0;
+        const bTime = b.lastActivity ? new Date(b.lastActivity).getTime() : 0;
         return bTime - aTime;
       });
 
-      let html = `
-        <div class="student-row">
-          <div>Student ID</div>
-          <div>Current Step</div>
-          <div>Progress</div>
-          <div>GitHub Repo</div>
-          <div>Last Active</div>
-          <div>Status</div>
+      listContainer.innerHTML = sortedStudents.map(student => {
+        const completionRate = student.completionRate || 0;
+        const lastActivity = student.lastActivity ? new Date(student.lastActivity) : null;
+        const timeAgo = lastActivity ? getTimeAgo(lastActivity) : 'Never';
+
+        const completed = Object.values(student.exercises || {}).filter(ex => ex.completed).length;
+        const totalTimeSpent = Math.round((student.totalTimeSpent || 0) / 60); // Convert to minutes
+
+        let statusColor = '#dc3545'; // Red for low progress
+        if (completionRate >= 75) statusColor = '#28a745'; // Green for high progress
+        else if (completionRate >= 40) statusColor = '#ffc107'; // Yellow for medium progress
+
+        return `
+          <div class="invitation-item" style="flex-direction: column; align-items: stretch; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <div class="invitation-info">
+                <div class="name" style="font-size: 1.1rem;">${student.studentName || student.studentId}</div>
+                <div class="email">${student.studentId}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: ${statusColor};">${completionRate}%</div>
+                <div style="font-size: 0.8rem; color: #666;">Completion</div>
+              </div>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 10px;">
+                <div>
+                  <div style="font-size: 0.8rem; color: #666;">Exercises Done</div>
+                  <div style="font-weight: 600;">${completed} / 9</div>
+                </div>
+                <div>
+                  <div style="font-size: 0.8rem; color: #666;">Time Spent</div>
+                  <div style="font-weight: 600;">${totalTimeSpent} min</div>
+                </div>
+                <div>
+                  <div style="font-size: 0.8rem; color: #666;">Last Active</div>
+                  <div style="font-weight: 600;">${timeAgo}</div>
+                </div>
+              </div>
+
+              <div style="margin-top: 10px;">
+                <div style="font-size: 0.8rem; color: #666; margin-bottom: 5px;">Progress:</div>
+                <div style="background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden;">
+                  <div style="background: ${statusColor}; height: 100%; width: ${completionRate}%; transition: width 0.3s;"></div>
+                </div>
+              </div>
+            </div>
+
+            <button onclick="viewStudentDetail('${student.studentId}')" class="button secondary" style="margin-top: 15px; padding: 8px 16px; font-size: 0.9rem;">
+              View Detailed Progress →
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      // Render exercise stats
+      renderExerciseStats();
+    }
+
+    // Render exercise completion statistics
+    function renderExerciseStats() {
+      const exerciseNames = [
+        'Exercise 1: Echo Bot',
+        'Exercise 2: Question Counter',
+        'Exercise 3: Context-Aware Responses',
+        'Exercise 4: Conversation History',
+        'Exercise 5: Add OpenAI',
+        'Exercise 6: Response Timing',
+        'Exercise 7: Error Handling',
+        'Exercise 8: Tool Calling',
+        'Exercise 9: Handle Interruptions'
+      ];
+
+      const exerciseStats = exerciseNames.map((name, index) => {
+        const exerciseId = `exercise-${index + 1}`;
+        const completedCount = studentProgressData.filter(student =>
+          student.exercises && student.exercises[exerciseId] && student.exercises[exerciseId].completed
+        ).length;
+
+        const total = studentProgressData.length;
+        const percentage = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+        return { name, completedCount, total, percentage };
+      });
+
+      const statsContainer = document.getElementById('exerciseStats');
+      statsContainer.innerHTML = exerciseStats.map(stat => `
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 600;">${stat.name}</span>
+            <span style="color: #666;">${stat.completedCount} / ${stat.total} students (${stat.percentage}%)</span>
+          </div>
+          <div style="background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, #F22F46 0%, #ff6b6b 100%); height: 100%; width: ${stat.percentage}%; transition: width 0.3s;"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // View detailed student progress
+    function viewStudentDetail(studentId) {
+      const student = studentProgressData.find(s => s.studentId === studentId);
+      if (!student) return;
+
+      const exercises = student.exercises || {};
+      const exerciseNames = [
+        'Exercise 1: Echo Bot',
+        'Exercise 2: Question Counter',
+        'Exercise 3: Context-Aware Responses',
+        'Exercise 4: Conversation History',
+        'Exercise 5: Add OpenAI',
+        'Exercise 6: Response Timing',
+        'Exercise 7: Error Handling',
+        'Exercise 8: Tool Calling',
+        'Exercise 9: Handle Interruptions'
+      ];
+
+      const detailHTML = `
+        <div style="background: white; padding: 30px; border-radius: 12px; max-width: 800px; margin: 0 auto;">
+          <h2 style="margin-bottom: 20px;">${student.studentName || student.studentId}</h2>
+          <div style="color: #666; margin-bottom: 30px;">${student.studentId}</div>
+
+          <h3 style="margin-bottom: 15px;">Exercise Progress:</h3>
+          ${exerciseNames.map((name, index) => {
+            const exerciseId = `exercise-${index + 1}`;
+            const ex = exercises[exerciseId] || {};
+            const completed = ex.completed || false;
+            const timeSpent = Math.round((ex.timeSpent || 0) / 60);
+            const attempts = ex.attempts || 0;
+
+            return `
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <span style="font-weight: 600;">${name}</span>
+                    ${completed ? '<span style="color: #28a745; margin-left: 10px;">✓ Completed</span>' : '<span style="color: #666; margin-left: 10px;">In Progress</span>'}
+                  </div>
+                  <div style="text-align: right; font-size: 0.9rem; color: #666;">
+                    ${timeSpent > 0 ? `${timeSpent} min` : ''}
+                    ${attempts > 0 ? ` • ${attempts} attempts` : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+
+          <button onclick="closeStudentDetail()" class="button" style="margin-top: 20px;">Close</button>
         </div>
       `;
 
-      sortedStudents.forEach(student => {
-        const lastActive = student.lastActive ? getTimeAgo(new Date(student.lastActive)) : 'Never';
-        const repoName = student.githubRepo ? student.githubRepo.split('/').pop() : '—';
-        const progress = student.progress || 0;
-
-        const isActive = student.lastActive &&
-          (Date.now() - new Date(student.lastActive).getTime()) < (24 * 60 * 60 * 1000);
-
-        const statusClass = progress === 100 ? 'status-completed' :
-                           isActive ? 'status-active' : 'status-inactive';
-        const statusText = progress === 100 ? '✅ Complete' :
-                          isActive ? '🟢 Active' : '⚪ Inactive';
-
-        html += `
-          <div class="student-row">
-            <div style="font-weight: 500;">${student.studentId}</div>
-            <div>Step ${student.currentStep || 1}</div>
-            <div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: ${progress}%"></div>
-              </div>
-              <span style="font-size: 0.85rem; color: #666; margin-top: 4px; display: block;">${progress}%</span>
-            </div>
-            <div style="font-family: monospace; font-size: 0.85rem;">${repoName}</div>
-            <div style="font-size: 0.85rem; color: #666;">${lastActive}</div>
-            <div>
-              <span class="status-badge ${statusClass}">${statusText}</span>
-            </div>
-          </div>
-        `;
+      // Create modal overlay
+      const overlay = document.createElement('div');
+      overlay.id = 'studentDetailOverlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        overflow-y: auto;
+      `;
+      overlay.innerHTML = detailHTML;
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeStudentDetail();
       });
+      document.body.appendChild(overlay);
+    }
 
-      list.innerHTML = html;
+    // Close student detail modal
+    function closeStudentDetail() {
+      const overlay = document.getElementById('studentDetailOverlay');
+      if (overlay) overlay.remove();
+    }
+
+    // Refresh progress data
+    async function refreshProgressData() {
+      showAlert('info', 'Refreshing student progress data...');
+      await loadStudentProgress();
+      showAlert('success', 'Student progress data updated!');
     }
 
     // Get time ago string
@@ -882,11 +1089,18 @@
       return 'Just now';
     }
 
-    // Initial load
-    loadAnalytics();
+    // Update switchTab function to load progress when switching to that tab
+    const originalSwitchTab = switchTab;
+    switchTab = function(tabName) {
+      originalSwitchTab.call(this, tabName);
 
-    // Auto-refresh every 30 seconds
-    setInterval(loadAnalytics, 30000);
+      if (tabName === 'progress') {
+        loadStudentProgress();
+      }
+    };
+
+    // Load progress on page load
+    loadStudentProgress();
   </script>
 </body>
 </html>

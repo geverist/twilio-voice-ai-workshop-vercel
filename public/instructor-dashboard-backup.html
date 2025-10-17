@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workshop Instructor Dashboard | Twilio Voice AI Workshop</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #F22F46 0%, #0d122b 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .refresh-indicator {
+      text-align: center;
+      color: white;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      opacity: 0.8;
+    }
+
+    .pulse {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #22c55e;
+      margin-right: 8px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .metric-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .metric-label {
+      color: #666;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .metric-value {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #F22F46;
+      line-height: 1;
+    }
+
+    .metric-subtext {
+      font-size: 0.85rem;
+      color: #999;
+      margin-top: 8px;
+    }
+
+    .chart-section {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .chart-title {
+      font-size: 1.5rem;
+      color: #333;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .refresh-btn {
+      background: #F22F46;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .refresh-btn:hover {
+      background: #d11f3a;
+      transform: translateY(-2px);
+    }
+
+    .step-bar {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .step-label {
+      width: 150px;
+      font-weight: 500;
+      color: #666;
+      font-size: 0.95rem;
+    }
+
+    .step-progress {
+      flex: 1;
+      height: 30px;
+      background: #f0f0f0;
+      border-radius: 15px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .step-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #F22F46, #ff6b6b);
+      transition: width 1s ease;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 10px;
+      color: white;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    .student-list {
+      background: white;
+      border-radius: 8px;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .student-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1.5fr 1.5fr 1fr;
+      gap: 15px;
+      padding: 15px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      align-items: center;
+    }
+
+    .student-row:hover {
+      background: #f9fafb;
+    }
+
+    .student-row:first-child {
+      font-weight: bold;
+      color: #F22F46;
+      border-bottom: 2px solid #F22F46;
+      background: #fff;
+    }
+
+    .student-row:first-child:hover {
+      background: #fff;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #F22F46, #ff6b6b);
+      transition: width 0.5s;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .status-active {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-completed {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .status-inactive {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    .health-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .health-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .health-card h3 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+
+    .health-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .health-item:last-child {
+      border-bottom: none;
+    }
+
+    .health-label {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .health-value {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .health-good {
+      color: #22c55e;
+    }
+
+    .health-warning {
+      color: #f59e0b;
+    }
+
+    .health-poor {
+      color: #ef4444;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      opacity: 0.3;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    .tab-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .tab-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .tab-btn.active {
+      background: white;
+      color: #F22F46;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .form-section {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #F22F46;
+    }
+
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    .hint {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .btn {
+      background: #F22F46;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn:hover {
+      background: #d11f3a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(242, 47, 70, 0.3);
+    }
+
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+
+    .alert {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .alert.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+
+    .alert.error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+
+    .info-box {
+      background: rgba(255, 255, 255, 0.15);
+      border-left: 4px solid white;
+      padding: 20px;
+      border-radius: 8px;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    .info-box h3 {
+      margin-bottom: 10px;
+    }
+
+    .info-box ul {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+
+    .info-box code {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+
+    @media (max-width: 768px) {
+      .student-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
+
+      .tabs {
+        flex-wrap: wrap;
+      }
+
+      .tab-btn {
+        padding: 10px 20px;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>👨‍🏫 Workshop Instructor Dashboard</h1>
+      <p>Manage workshops, send invitations, and track student progress</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('analytics')">📊 Analytics</button>
+      <button class="tab-btn" onclick="switchTab('invitations')">📧 Invitations</button>
+      <button class="tab-btn" onclick="switchTab('setup')">⚙️ Setup</button>
+    </div>
+
+    <!-- Analytics Tab -->
+    <div id="analyticsTab" class="tab-content active">
+      <div class="refresh-indicator">
+        <span class="pulse"></span> Auto-refreshing every 30 seconds
+      </div>
+
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Total Students</div>
+        <div class="metric-value" id="totalStudents">0</div>
+        <div class="metric-subtext">All time</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Active Now</div>
+        <div class="metric-value" id="activeStudents">0</div>
+        <div class="metric-subtext">Last 24 hours</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Completed</div>
+        <div class="metric-value" id="completedStudents">0</div>
+        <div class="metric-subtext">100% progress</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Avg Progress</div>
+        <div class="metric-value" id="avgProgress">0%</div>
+        <div class="metric-subtext">Overall completion</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Repos Created</div>
+        <div class="metric-value" id="reposCreated">0</div>
+        <div class="metric-subtext">GitHub repositories</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-label">Avg Time</div>
+        <div class="metric-value" id="avgTime">0h</div>
+        <div class="metric-subtext">To complete</div>
+      </div>
+    </div>
+
+    <!-- Workshop Health -->
+    <div class="health-grid">
+      <div class="health-card">
+        <h3>📊 Workshop Health</h3>
+        <div class="health-item">
+          <span class="health-label">Completion Rate</span>
+          <span class="health-value" id="healthCompletion">—</span>
+        </div>
+        <div class="health-item">
+          <span class="health-label">Drop-off Rate</span>
+          <span class="health-value" id="healthDropoff">—</span>
+        </div>
+        <div class="health-item">
+          <span class="health-label">Avg Time per Step</span>
+          <span class="health-value" id="healthTimePerStep">—</span>
+        </div>
+        <div class="health-item">
+          <span class="health-label">Success Rate</span>
+          <span class="health-value" id="healthSuccess">—</span>
+        </div>
+      </div>
+
+      <div class="health-card">
+        <h3>🚀 Deployment Stats</h3>
+        <div class="health-item">
+          <span class="health-label">Voice Handlers</span>
+          <span class="health-value" id="deployVoiceHandlers">0</span>
+        </div>
+        <div class="health-item">
+          <span class="health-label">WebSocket Handlers</span>
+          <span class="health-value" id="deployWebSocketHandlers">0</span>
+        </div>
+        <div class="health-item">
+          <span class="health-label">GitHub Repos</span>
+          <span class="health-value" id="deployGitHubRepos">0</span>
+        </div>
+        <div class="health-item">
+          <span class="health-label">Full Deployments</span>
+          <span class="health-value" id="deployFull">0</span>
+        </div>
+      </div>
+
+      <div class="health-card">
+        <h3>⚠️ Issues & Blockers</h3>
+        <div class="health-item">
+          <span class="health-label">Students Stuck</span>
+          <span class="health-value health-warning" id="issuesStuck">0</span>
+        </div>
+        <div class="health-item">
+          <span class="health-label">Validation Failures</span>
+          <span class="health-value health-poor" id="issuesValidation">0</span>
+        </div>
+        <div class="health-item">
+          <span class="health-label">Demo Mode Users</span>
+          <span class="health-value" id="issuesDemoMode">0</span>
+        </div>
+        <div class="health-item">
+          <span class="health-label">Avg Attempts/Step</span>
+          <span class="health-value" id="issuesAttempts">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step Completion -->
+    <div class="chart-section">
+      <h2 class="chart-title">
+        📈 Step Completion Rates
+        <button class="refresh-btn" onclick="loadAnalytics()">🔄 Refresh</button>
+      </h2>
+      <div id="stepCompletionChart">
+        <div class="step-bar">
+          <div class="step-label">Step 1: Setup</div>
+          <div class="step-progress">
+            <div class="step-fill" style="width: 0%">0%</div>
+          </div>
+        </div>
+        <div class="step-bar">
+          <div class="step-label">Step 2: Credentials</div>
+          <div class="step-progress">
+            <div class="step-fill" style="width: 0%">0%</div>
+          </div>
+        </div>
+        <div class="step-bar">
+          <div class="step-label">Step 3: Phone Setup</div>
+          <div class="step-progress">
+            <div class="step-fill" style="width: 0%">0%</div>
+          </div>
+        </div>
+        <div class="step-bar">
+          <div class="step-label">Step 4: Voice Handler</div>
+          <div class="step-progress">
+            <div class="step-fill" style="width: 0%">0%</div>
+          </div>
+        </div>
+        <div class="step-bar">
+          <div class="step-label">Step 5: WebSocket</div>
+          <div class="step-progress">
+            <div class="step-fill" style="width: 0%">0%</div>
+          </div>
+        </div>
+        <div class="step-bar">
+          <div class="step-label">Step 6: ConvRelay</div>
+          <div class="step-progress">
+            <div class="step-fill" style="width: 0%">0%</div>
+          </div>
+        </div>
+        <div class="step-bar">
+          <div class="step-label">Step 7: Test Call</div>
+          <div class="step-progress">
+            <div class="step-fill" style="width: 0%">0%</div>
+          </div>
+        </div>
+        <div class="step-bar">
+          <div class="step-label">Step 8: Production</div>
+          <div class="step-progress">
+            <div class="step-fill" style="width: 0%">0%</div>
+          </div>
+        </div>
+        <div class="step-bar">
+          <div class="step-label">Step 9: Complete</div>
+          <div class="step-progress">
+            <div class="step-fill" style="width: 0%">0%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Student Progress -->
+    <div class="chart-section">
+      <h2 class="chart-title">
+        👥 Student Progress
+      </h2>
+      <div class="student-list" id="studentsList">
+        <div class="student-row">
+          <div>Student ID</div>
+          <div>Current Step</div>
+          <div>Progress</div>
+          <div>GitHub Repo</div>
+          <div>Last Active</div>
+          <div>Status</div>
+        </div>
+        <div class="empty-state">
+          <div class="empty-state-icon">📚</div>
+          <p>No student data yet</p>
+          <p style="font-size: 0.9rem; margin-top: 10px;">Students will appear here once they start the workshop</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let analyticsData = null;
+
+    // Load analytics data from API
+    async function loadAnalytics() {
+      try {
+        const response = await fetch('/api/workshop-analytics');
+        const data = await response.json();
+
+        if (data.success) {
+          analyticsData = data;
+          renderDashboard(data);
+        } else {
+          console.error('Error loading analytics:', data.error);
+        }
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+      }
+    }
+
+    // Render dashboard with data
+    function renderDashboard(data) {
+      // Update key metrics
+      document.getElementById('totalStudents').textContent = data.totalStudents || 0;
+      document.getElementById('activeStudents').textContent = data.activeStudents || 0;
+      document.getElementById('completedStudents').textContent = data.completedStudents || 0;
+      document.getElementById('avgProgress').textContent = (data.avgProgress || 0) + '%';
+      document.getElementById('reposCreated').textContent = data.reposCreated || 0;
+
+      const avgTimeHours = data.avgCompletionTime ? (data.avgCompletionTime / 60).toFixed(1) : 0;
+      document.getElementById('avgTime').textContent = avgTimeHours + 'h';
+
+      // Workshop health
+      const completionRate = data.totalStudents > 0 ?
+        ((data.completedStudents / data.totalStudents) * 100).toFixed(0) : 0;
+      const completionClass = completionRate >= 70 ? 'health-good' :
+                              completionRate >= 40 ? 'health-warning' : 'health-poor';
+      document.getElementById('healthCompletion').textContent = completionRate + '%';
+      document.getElementById('healthCompletion').className = `health-value ${completionClass}`;
+
+      const dropoffRate = data.dropoffRate || 0;
+      const dropoffClass = dropoffRate < 20 ? 'health-good' :
+                          dropoffRate < 40 ? 'health-warning' : 'health-poor';
+      document.getElementById('healthDropoff').textContent = dropoffRate + '%';
+      document.getElementById('healthDropoff').className = `health-value ${dropoffClass}`;
+
+      document.getElementById('healthTimePerStep').textContent = data.avgTimePerStep || '—';
+      document.getElementById('healthSuccess').textContent = (data.successRate || 0) + '%';
+
+      // Deployment stats
+      document.getElementById('deployVoiceHandlers').textContent = data.voiceHandlersDeployed || 0;
+      document.getElementById('deployWebSocketHandlers').textContent = data.websocketHandlersDeployed || 0;
+      document.getElementById('deployGitHubRepos').textContent = data.reposCreated || 0;
+      document.getElementById('deployFull').textContent = data.fullDeployments || 0;
+
+      // Issues & blockers
+      document.getElementById('issuesStuck').textContent = data.studentsStuck || 0;
+      document.getElementById('issuesValidation').textContent = data.validationFailures || 0;
+      document.getElementById('issuesDemoMode').textContent = data.demoModeUsers || 0;
+      document.getElementById('issuesAttempts').textContent = data.avgAttemptsPerStep || '—';
+
+      // Step completion chart
+      if (data.stepCompletion) {
+        renderStepCompletion(data.stepCompletion);
+      }
+
+      // Student list
+      if (data.students && data.students.length > 0) {
+        renderStudentList(data.students);
+      }
+    }
+
+    // Render step completion chart
+    function renderStepCompletion(stepData) {
+      const chart = document.getElementById('stepCompletionChart');
+      let html = '';
+
+      for (let i = 1; i <= 9; i++) {
+        const stepName = [
+          'Step 1: Setup',
+          'Step 2: Credentials',
+          'Step 3: Phone Setup',
+          'Step 4: Voice Handler',
+          'Step 5: WebSocket',
+          'Step 6: ConvRelay',
+          'Step 7: Test Call',
+          'Step 8: Production',
+          'Step 9: Complete'
+        ][i - 1];
+
+        const step = stepData[`step${i}`] || { completed: 0, total: 0 };
+        const rate = step.total > 0 ? ((step.completed / step.total) * 100).toFixed(0) : 0;
+
+        html += `
+          <div class="step-bar">
+            <div class="step-label">${stepName}</div>
+            <div class="step-progress">
+              <div class="step-fill" style="width: ${rate}%">${rate}% (${step.completed}/${step.total})</div>
+            </div>
+          </div>
+        `;
+      }
+
+      chart.innerHTML = html;
+    }
+
+    // Render student list
+    function renderStudentList(students) {
+      const list = document.getElementById('studentsList');
+
+      // Sort by last activity (most recent first)
+      const sortedStudents = [...students].sort((a, b) => {
+        const aTime = a.lastActive ? new Date(a.lastActive).getTime() : 0;
+        const bTime = b.lastActive ? new Date(b.lastActive).getTime() : 0;
+        return bTime - aTime;
+      });
+
+      let html = `
+        <div class="student-row">
+          <div>Student ID</div>
+          <div>Current Step</div>
+          <div>Progress</div>
+          <div>GitHub Repo</div>
+          <div>Last Active</div>
+          <div>Status</div>
+        </div>
+      `;
+
+      sortedStudents.forEach(student => {
+        const lastActive = student.lastActive ? getTimeAgo(new Date(student.lastActive)) : 'Never';
+        const repoName = student.githubRepo ? student.githubRepo.split('/').pop() : '—';
+        const progress = student.progress || 0;
+
+        const isActive = student.lastActive &&
+          (Date.now() - new Date(student.lastActive).getTime()) < (24 * 60 * 60 * 1000);
+
+        const statusClass = progress === 100 ? 'status-completed' :
+                           isActive ? 'status-active' : 'status-inactive';
+        const statusText = progress === 100 ? '✅ Complete' :
+                          isActive ? '🟢 Active' : '⚪ Inactive';
+
+        html += `
+          <div class="student-row">
+            <div style="font-weight: 500;">${student.studentId}</div>
+            <div>Step ${student.currentStep || 1}</div>
+            <div>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: ${progress}%"></div>
+              </div>
+              <span style="font-size: 0.85rem; color: #666; margin-top: 4px; display: block;">${progress}%</span>
+            </div>
+            <div style="font-family: monospace; font-size: 0.85rem;">${repoName}</div>
+            <div style="font-size: 0.85rem; color: #666;">${lastActive}</div>
+            <div>
+              <span class="status-badge ${statusClass}">${statusText}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      list.innerHTML = html;
+    }
+
+    // Get time ago string
+    function getTimeAgo(date) {
+      const seconds = Math.floor((new Date() - date) / 1000);
+
+      const intervals = {
+        year: 31536000,
+        month: 2592000,
+        week: 604800,
+        day: 86400,
+        hour: 3600,
+        minute: 60
+      };
+
+      for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+        const interval = Math.floor(seconds / secondsInUnit);
+        if (interval >= 1) {
+          return interval === 1 ? `1 ${unit} ago` : `${interval} ${unit}s ago`;
+        }
+      }
+
+      return 'Just now';
+    }
+
+    // Switch tabs
+    function switchTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+
+      // Deactivate all tab buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Show selected tab
+      document.getElementById(tabName + 'Tab').classList.add('active');
+
+      // Activate clicked button
+      event.target.classList.add('active');
+    }
+
+    // Initial load
+    loadAnalytics();
+
+    // Auto-refresh every 30 seconds
+    setInterval(loadAnalytics, 30000);
+  </script>
+</body>
+</html>

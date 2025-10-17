@@ -19,7 +19,9 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
-    "twilio": "^5.3.4"
+    "twilio": "^5.3.4",
+    "@vercel/postgres": "^0.10.0",
+    "@sendgrid/mail": "^8.1.0"
   },
   "devDependencies": {
     "vercel": "^37.0.0"
