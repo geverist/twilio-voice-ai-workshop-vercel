@@ -1396,11 +1396,33 @@
     }
 
     function startFresh() {
+      // Clear all progress and state
       localStorage.removeItem('workshop_progress');
+      localStorage.removeItem('studentDemoMode');
+      localStorage.removeItem('studentName');
+      localStorage.removeItem('demoPurchasedNumber');
+      localStorage.removeItem('demoMessagingProvisioned');
+      localStorage.removeItem('demoSyncProvisioned');
+      localStorage.removeItem('workshopCredentials');
+      sessionStorage.clear();
+
+      // Reset all state variables
+      studentDemoMode = false;
+      studentName = '';
+      twilioConnected = false;
+      openaiConnected = false;
+      githubToken = null;
+      githubUsername = null;
+      twilioCredentials = null;
+      openaiApiKey = null;
+
+      // Close the resume modal
       if (window.resumeModal) {
         window.resumeModal.remove();
       }
-      alert('🔄 Starting fresh! Your old progress has been cleared.');
+
+      // Show the setup modal
+      showSetupRequiredModal();
     }
 
     // =========================================================================
@@ -3323,6 +3345,12 @@
           }
         }
 
+        // Remove const twiml declarations since we provide it
+        functionBody = functionBody.replace(/const\s+twiml\s*=\s*new\s+twilio\.twiml\.VoiceResponse\(\s*\)\s*;?\s*/g, '');
+
+        // Remove require('twilio') declarations since we provide it
+        functionBody = functionBody.replace(/const\s+twilio\s*=\s*require\(['"]twilio['"]\)\s*;?\s*/g, '');
+
         // Create a safe execution context
         const wrappedCode = `
           (function() {
@@ -3333,6 +3361,7 @@
               if (module === 'twilio') return arguments[1];
               return {};
             };
+            const twilio = arguments[1];
             const twiml = arguments[0];
             ${functionBody}
             return twiml;
