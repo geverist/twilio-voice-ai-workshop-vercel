@@ -1484,7 +1484,11 @@
       document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.remove('active');
       });
-      document.getElementById(`btn-${lang}`).classList.add('active');
+
+      const langBtn = document.getElementById(`btn-${lang}`);
+      if (langBtn) {
+        langBtn.classList.add('active');
+      }
 
       localStorage.setItem('preferredLanguage', lang);
       console.log(`Language switched to: ${lang}`);
