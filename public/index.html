@@ -3289,29 +3289,58 @@
       try {
         // Try to execute the code to validate it actually works
         const mockTwiml = {
-          say: function(text, options) { this._hasSay = true; return this; },
-          gather: function(options) { this._hasGather = true; return this; },
-          hangup: function() { this._hasHangup = true; return this; },
-          dial: function(options) { this._hasDial = true; return { number: function() {} }; },
           _hasSay: false,
           _hasGather: false,
           _hasHangup: false,
           _hasDial: false,
+          say: function(text, options) { this._hasSay = true; return this; },
+          gather: function(options) {
+            this._hasGather = true;
+            const self = this;
+            return {
+              say: function(text, opts) { self._hasSay = true; return self; }
+            };
+          },
+          hangup: function() { this._hasHangup = true; return this; },
+          dial: function(options) { this._hasDial = true; return { number: function() {} }; },
           toString: function() { return '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'; }
         };
+
+        // Mock twilio module for require('twilio')
+        const mockTwilio = {
+          twiml: {
+            VoiceResponse: function() { return mockTwiml; }
+          }
+        };
+
+        // Extract the function body from exports.handler or just use the code as-is
+        let functionBody = code;
+        if (code.includes('exports.handler')) {
+          // Extract everything inside the handler function
+          const match = code.match(/exports\.handler\s*=\s*function\s*\([^)]*\)\s*\{([\s\S]*)\}/);
+          if (match) {
+            functionBody = match[1];
+          }
+        }
 
         // Create a safe execution context
         const wrappedCode = `
           (function() {
+            const context = { TWILIO_PHONE_NUMBER: '+15555555555' };
+            const event = {};
+            const callback = function(err, response) {};
+            const require = function(module) {
+              if (module === 'twilio') return arguments[1];
+              return {};
+            };
             const twiml = arguments[0];
-            const context = arguments[1];
-            ${code}
+            ${functionBody}
             return twiml;
           })
         `;
 
         const func = eval(wrappedCode);
-        const result = func(mockTwiml, { TWILIO_PHONE_NUMBER: '+15555555555' });
+        const result = func(mockTwiml, mockTwilio);
 
         // Check if required verbs were called
         const hasSayVerb = result._hasSay;
