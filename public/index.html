@@ -7217,6 +7217,9 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           // Save progress immediately
           saveProgressToStorage();
 
+          // Re-render step content to show test section
+          renderStepContent();
+
           showStatus(statusId, 'success', '✅ WebSocket handler deployed successfully!');
           console.log('✅ Step 5 deployed, step5Deployed =', step5Deployed);
 
