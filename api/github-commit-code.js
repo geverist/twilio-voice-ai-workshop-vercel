@@ -123,7 +123,7 @@ export default async function handler(req, res) {
     // NOTE: This is a workshop-only approach. For production, students would
     // deploy to their own hosting. But for learning, we use a shared endpoint
     // hosted by the workshop itself.
-    const workshopDomain = req.headers.get('host') || 'localhost:3000';
+    const workshopDomain = req.headers.host || 'localhost:3000';
     const protocol = workshopDomain.includes('localhost') ? 'ws' : 'wss';
     const deployedUrl = `${protocol}://${workshopDomain}/api/workshop-websocket`;
 
