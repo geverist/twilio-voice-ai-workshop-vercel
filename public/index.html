@@ -1938,9 +1938,18 @@
                     🚪 Sign Out
                   </button>
                 </div>
-                <p style="color: rgba(255,255,255,0.85); margin: 0; font-size: 13px;">
+                <p style="color: rgba(255,255,255,0.85); margin: 0 0 12px 0; font-size: 13px;">
                   You can deploy your code to this repository throughout the workshop.
                 </p>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <a href="https://github.com/${githubUsername}/${studentRepoName}" target="_blank" style="color: white; text-decoration: none; font-size: 13px; opacity: 0.9;">
+                    🔗 View Repository →
+                  </a>
+                  <span style="color: rgba(255,255,255,0.4);">•</span>
+                  <a href="javascript:void(0)" onclick="cloneNewRepository()" style="color: white; text-decoration: none; font-size: 13px; opacity: 0.9;">
+                    📦 Clone New Repository
+                  </a>
+                </div>
               </div>
             ` : githubToken && githubUsername && githubUsername !== 'demo_user' ? `
               <!-- GitHub connected but NO repo cloned yet -->
@@ -11445,6 +11454,28 @@ twilio serverless:deploy
         }
       } catch (error) {
         showStatus('githubCloneStatus', 'error', '❌ Error: ' + error.message);
+      }
+    }
+
+    // Clone a new repository (when user already has one but wants a fresh start)
+    function cloneNewRepository() {
+      const confirmClone = confirm(
+        '📦 Clone New Repository?\n\n' +
+        `You already have a repository: ${studentRepoName}\n\n` +
+        'Creating a new repository will:\n' +
+        '• Ask you to choose a different name\n' +
+        '• Keep your existing repository unchanged\n' +
+        '• Switch to using the new repository for future deployments\n\n' +
+        'Continue?'
+      );
+
+      if (confirmClone) {
+        // Clear the current repo name so the clone flow starts fresh
+        studentRepoName = null;
+        saveProgressToStorage();
+
+        // Trigger the clone flow
+        cloneWorkshopRepo();
       }
     }
 
