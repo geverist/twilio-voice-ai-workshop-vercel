@@ -1226,6 +1226,11 @@
           authToken: 'demo_auth_token'
         };
         openaiApiKey = 'demo_openai_key';
+
+        // Clear any previous demo service provisions to start fresh
+        localStorage.removeItem('demoMessagingProvisioned');
+        localStorage.removeItem('demoSyncProvisioned');
+        localStorage.removeItem('demoPurchasedNumber');
       }
 
       document.getElementById('setupModal').remove();
