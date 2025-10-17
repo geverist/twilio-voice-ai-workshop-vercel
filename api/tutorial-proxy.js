@@ -604,10 +604,19 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Twilio API Error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      moreInfo: error.moreInfo,
+      details: error.details
+    });
 
     return res.status(500).json({
-      error: error.message,
-      code: error.code || 'UNKNOWN_ERROR'
+      error: error.message || 'Unknown error occurred',
+      code: error.code || 'UNKNOWN_ERROR',
+      status: error.status,
+      details: error.details
     });
   }
 }
