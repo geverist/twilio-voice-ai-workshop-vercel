@@ -1431,6 +1431,7 @@
     function revealTestSections() {
       // Explicitly reveal test sections based on deployment flags
       // This helps when resuming progress or when template rendering has timing issues
+      console.log('🔍 revealTestSections() called - step4Deployed=' + step4Deployed + ', step5Deployed=' + step5Deployed + ', step6Deployed=' + step6Deployed + ', currentStep=' + currentStep);
 
       if (step5Deployed) {
         setTimeout(() => {
@@ -1438,6 +1439,8 @@
           if (step5Test) {
             step5Test.style.display = 'block';
             console.log('✅ Step 5 test section revealed (step5Deployed=true)');
+          } else {
+            console.warn('⚠️ step5TestSection element not found in DOM (step5Deployed=true, currentStep=' + currentStep + ')');
           }
         }, 100);
       }
