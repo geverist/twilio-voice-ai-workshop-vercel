@@ -7223,48 +7223,52 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           // Save progress immediately
           saveProgressToStorage();
 
-          // Re-render step content to show test section
-          renderStepContent();
-
           showStatus(statusId, 'success', '✅ WebSocket handler deployed successfully!');
           console.log('✅ Step 5 deployed, step5Deployed =', step5Deployed);
 
-          // Reveal test section
-          const testSection = document.getElementById('step5TestSection');
-          if (testSection) {
-            testSection.style.display = 'block';
+          // Re-render step content to show test section (with small delay to ensure state is set)
+          setTimeout(() => {
+            renderStepContent();
 
-            // Disable test button for 30 seconds while deployment propagates
-            const sendTestBtn = testSection.querySelector('button[onclick*="testSingleWebSocketMessage"]');
-            const testInput = document.getElementById('testWebSocketMessage');
-
-            if (sendTestBtn) sendTestBtn.disabled = true;
-            if (testInput) testInput.disabled = true;
-
-            // Show countdown timer
-            let countdown = 30;
-            const originalSendText = sendTestBtn ? sendTestBtn.innerHTML : '';
-
-            const countdownInterval = setInterval(() => {
-              countdown--;
-              if (sendTestBtn) sendTestBtn.innerHTML = `⏳ Wait ${countdown}s`;
-
-              if (countdown <= 0) {
-                clearInterval(countdownInterval);
-                if (sendTestBtn) {
-                  sendTestBtn.disabled = false;
-                  sendTestBtn.innerHTML = originalSendText;
-                }
-                if (testInput) testInput.disabled = false;
-
-                celebrate('✅ Ready to test! Deployment has propagated.', 'normal');
-              }
-            }, 1000);
-
+            // Wait for DOM to update, then reveal test section
             setTimeout(() => {
-              testSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 500);
-          }
+              const testSection = document.getElementById('step5TestSection');
+              if (testSection) {
+                testSection.style.display = 'block';
+
+                // Disable test button for 30 seconds while deployment propagates
+                const sendTestBtn = testSection.querySelector('button[onclick*="testSingleWebSocketMessage"]');
+                const testInput = document.getElementById('testWebSocketMessage');
+
+                if (sendTestBtn) sendTestBtn.disabled = true;
+                if (testInput) testInput.disabled = true;
+
+                // Show countdown timer
+                let countdown = 30;
+                const originalSendText = sendTestBtn ? sendTestBtn.innerHTML : '';
+
+                const countdownInterval = setInterval(() => {
+                  countdown--;
+                  if (sendTestBtn) sendTestBtn.innerHTML = `⏳ Wait ${countdown}s`;
+
+                  if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    if (sendTestBtn) {
+                      sendTestBtn.disabled = false;
+                      sendTestBtn.innerHTML = originalSendText;
+                    }
+                    if (testInput) testInput.disabled = false;
+
+                    celebrate('✅ Ready to test! Deployment has propagated.', 'normal');
+                  }
+                }, 1000);
+
+                setTimeout(() => {
+                  testSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 500);
+              }
+            }, 50);
+          }, 100);
         }
         if (stepNumber === 6) {
           step6Committed = true;
