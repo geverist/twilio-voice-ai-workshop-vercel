@@ -1221,6 +1221,11 @@
       studentDemoMode = isDemoMode;
       localStorage.setItem('studentDemoMode', isDemoMode ? 'true' : 'false');
 
+      // Set flag to indicate we're setting up accounts (not resuming)
+      if (!isDemoMode) {
+        sessionStorage.setItem('settingUpAccounts', 'true');
+      }
+
       // In demo mode, auto-connect all accounts with demo credentials
       if (isDemoMode) {
         twilioConnected = true;
@@ -1688,8 +1693,10 @@
       }
 
       // Check for saved progress
-      if (savedProgress && !setupComplete && !isGithubCallback && sessionStorage.getItem('startingFresh') !== 'true') {
-        // Only show resume modal if NOT coming from setup wizard, NOT from GitHub callback, AND not starting fresh
+      const isSettingUpAccounts = sessionStorage.getItem('settingUpAccounts') === 'true';
+
+      if (savedProgress && !setupComplete && !isGithubCallback && !isSettingUpAccounts && sessionStorage.getItem('startingFresh') !== 'true') {
+        // Only show resume modal if NOT coming from setup wizard, NOT from GitHub callback, NOT setting up accounts, AND not starting fresh
         showResumeModal(savedProgress);
       } else if (sessionStorage.getItem('startingFresh') === 'true') {
         // Clear the flag after checking
