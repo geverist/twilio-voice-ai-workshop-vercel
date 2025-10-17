@@ -9271,19 +9271,37 @@ twilio serverless:deploy
     // Exit demo mode - reset everything
     function exitDemoMode() {
       if (confirm('Exit Demo Mode?\n\nThis will reset all progress and return you to Step 1. Are you sure?')) {
-        // Clear all state
+        // Clear all connection state
         twilioCredentials = null;
         twilioConnected = false;
         openaiConnected = false;
+        openaiApiKey = null;
         githubToken = null;
         githubUsername = null;
         studentDemoMode = false;
+
+        // Reset to step 1
         currentStep = 0;
 
+        // Clear call direction
+        callDirectionChosen = false;
+        callDirection = '';
+
+        // Clear services
+        servicesReady = false;
+        selectedPhoneNumber = null;
+        selectedPhoneNumberSid = null;
+
         // Clear all progress flags
-        step1Complete = false;
-        step2Complete = false;
-        step3Complete = false;
+        basicTwimlCreated = false;
+        functionsDeployed = false;
+        basicCallTested = false;
+        websocketBuilt = false;
+        conversationRelayCreated = false;
+        promptEngineeringComplete = false;
+        toolsConfigured = false;
+        projectDeployed = false;
+        aiCallTested = false;
         step4CodeValidated = false;
         step4Committed = false;
         step5CodeValidated = false;
@@ -9291,19 +9309,27 @@ twilio serverless:deploy
         step6CodeValidated = false;
         step6Deployed = false;
         step8Committed = false;
+        syncServiceSkipped = false;
+        deployedServiceSid = null;
+        deployedEnvironmentSid = null;
+        deployedBuildSid = null;
 
-        // Clear storage
+        // Clear all localStorage
         localStorage.removeItem('workshopProgress');
         localStorage.removeItem('studentDemoMode');
         localStorage.removeItem('demoPurchasedNumber');
+        localStorage.removeItem('workshopCredentials');
         sessionStorage.clear();
 
         // Hide banner
         document.getElementById('demoModeBanner').style.display = 'none';
 
-        // Reset to step 1
+        // Reset to step 1 and re-render
+        renderProgressSteps();
         renderStepContent();
-        updateProgressBar();
+
+        // Scroll to top
+        window.scrollTo(0, 0);
 
         celebrate('Demo mode exited. Please connect your credentials to continue.', 'normal');
       }
