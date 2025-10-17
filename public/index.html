@@ -1857,17 +1857,23 @@
       }
 
       // IMPORTANT: Always ensure we start at step 0 unless explicitly resuming
-      // If we're NOT showing the resume modal, currentStep should be 0
-      if (!savedProgress || setupComplete || isGithubCallback || isSettingUpAccounts || sessionStorage.getItem('startingFresh') === 'true') {
-        // Ensure we're at step 0 (don't use any potentially stale currentStep value)
-        currentStep = 0;
-      } else if (savedProgress) {
+      // But ALWAYS load deployment flags if we have saved progress (so templates render correctly)
+      if (savedProgress) {
         // Load deployment flags so templates render correctly even before resume modal
         step4Deployed = savedProgress.step4Deployed || false;
         step5Deployed = savedProgress.step5Deployed || false;
         step6Deployed = savedProgress.step6Deployed || false;
+        console.log('📦 Pre-loaded deployment flags for rendering: step4Deployed=' + step4Deployed + ', step5Deployed=' + step5Deployed + ', step6Deployed=' + step6Deployed);
+      }
+
+      // Determine starting step
+      if (!savedProgress || setupComplete || isGithubCallback || isSettingUpAccounts || sessionStorage.getItem('startingFresh') === 'true') {
+        // Ensure we're at step 0 (don't use any potentially stale currentStep value)
+        currentStep = 0;
+      } else if (savedProgress) {
+        // Resume from saved step
         currentStep = savedProgress.currentStep || 0;
-        console.log('📦 Pre-loaded deployment flags for rendering: step4Deployed=' + step4Deployed + ', step5Deployed=' + step5Deployed + ', step6Deployed=' + step6Deployed + ', currentStep=' + currentStep);
+        console.log('📦 Resuming from step: ' + currentStep);
       }
 
       // Always render content first
