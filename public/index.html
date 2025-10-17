@@ -6674,15 +6674,36 @@ ${hintsLine}
             <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
               Your WebSocket handler will send conversation transcripts to OpenAI and return AI-generated responses.
             </p>
-            <div class="form-group">
-              <label>OpenAI API Key</label>
-              <input type="password" id="openaiKey" placeholder="sk-proj-********************************" value="${openaiApiKey || ''}" />
-              <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>
-              </p>
-            </div>
-            <button class="btn btn-primary" onclick="connectOpenAI()">Connect OpenAI</button>
-            <div id="openaiStatus" class="connection-status" style="display: none; margin-top: 10px;"></div>
+
+            ${openaiConnected ? `
+              <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c3e6cb;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                  <span style="font-size: 1.5rem;">✅</span>
+                  <div>
+                    <strong style="color: #155724; font-size: 1.05rem;">OpenAI API Key Connected${studentDemoMode ? ' (Demo)' : ''}</strong><br>
+                    <span style="color: #155724; font-size: 13px;">${studentDemoMode ? 'sk-demo-...workshop' : (openaiApiKey ? openaiApiKey.substring(0, 12) + '...' + openaiApiKey.substring(openaiApiKey.length - 4) : 'Connected')}</span>
+                  </div>
+                </div>
+                ${studentDemoMode ? `
+                  <p style="color: #155724; margin: 0 0 10px 0; font-size: 13px;">
+                    📝 Using demo API key - AI responses are simulated.
+                  </p>
+                ` : ''}
+                <button class="btn" style="padding: 8px 16px; font-size: 13px; background: white; color: #666; border: 1px solid #ddd;" onclick="openaiConnected = false; openaiApiKey = null; renderStepContent();">
+                  🔄 Change API Key
+                </button>
+              </div>
+            ` : `
+              <div class="form-group">
+                <label>OpenAI API Key</label>
+                <input type="password" id="openaiKey" placeholder="sk-proj-********************************" value="${openaiApiKey || ''}" />
+                <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                  Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>
+                </p>
+              </div>
+              <button class="btn btn-primary" onclick="connectOpenAI()">Connect OpenAI</button>
+              <div id="openaiStatus" class="connection-status" style="display: none; margin-top: 10px;"></div>
+            `}
           </div>
 
           <div class="instructions">
