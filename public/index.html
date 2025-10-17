@@ -10242,6 +10242,10 @@ app.get('/health', (req, res) => {
 
     function showStatus(elementId, type, message) {
       const element = document.getElementById(elementId);
+      if (!element) {
+        console.warn(`showStatus: Element with id '${elementId}' not found`);
+        return;
+      }
       element.className = `status-box show ${type}`;
       element.innerHTML = message;
     }
