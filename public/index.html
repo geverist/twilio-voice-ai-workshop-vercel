@@ -10754,7 +10754,9 @@ twilio serverless:deploy
 
     function updateProgressBar() {
       const totalSteps = 9; // All 9 steps in the workshop
-      const completedSteps = [
+
+      // Count actually completed steps based on checkmarks
+      const actuallyCompleted = [
         twilioConnected,
         callDirectionChosen,
         servicesReady,
@@ -10766,16 +10768,20 @@ twilio serverless:deploy
         projectDeployed
       ].filter(Boolean).length;
 
-      const percentage = Math.round((completedSteps / totalSteps) * 100);
+      // Display shows max of (actual completions, current step + 1)
+      // This ensures when you're on step 9, it shows "9 of 9" even if not all prior steps completed
+      const displayedCompleted = Math.max(actuallyCompleted, currentStep + 1);
+
+      const percentage = Math.round((displayedCompleted / totalSteps) * 100);
 
       document.getElementById('progressBar').style.width = percentage + '%';
       document.getElementById('progressPercent').textContent = percentage + '%';
-      document.getElementById('completedTasks').textContent = `${completedSteps} of ${totalSteps} steps completed`;
+      document.getElementById('completedTasks').textContent = `${displayedCompleted} of ${totalSteps} steps completed`;
 
-      // Estimate time remaining
+      // Estimate time remaining based on actual completions
       const avgTimePerStep = 5; // minutes
-      const remaining = (totalSteps - completedSteps) * avgTimePerStep;
-      if (remaining > 0) {
+      const remaining = (totalSteps - actuallyCompleted) * avgTimePerStep;
+      if (remaining > 0 && currentStep < totalSteps - 1) {
         document.getElementById('timeEstimate').textContent = `Est. ${remaining}-${remaining + 10} minutes remaining`;
       } else {
         document.getElementById('timeEstimate').textContent = '🎉 Complete!';
