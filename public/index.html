@@ -1113,6 +1113,11 @@
     let studentName = localStorage.getItem('studentName') || '';
     let studentDemoMode = localStorage.getItem('studentDemoMode') === 'true';
 
+    // Codespaces variables
+    let codespaceUrl = ''; // WebSocket URL (wss://...)
+    let codespaceWebUrl = ''; // Browser URL to open Codespace
+    let codespaceName = ''; // Codespace identifier
+
     // Session token for identifying student across requests (works for both live and demo mode)
     let sessionToken = localStorage.getItem('sessionToken') || null;
     let ttsProvider = 'amazon-polly'; // Default TTS provider
@@ -1170,6 +1175,9 @@
         deployedEnvironmentSid,
         deployedBuildSid,
         studentRepoName,
+        codespaceUrl,
+        codespaceWebUrl,
+        codespaceName,
         timestamp: new Date().toISOString(),
         completedSteps: steps.slice(0, currentStep).map(s => s.title)
       };
@@ -1409,6 +1417,9 @@
       deployedEnvironmentSid = progress.deployedEnvironmentSid || null;
       deployedBuildSid = progress.deployedBuildSid || null;
       studentRepoName = progress.studentRepoName || null;
+      codespaceUrl = progress.codespaceUrl || '';
+      codespaceWebUrl = progress.codespaceWebUrl || '';
+      codespaceName = progress.codespaceName || '';
 
       // Close modal
       if (window.resumeModal) {
@@ -2036,6 +2047,64 @@
               </p>
             `}
           </div>
+
+          <!-- GitHub Codespaces Deployment -->
+          ${githubToken && studentRepoName && !studentDemoMode ? `
+          <div class="service-card" style="background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; margin-bottom: 30px;">
+            <h4 style="color: white; margin-bottom: 15px;">🚀 Step 1b: Deploy Your Development Environment</h4>
+            <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
+              Launch your code in GitHub Codespaces - a cloud development environment with a live WebSocket server!
+            </p>
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
+                <strong>💡 What you get:</strong>
+              </p>
+              <ul style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
+                <li>Cloud-hosted WebSocket server (auto-starts on port 3000)</li>
+                <li>Public WSS URL for receiving phone calls</li>
+                <li>60 hours/month free with your GitHub account</li>
+                <li>Stays running while you work through the workshop</li>
+              </ul>
+            </div>
+
+            ${codespaceUrl ? `
+              <div style="background: rgba(40, 167, 69, 0.3); padding: 20px; border-radius: 8px; border: 2px solid rgba(40, 167, 69, 0.6);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                  <span style="font-size: 1.5rem;">✅</span>
+                  <div>
+                    <strong style="color: white; font-size: 1.05rem;">Codespace Running!</strong><br>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Your WebSocket server is live</span>
+                  </div>
+                </div>
+                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                  <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 5px;">WebSocket URL:</div>
+                  <code style="color: white; font-size: 12px; word-break: break-all; font-family: monospace;">${codespaceUrl}</code>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <button class="btn" onclick="window.open('${codespaceWebUrl}', '_blank')" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 13px;">
+                    🌐 Open Codespace
+                  </button>
+                  <button class="btn" onclick="refreshCodespaceStatus()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 13px;">
+                    🔄 Refresh Status
+                  </button>
+                </div>
+              </div>
+            ` : `
+              <button
+                class="btn btn-primary"
+                id="deployCodespaceBtn"
+                onclick="deployToCodespaces()"
+                style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #1a7f37; border: none; font-weight: bold;">
+                🚀 Launch Development Environment
+              </button>
+              <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
+                Takes about 60 seconds to start • Uses your GitHub free tier
+              </p>
+            `}
+
+            <div id="codespaceDeployStatus" style="margin-top: 15px;"></div>
+          </div>
+          ` : ''}
 
           <div class="instructions">
             <h3>📋 What You'll Need</h3>
@@ -8710,30 +8779,59 @@ app.get('/health', (req, res) => {
           ` : ''}
 
           <div id="step5DeploySection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8; display: ${step5CodeValidated ? 'block' : 'none'};">
-            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">🚀 Deploy WebSocket Handler</h3>
-            <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
-              Your WebSocket handler will be deployed to handle real-time communication with ConversationRelay.
-              <strong>This sets up the environment for receiving WebSocket media streams in the next step.</strong>
-            </p>
-            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
-                <strong>📋 Deployment Steps:</strong>
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">📡 Your WebSocket Server</h3>
+            ${codespaceUrl ? `
+              <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px; line-height: 1.6;">
+                Great news! You already deployed your WebSocket server in Step 1. It's running and ready to handle phone calls.
               </p>
-              <ol style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                <li>Commit your code to GitHub repository</li>
-                <li>Receive workshop WebSocket endpoint URL</li>
-                <li>Use this URL in Step 6 for ConversationRelay</li>
-                <li><em>Note: In production, this would deploy to Railway/Render with your code</em></li>
-              </ol>
-            </div>
-            <button
-              class="btn btn-success"
-              id="commitStep5Btn"
-              onclick="commitStep(5)"
-              style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-              🚀 Deploy WebSocket Handler to External Hosting
-            </button>
-            <div id="commitStep5Status" style="margin-top: 15px;"></div>
+              <div style="background: rgba(40, 167, 69, 0.3); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid rgba(40, 167, 69, 0.5);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                  <span style="font-size: 1.5rem;">✅</span>
+                  <div>
+                    <strong style="color: white; font-size: 1.05rem;">Codespace Running from Step 1</strong><br>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Your WebSocket server is live and ready</span>
+                  </div>
+                </div>
+                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                  <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 5px;">WebSocket URL:</div>
+                  <code style="color: white; font-size: 14px; word-break: break-all;">${codespaceUrl}</code>
+                </div>
+                <p style="color: rgba(255,255,255,0.85); margin-bottom: 15px; font-size: 13px;">
+                  💡 You can use this URL in Step 6 when configuring ConversationRelay
+                </p>
+                <div style="display: flex; gap: 10px;">
+                  <button class="btn" onclick="window.open('${codespaceWebUrl}', '_blank')" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);">
+                    🌐 Open Codespace
+                  </button>
+                  <button class="btn" onclick="refreshCodespaceStatus()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);">
+                    🔄 Refresh Status
+                  </button>
+                </div>
+              </div>
+            ` : `
+              <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
+                Launch your WebSocket server in GitHub Codespaces - a cloud development environment with your code and a public URL.
+              </p>
+              <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
+                  <strong>💡 What happens:</strong>
+                </p>
+                <ol style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
+                  <li>Creates a cloud development environment from your GitHub repository</li>
+                  <li>Automatically starts your WebSocket server on port 3000</li>
+                  <li>Provides a public WSS URL: <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">wss://your-codespace-3000.app.github.dev</code></li>
+                  <li>Ready to receive real phone calls in Step 6!</li>
+                </ol>
+              </div>
+              <button
+                class="btn btn-success"
+                id="deployCodespaceBtn"
+                onclick="deployToCodespaces()"
+                style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                🚀 Launch Codespace with WebSocket Server
+              </button>
+              <div id="codespaceDeployStatus" style="margin-top: 15px; color: white;"></div>
+            `}
           </div>
 
           <div class="console-output" id="console7" style="display: none;"></div>
@@ -12290,6 +12388,187 @@ twilio serverless:deploy
         }
       } catch (error) {
         showStatus('githubCloneStatus', 'error', '❌ Error: ' + error.message);
+      }
+    }
+
+    // =========================================================================
+    // GITHUB CODESPACES DEPLOYMENT
+    // =========================================================================
+
+    /**
+     * Deploy student repository to GitHub Codespaces
+     * Creates a cloud development environment with WebSocket server
+     */
+    async function deployToCodespaces() {
+      const btn = document.getElementById('deployCodespaceBtn');
+      const statusEl = document.getElementById('codespaceDeployStatus');
+
+      if (!githubToken || !githubUsername || !studentRepoName) {
+        showStatus('codespaceDeployStatus', 'error', '❌ Missing GitHub credentials or repository');
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+        btn.textContent = '🚀 Launching Codespace...';
+        showStatus('codespaceDeployStatus', 'info', '📦 Creating your cloud development environment...');
+
+        const repoFullName = `${githubUsername}/${studentRepoName}`;
+
+        // Create the Codespace
+        const response = await fetch('/api/github-create-codespace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: githubToken,
+            repoFullName: repoFullName,
+            githubUsername: githubUsername
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to create Codespace');
+        }
+
+        codespaceName = data.codespace.name;
+        codespaceWebUrl = data.codespace.webUrl;
+
+        showStatus('codespaceDeployStatus', 'success',
+          `✅ Codespace created! Waiting for server to start...<br>` +
+          `<span style="font-size: 12px; opacity: 0.8;">This usually takes 30-60 seconds</span>`
+        );
+
+        // Poll for Codespace to become available
+        await pollCodespaceStatus();
+
+      } catch (error) {
+        console.error('Codespace deployment error:', error);
+        showStatus('codespaceDeployStatus', 'error', '❌ ' + error.message);
+        btn.disabled = false;
+        btn.textContent = '🚀 Launch Codespace with WebSocket Server';
+      }
+    }
+
+    /**
+     * Poll Codespace status until it's available and get the WebSocket URL
+     */
+    async function pollCodespaceStatus() {
+      const maxAttempts = 30; // 30 attempts = 2.5 minutes max
+      let attempts = 0;
+
+      const poll = async () => {
+        attempts++;
+
+        try {
+          const response = await fetch('/api/github-get-codespace', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              accessToken: githubToken,
+              codespaceName: codespaceName,
+              repoFullName: `${githubUsername}/${studentRepoName}`
+            })
+          });
+
+          const data = await response.json();
+
+          if (!data.success) {
+            throw new Error(data.error || 'Failed to get Codespace status');
+          }
+
+          const state = data.codespace.state;
+          console.log(`Codespace state: ${state} (attempt ${attempts}/${maxAttempts})`);
+
+          if (state === 'Available') {
+            // Codespace is ready!
+            codespaceUrl = data.codespace.websocketUrl;
+            codespaceWebUrl = data.codespace.webUrl;
+            websocketUrl = codespaceUrl; // Set as the WebSocket URL for the workshop
+
+            // Save to localStorage
+            saveProgressToStorage();
+
+            showStatus('codespaceDeployStatus', 'success',
+              `🎉 Codespace is live!<br>` +
+              `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>` +
+              `<a href="${codespaceWebUrl}" target="_blank" style="color: white; text-decoration: underline; margin-top: 10px; display: inline-block;">🌐 Open Codespace →</a>`
+            );
+
+            celebrate('🎉 Your development environment is ready!', 'normal');
+            renderStepContent(); // Refresh to show the Codespace URL
+
+          } else if (state === 'Starting' || state === 'Created') {
+            // Still starting, continue polling
+            showStatus('codespaceDeployStatus', 'info',
+              `⏳ Server starting... (${Math.round(attempts * 5)} seconds)<br>` +
+              `<span style="font-size: 12px; opacity: 0.8;">Status: ${state}</span>`
+            );
+
+            if (attempts < maxAttempts) {
+              setTimeout(poll, 5000); // Poll every 5 seconds
+            } else {
+              throw new Error('Codespace took too long to start. Please try refreshing.');
+            }
+
+          } else {
+            // Unknown or error state
+            throw new Error(`Unexpected Codespace state: ${state}`);
+          }
+
+        } catch (error) {
+          console.error('Error polling Codespace:', error);
+          showStatus('codespaceDeployStatus', 'error', '❌ ' + error.message);
+        }
+      };
+
+      // Start polling
+      poll();
+    }
+
+    /**
+     * Refresh Codespace status (if user returns later and Codespace stopped)
+     */
+    async function refreshCodespaceStatus() {
+      try {
+        showStatus('codespaceDeployStatus', 'info', '🔄 Checking Codespace status...');
+
+        const response = await fetch('/api/github-get-codespace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: githubToken,
+            codespaceName: codespaceName,
+            repoFullName: `${githubUsername}/${studentRepoName}`
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to get Codespace status');
+        }
+
+        if (data.codespace.state === 'Available') {
+          codespaceUrl = data.codespace.websocketUrl;
+          codespaceWebUrl = data.codespace.webUrl;
+          websocketUrl = codespaceUrl;
+          saveProgressToStorage();
+
+          showStatus('codespaceDeployStatus', 'success', '✅ Codespace is running!');
+          renderStepContent();
+        } else if (data.codespace.state === 'Shutdown') {
+          showStatus('codespaceDeployStatus', 'info',
+            `⚠️ Codespace is stopped. <a href="${codespaceWebUrl}" target="_blank" style="color: white; text-decoration: underline;">Open it</a> to restart.`
+          );
+        } else {
+          showStatus('codespaceDeployStatus', 'info', `Status: ${data.codespace.state}`);
+        }
+
+      } catch (error) {
+        console.error('Error refreshing Codespace:', error);
+        showStatus('codespaceDeployStatus', 'error', '❌ ' + error.message);
       }
     }
 
