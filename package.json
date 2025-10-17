@@ -19,10 +19,16 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
+    "@deepgram/sdk": "^4.11.2",
     "@sendgrid/mail": "^8.1.0",
     "@vercel/postgres": "^0.10.0",
     "dotenv": "^17.2.3",
-    "twilio": "^5.3.4"
+    "elevenlabs": "^1.59.0",
+    "form-data": "^4.0.0",
+    "node-fetch": "^3.3.2",
+    "openai": "^6.4.0",
+    "twilio": "^5.3.4",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "vercel": "^37.0.0"

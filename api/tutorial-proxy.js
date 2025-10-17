@@ -475,6 +475,119 @@ export default async function handler(req, res) {
         }
         break;
 
+      case 'getWorkshopCallHistory':
+        // Get all calls made during workshop session with CI data if available
+        try {
+          const { phoneNumber, startTime, ciServiceSid } = params;
+
+          // Fetch calls from the phone number since workshop start
+          const startDate = startTime ? new Date(startTime) : new Date(Date.now() - 2 * 60 * 60 * 1000); // Default 2 hours ago
+
+          const calls = await client.calls.list({
+            to: phoneNumber,
+            from: phoneNumber,
+            startTimeAfter: startDate,
+            limit: 50
+          });
+
+          // Also get calls TO or FROM this number
+          const inboundCalls = await client.calls.list({
+            to: phoneNumber,
+            startTimeAfter: startDate,
+            limit: 50
+          });
+
+          const outboundCalls = await client.calls.list({
+            from: phoneNumber,
+            startTimeAfter: startDate,
+            limit: 50
+          });
+
+          // Combine and deduplicate
+          const allCalls = [...inboundCalls, ...outboundCalls];
+          const uniqueCalls = Array.from(new Map(allCalls.map(c => [c.sid, c])).values());
+
+          // Sort by start time (newest first)
+          uniqueCalls.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+          // Enrich with CI data if available
+          const enrichedCalls = await Promise.all(uniqueCalls.map(async (call) => {
+            const callData = {
+              sid: call.sid,
+              direction: call.direction,
+              from: call.from,
+              to: call.to,
+              status: call.status,
+              startTime: call.startTime,
+              endTime: call.endTime,
+              duration: call.duration,
+              conversationalIntelligence: null
+            };
+
+            // Try to fetch CI data if service is configured
+            if (ciServiceSid) {
+              try {
+                // Search for transcripts for this call SID
+                const transcripts = await client.intelligence.v2.transcripts.list({
+                  serviceSid: ciServiceSid,
+                  limit: 10
+                });
+
+                // Find transcript matching this call
+                const transcript = transcripts.find(t => t.customerKey === call.sid || t.sid === call.sid);
+
+                if (transcript) {
+                  // Fetch detailed transcript data
+                  const transcriptDetails = await client.intelligence.v2
+                    .transcripts(transcript.sid)
+                    .fetch();
+
+                  // Fetch sentences if available
+                  let sentences = [];
+                  try {
+                    sentences = await client.intelligence.v2
+                      .transcripts(transcript.sid)
+                      .sentences
+                      .list({ limit: 50 });
+                  } catch (e) {
+                    console.log('Sentences not yet available for transcript:', transcript.sid);
+                  }
+
+                  callData.conversationalIntelligence = {
+                    sid: transcript.sid,
+                    sentiment: transcriptDetails.sentiment || null,
+                    topics: transcriptDetails.topics || [],
+                    transcript: sentences.map(s => ({
+                      speaker: s.speaker,
+                      text: s.text,
+                      timestamp: s.timestamp
+                    }))
+                  };
+                }
+              } catch (ciError) {
+                console.log(`CI data not available for call ${call.sid}:`, ciError.message);
+                // CI data not available for this call - that's okay
+              }
+            }
+
+            return callData;
+          }));
+
+          result = {
+            success: true,
+            calls: enrichedCalls,
+            count: enrichedCalls.length
+          };
+        } catch (callHistoryError) {
+          console.error('Error fetching call history:', callHistoryError);
+          result = {
+            success: false,
+            error: callHistoryError.message,
+            calls: []
+          };
+        }
+        break;
+
       default:
         return res.status(400).json({ error: 'Invalid action' });
     }

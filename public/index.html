@@ -5589,6 +5589,22 @@ Remember: You're having a natural conversation, not reading a script!\`;
             </div>
           </div>
 
+          <!-- Workshop Call History -->
+          <div class="service-card" style="background: linear-gradient(135deg, #4fc1ff 0%, #1a73e8 100%);">
+            <h3 style="color: white; margin-bottom: 15px;">📞 Your Workshop Call History</h3>
+            <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px;">
+              Review all the calls you made during this workshop session with AI-powered insights.
+            </p>
+            <div id="workshopCallHistory">
+              <button class="btn" onclick="loadWorkshopCallHistory()" style="background: white; color: #1a73e8; padding: 12px 24px; font-size: 16px; font-weight: bold;">
+                📊 Load Call History
+              </button>
+            </div>
+            <div id="workshopCallHistoryData" style="display: none; margin-top: 20px;">
+              <!-- Call history will be loaded here -->
+            </div>
+          </div>
+
           <!-- Next Steps -->
           <div class="service-card">
             <h3>📦 Take Your Project Further</h3>
@@ -5936,6 +5952,248 @@ Remember: You're having a natural conversation, not reading a script!\`;
           </div>
         `;
       }
+    }
+
+    async function loadWorkshopCallHistory() {
+      const historyContainer = document.getElementById('workshopCallHistoryData');
+      const loadButton = document.getElementById('workshopCallHistory');
+
+      loadButton.innerHTML = '<div style="color: white;">📡 Loading your workshop calls...</div>';
+
+      try {
+        // Demo mode simulation
+        if (studentDemoMode || twilioCredentials?.demoMode === true) {
+          setTimeout(() => {
+            loadButton.style.display = 'none';
+            historyContainer.style.display = 'block';
+            historyContainer.innerHTML = `
+              <div style="background: white; color: #333; padding: 20px; border-radius: 8px;">
+                <h4 style="margin: 0 0 15px 0; color: #1a73e8;">📞 Demo Workshop Calls (3)</h4>
+
+                ${generateDemoCallCard(1, 'Step 4', 'Basic TwiML Test', 'completed', '45s', 'You tested the Basic TwiML handler with IVR menu navigation.')}
+                ${generateDemoCallCard(2, 'Step 5', 'Media Streams Test', 'completed', '62s', 'You tested real-time audio streaming via WebSocket.')}
+                ${generateDemoCallCard(3, 'Step 6', 'AI Voice Assistant', 'completed', '98s', 'You had a conversation with your AI assistant powered by ConversationRelay!', true)}
+
+                <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #4fc1ff;">
+                  <p style="font-size: 13px; color: #666; line-height: 1.6; margin: 0;">
+                    <strong>💡 Demo Mode:</strong> These are simulated calls to show you what call history looks like.
+                    In live mode, you'll see actual call data from your Twilio account with Conversational Intelligence insights!
+                  </p>
+                </div>
+              </div>
+            `;
+          }, 1500);
+          return;
+        }
+
+        // Live mode - fetch actual call history
+        const workshopStartTime = localStorage.getItem('workshopStartTime') || new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+        const response = await fetch('/api/tutorial-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'getWorkshopCallHistory',
+            phoneNumber: selectedPhoneNumber,
+            startTime: workshopStartTime,
+            ciServiceSid: ciServiceSid,
+            ...twilioCredentials
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load call history');
+        }
+
+        // Hide load button, show history
+        loadButton.style.display = 'none';
+        historyContainer.style.display = 'block';
+
+        const calls = data.calls || [];
+
+        if (calls.length === 0) {
+          historyContainer.innerHTML = `
+            <div style="background: rgba(255,255,255,0.2); padding: 20px; border-radius: 8px; text-align: center;">
+              <p style="margin: 0; color: white;">📞 No calls found yet. Make some test calls and come back!</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Render call history
+        historyContainer.innerHTML = `
+          <div style="background: white; color: #333; padding: 20px; border-radius: 8px;">
+            <h4 style="margin: 0 0 15px 0; color: #1a73e8;">📞 Your Workshop Calls (${calls.length})</h4>
+
+            ${calls.map((call, idx) => {
+              const direction = call.direction === 'outbound-api' ? 'Outbound' : 'Inbound';
+              const directionIcon = call.direction === 'outbound-api' ? '📤' : '📥';
+              const duration = call.duration ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : 'N/A';
+              const status = call.status || 'unknown';
+              const statusColor = status === 'completed' ? '#56ab2f' : status === 'busy' ? '#e5c07b' : status === 'no-answer' ? '#c678dd' : '#ff6b6b';
+
+              // CI data if available
+              const ciData = call.conversationalIntelligence;
+              const hasCIData = ciData && ciData.transcript;
+
+              return `
+                <div style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                  <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                    <div>
+                      <strong>Call #${idx + 1}</strong> <span style="background: #e3f2fd; color: #1a73e8; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">${directionIcon} ${direction}</span>
+                      <div style="font-size: 12px; color: #666; margin-top: 5px; line-height: 1.6;">
+                        📱 ${direction === 'Outbound' ? `To: ${call.to}` : `From: ${call.from}`}<br>
+                        🕐 ${new Date(call.startTime).toLocaleString()}<br>
+                        ⏱️ Duration: ${duration}<br>
+                        📊 Status: <span style="color: ${statusColor}; font-weight: bold;">${status}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  ${hasCIData ? `
+                    <div style="background: #f0f9ff; padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #4fc1ff;">
+                      <strong style="font-size: 13px; color: #1a73e8;">🧠 AI Insights Available</strong>
+
+                      ${ciData.sentiment ? `
+                        <div style="margin-top: 8px;">
+                          <span style="font-size: 12px; color: #666;">Sentiment:</span>
+                          <span style="font-size: 20px; margin-left: 8px;">
+                            ${ciData.sentiment === 'positive' ? '😊' : ciData.sentiment === 'negative' ? '😞' : '😐'}
+                          </span>
+                          <span style="color: ${ciData.sentiment === 'positive' ? '#56ab2f' : '#666'}; font-weight: bold; text-transform: uppercase; font-size: 12px; margin-left: 8px;">
+                            ${ciData.sentiment}
+                          </span>
+                        </div>
+                      ` : ''}
+
+                      ${ciData.transcript && ciData.transcript.length > 0 ? `
+                        <div style="margin-top: 10px;">
+                          <strong style="font-size: 12px; color: #666;">Conversation Highlights:</strong>
+                          <div style="max-height: 150px; overflow-y: auto; margin-top: 5px; font-size: 12px; line-height: 1.6;">
+                            ${ciData.transcript.slice(0, 5).map(line => `
+                              <div style="margin: 5px 0;">
+                                <span style="color: #1a73e8; font-weight: bold;">${line.speaker === 'customer' ? '🗣️' : '🤖'}:</span>
+                                ${line.text.substring(0, 100)}${line.text.length > 100 ? '...' : ''}
+                              </div>
+                            `).join('')}
+                            ${ciData.transcript.length > 5 ? `<div style="color: #999; font-style: italic; margin-top: 5px;">+ ${ciData.transcript.length - 5} more lines</div>` : ''}
+                          </div>
+                        </div>
+                      ` : `
+                        <div style="padding: 8px; background: #fff3cd; border-radius: 4px; font-size: 12px; color: #856404; margin-top: 8px;">
+                          ⏳ Transcript processing... (This can take a few minutes)
+                        </div>
+                      `}
+
+                      ${ciData.topics && ciData.topics.length > 0 ? `
+                        <div style="margin-top: 10px;">
+                          <strong style="font-size: 12px; color: #666;">Topics:</strong>
+                          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px;">
+                            ${ciData.topics.map(topic => `
+                              <span style="background: white; color: #1a73e8; padding: 3px 10px; border-radius: 10px; font-size: 11px; border: 1px solid #e3f2fd;">
+                                ${topic}
+                              </span>
+                            `).join('')}
+                          </div>
+                        </div>
+                      ` : ''}
+                    </div>
+                  ` : `
+                    <div style="padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 12px; color: #666; margin-top: 10px;">
+                      💡 Enable Conversational Intelligence to get AI-powered insights like sentiment analysis, transcripts, and topic detection.
+                    </div>
+                  `}
+
+                  ${call.sid ? `
+                    <div style="margin-top: 10px;">
+                      <a href="https://console.twilio.com/us1/monitor/logs/calls/${call.sid}" target="_blank"
+                         style="color: #1a73e8; text-decoration: none; font-size: 12px; font-weight: bold;">
+                        📊 View Full Details in Console →
+                      </a>
+                    </div>
+                  ` : ''}
+                </div>
+              `;
+            }).join('')}
+
+            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #1a73e8;">
+              <h5 style="margin: 0 0 10px 0; color: #1a73e8;">📊 Workshop Session Summary</h5>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 10px;">
+                <div style="text-align: center;">
+                  <div style="font-size: 28px; font-weight: bold; color: #1a73e8;">${calls.length}</div>
+                  <div style="font-size: 12px; color: #666;">Total Calls</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="font-size: 28px; font-weight: bold; color: #56ab2f;">${calls.filter(c => c.status === 'completed').length}</div>
+                  <div style="font-size: 12px; color: #666;">Completed</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="font-size: 28px; font-weight: bold; color: #667eea;">
+                    ${Math.floor(calls.reduce((sum, c) => sum + (parseInt(c.duration) || 0), 0) / 60)}m
+                  </div>
+                  <div style="font-size: 12px; color: #666;">Total Duration</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+      } catch (error) {
+        console.error('Call history error:', error);
+        historyContainer.style.display = 'block';
+        historyContainer.innerHTML = `
+          <div style="background: rgba(255, 0, 0, 0.2); padding: 20px; border-radius: 8px;">
+            <p style="margin: 0; color: white;">❌ Failed to load call history: ${error.message}</p>
+            <p style="margin: 10px 0 0 0; color: white; font-size: 14px;">
+              This is normal if no calls have been made yet. Make a test call and try again!
+            </p>
+          </div>
+        `;
+      }
+    }
+
+    // Helper function to generate demo call cards
+    function generateDemoCallCard(number, step, title, status, duration, description, hasAI = false) {
+      return `
+        <div style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+            <div>
+              <strong>Call #${number}</strong> <span style="background: #e3f2fd; color: #1a73e8; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">${step}</span>
+              <div style="font-size: 14px; color: #333; margin-top: 5px; font-weight: 600;">${title}</div>
+              <div style="font-size: 12px; color: #666; margin-top: 5px; line-height: 1.6;">
+                📱 To: ${selectedPhoneNumber || '+1234567890'}<br>
+                🕐 ${new Date(Date.now() - (3 - number) * 30 * 60 * 1000).toLocaleString()}<br>
+                ⏱️ Duration: ${duration}<br>
+                📊 Status: <span style="color: #56ab2f; font-weight: bold;">${status}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 12px; color: #666; margin-top: 10px;">
+            ${description}
+          </div>
+
+          ${hasAI ? `
+            <div style="background: #f0f9ff; padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #4fc1ff;">
+              <strong style="font-size: 13px; color: #1a73e8;">🧠 AI Insights</strong>
+              <div style="margin-top: 8px;">
+                <span style="font-size: 12px; color: #666;">Sentiment:</span>
+                <span style="font-size: 20px; margin-left: 8px;">😊</span>
+                <span style="color: #56ab2f; font-weight: bold; text-transform: uppercase; font-size: 12px; margin-left: 8px;">POSITIVE</span>
+              </div>
+              <div style="margin-top: 10px;">
+                <strong style="font-size: 12px; color: #666;">Topics Detected:</strong>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px;">
+                  <span style="background: white; color: #1a73e8; padding: 3px 10px; border-radius: 10px; font-size: 11px; border: 1px solid #e3f2fd;">appointments</span>
+                  <span style="background: white; color: #1a73e8; padding: 3px 10px; border-radius: 10px; font-size: 11px; border: 1px solid #e3f2fd;">scheduling</span>
+                </div>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
     }
 
     function downloadProjectPackage() {
