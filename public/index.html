@@ -11530,49 +11530,73 @@ twilio serverless:deploy
             celebrate('🎉 Repository connected! You can now deploy your code.', 'normal');
             return;
           } else {
-            // User wants a different name - prompt for custom name
-            const customName = prompt(
-              `Enter a name for your new repository:\n\n` +
-              `(Must be unique in your GitHub account)\n\n` +
-              `Suggested names:\n` +
-              `• twilio-voice-ai-workshop-2\n` +
-              `• my-voice-ai-app\n` +
-              `• conversationrelay-demo`,
-              'twilio-voice-ai-workshop-2'
-            );
+            // User wants a different name - prompt for custom name with retry logic
+            let customName = '';
+            let createSuccess = false;
 
-            if (!customName || customName.trim() === '') {
-              showStatus('githubCloneStatus', 'info', 'Repository creation cancelled.');
-              return;
-            }
-
-            // Try creating with the custom name
-            const cleanName = customName.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
-            showStatus('githubCloneStatus', 'info', `📦 Creating repository: ${cleanName}...`);
-
-            const createResponse = await fetch('/api/github-create-repo', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                accessToken: githubToken,
-                githubUsername: githubUsername,
-                repoName: cleanName
-              })
-            });
-
-            const createData = await createResponse.json();
-
-            if (createData.success) {
-              showStatus('githubCloneStatus', 'success',
-                `✅ Repository created! <a href="${createData.repoUrl}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
+            while (!createSuccess) {
+              customName = prompt(
+                `Enter a name for your new repository:\n\n` +
+                `(Must be unique in your GitHub account)\n\n` +
+                `Suggested names:\n` +
+                `• twilio-voice-ai-workshop-2\n` +
+                `• my-voice-ai-app\n` +
+                `• conversationrelay-demo`,
+                'twilio-voice-ai-workshop-2'
               );
 
-              studentRepoName = createData.repoName || cleanName;
-              saveProgressToStorage();
+              if (!customName || customName.trim() === '') {
+                showStatus('githubCloneStatus', 'info', 'Repository creation cancelled.');
+                return;
+              }
 
-              celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
-            } else {
-              showStatus('githubCloneStatus', 'error', '❌ ' + createData.error);
+              // Try creating with the custom name
+              const cleanName = customName.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
+              showStatus('githubCloneStatus', 'info', `📦 Creating repository: ${cleanName}...`);
+
+              const createResponse = await fetch('/api/github-create-repo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  accessToken: githubToken,
+                  githubUsername: githubUsername,
+                  repoName: cleanName
+                })
+              });
+
+              const createData = await createResponse.json();
+
+              if (createData.success) {
+                showStatus('githubCloneStatus', 'success',
+                  `✅ Repository created! <a href="${createData.repoUrl}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
+                );
+
+                studentRepoName = createData.repoName || cleanName;
+                saveProgressToStorage();
+
+                celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
+                createSuccess = true;
+              } else {
+                // Check if it's a name conflict error
+                if (createData.error && createData.error.includes('already exists')) {
+                  const retry = confirm(
+                    `⚠️ Repository name "${cleanName}" already exists in your account.\n\n` +
+                    `Would you like to try a different name?\n\n` +
+                    `• Click OK to enter a new name\n` +
+                    `• Click Cancel to stop`
+                  );
+
+                  if (!retry) {
+                    showStatus('githubCloneStatus', 'info', 'Repository creation cancelled.');
+                    return;
+                  }
+                  // Loop continues to prompt again
+                } else {
+                  // Other error - show and exit
+                  showStatus('githubCloneStatus', 'error', '❌ ' + createData.error);
+                  return;
+                }
+              }
             }
             return;
           }
@@ -11604,7 +11628,80 @@ twilio serverless:deploy
 
           celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
         } else {
-          showStatus('githubCloneStatus', 'error', '❌ ' + data.error);
+          // Check if it's a name conflict error
+          if (data.error && data.error.includes('already exists')) {
+            // Repository exists (race condition or check failed) - prompt for custom name with retry logic
+            let customName = '';
+            let createSuccess = false;
+
+            while (!createSuccess) {
+              customName = prompt(
+                `⚠️ Repository "${repoName}" already exists in your account.\n\n` +
+                `Enter a different name for your repository:\n\n` +
+                `Suggested names:\n` +
+                `• twilio-voice-ai-workshop-2\n` +
+                `• my-voice-ai-app\n` +
+                `• conversationrelay-demo`,
+                'twilio-voice-ai-workshop-2'
+              );
+
+              if (!customName || customName.trim() === '') {
+                showStatus('githubCloneStatus', 'info', 'Repository creation cancelled.');
+                return;
+              }
+
+              // Try creating with the custom name
+              const cleanName = customName.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
+              showStatus('githubCloneStatus', 'info', `📦 Creating repository: ${cleanName}...`);
+
+              const retryResponse = await fetch('/api/github-create-repo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  accessToken: githubToken,
+                  githubUsername: githubUsername,
+                  repoName: cleanName
+                })
+              });
+
+              const retryData = await retryResponse.json();
+
+              if (retryData.success) {
+                showStatus('githubCloneStatus', 'success',
+                  `✅ Repository created! <a href="${retryData.repoUrl}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
+                );
+
+                studentRepoName = retryData.repoName || cleanName;
+                saveProgressToStorage();
+
+                celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
+                createSuccess = true;
+              } else {
+                // Check if it's another name conflict
+                if (retryData.error && retryData.error.includes('already exists')) {
+                  const retry = confirm(
+                    `⚠️ Repository name "${cleanName}" also already exists.\n\n` +
+                    `Would you like to try a different name?\n\n` +
+                    `• Click OK to enter a new name\n` +
+                    `• Click Cancel to stop`
+                  );
+
+                  if (!retry) {
+                    showStatus('githubCloneStatus', 'info', 'Repository creation cancelled.');
+                    return;
+                  }
+                  // Loop continues to prompt again
+                } else {
+                  // Other error - show and exit
+                  showStatus('githubCloneStatus', 'error', '❌ ' + retryData.error);
+                  return;
+                }
+              }
+            }
+          } else {
+            // Other error - just show it
+            showStatus('githubCloneStatus', 'error', '❌ ' + data.error);
+          }
         }
       } catch (error) {
         showStatus('githubCloneStatus', 'error', '❌ Error: ' + error.message);

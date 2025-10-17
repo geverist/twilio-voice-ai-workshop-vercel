@@ -273,10 +273,49 @@ export default async function handler(req, res) {
       }
     }
 
+    // DELETE: Remove a student
+    if (req.method === 'DELETE') {
+      const { studentId } = req.body;
+
+      if (!studentId) {
+        return res.status(400).json({
+          success: false,
+          error: 'studentId is required'
+        });
+      }
+
+      try {
+        const result = await sql`
+          DELETE FROM workshop_students
+          WHERE student_email = ${studentId}
+        `;
+
+        if (result.rowCount === 0) {
+          return res.status(404).json({
+            success: false,
+            error: 'Student not found'
+          });
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: `Student ${studentId} deleted successfully`
+        });
+
+      } catch (error) {
+        console.error('Error deleting student:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to delete student',
+          details: error.message
+        });
+      }
+    }
+
     // Invalid method
     return res.status(405).json({
       success: false,
-      error: 'Method not allowed. Use GET or POST.'
+      error: 'Method not allowed. Use GET, POST, or DELETE.'
     });
 
   } catch (error) {
