@@ -1208,20 +1208,36 @@
 
       if (name) {
         studentName = name;
-        studentDemoMode = isDemoMode;
         localStorage.setItem('studentName', name);
-        localStorage.setItem('studentDemoMode', isDemoMode ? 'true' : 'false');
+      }
+
+      studentDemoMode = isDemoMode;
+      localStorage.setItem('studentDemoMode', isDemoMode ? 'true' : 'false');
+
+      // In demo mode, auto-connect all accounts with demo credentials
+      if (isDemoMode) {
+        twilioConnected = true;
+        openaiConnected = true;
+        githubToken = 'demo_token';
+        githubUsername = 'demo_user';
+        twilioCredentials = {
+          accountSid: 'DEMO_ACCOUNT_SID',
+          authToken: 'demo_auth_token'
+        };
+        openaiApiKey = 'demo_openai_key';
       }
 
       document.getElementById('setupModal').remove();
       renderStepContent();
 
       // Show personalized welcome message
-      if (studentName) {
-        setTimeout(() => {
-          celebrate(`👋 Welcome${studentName ? ', ' + studentName : ''}! Let's build an AI voice agent together.`, 'normal');
-        }, 300);
-      }
+      const welcomeMsg = studentName
+        ? `👋 Welcome, ${studentName}! ${isDemoMode ? 'Running in demo mode.' : "Let's build an AI voice agent together."}`
+        : `👋 Welcome! ${isDemoMode ? 'Running in demo mode - explore the workshop interface.' : "Let's build an AI voice agent together."}`;
+
+      setTimeout(() => {
+        celebrate(welcomeMsg, 'normal');
+      }, 300);
     }
 
     function showResumeModal(progress) {
@@ -1709,25 +1725,41 @@
           <div class="service-card">
             <h4>🔴 Twilio Account</h4>
 
-            <!-- Auth Method Selection -->
-            <div class="form-group">
-              <label>Authentication Method</label>
-              <select id="authMethod" onchange="toggleAuthMethod()" style="width: 100%; padding: 10px;">
-                <option value="apikey">🔑 API Key (Recommended - Most Secure)</option>
-                <option value="token">Account SID + Auth Token</option>
-                <option value="demo">Demo Mode (No credentials needed)</option>
-              </select>
-            </div>
+            ${twilioConnected ? `
+              <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c3e6cb;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                  <span style="font-size: 1.5rem;">✅</span>
+                  <strong style="color: #155724; font-size: 1.1rem;">Connected${studentDemoMode ? ' (Demo Mode)' : ''}</strong>
+                </div>
+                <p style="color: #155724; margin: 0; font-size: 14px;">
+                  ${studentDemoMode
+                    ? 'Running in demo mode - exploring the workshop interface with simulated data.'
+                    : `Account: ${twilioCredentials?.accountSid || 'Connected'}`
+                  }
+                </p>
+              </div>
+            ` : `
+              <!-- Auth Method Selection -->
+              <div class="form-group">
+                <label>Authentication Method</label>
+                <select id="authMethod" onchange="toggleAuthMethod()" style="width: 100%; padding: 10px;">
+                  <option value="apikey">🔑 API Key (Recommended - Most Secure)</option>
+                  <option value="token">Account SID + Auth Token</option>
+                  <option value="demo">Demo Mode (No credentials needed)</option>
+                </select>
+              </div>
+            `}
 
-            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
-              <strong>💡 Why API Keys?</strong>
-              <ul style="margin: 10px 0 0 20px; font-size: 14px;">
-                <li>Can be deleted after the workshop</li>
-                <li>More secure than Auth Tokens</li>
-                <li>Your credentials are only used to create a session</li>
-                <li>Takes 30 seconds to set up</li>
-              </ul>
-            </div>
+            ${!twilioConnected ? `
+              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
+                <strong>💡 Why API Keys?</strong>
+                <ul style="margin: 10px 0 0 20px; font-size: 14px;">
+                  <li>Can be deleted after the workshop</li>
+                  <li>More secure than Auth Tokens</li>
+                  <li>Your credentials are only used to create a session</li>
+                  <li>Takes 30 seconds to set up</li>
+                </ul>
+              </div>
 
             <!-- Self-Hosted Auth -->
             <div id="selfhostedAuth">
@@ -1823,12 +1855,13 @@
             </div>
 
             <div id="twilioStatus" class="connection-status" style="display: none; margin-top: 10px;"></div>
+            ` : ''}
           </div>
 
           <div id="step1Status" class="status-box"></div>
 
           <div class="button-group">
-            <button class="btn btn-primary" id="nextBtn1" onclick="nextStep()" disabled>
+            <button class="btn btn-primary" id="nextBtn1" onclick="nextStep()" ${twilioConnected ? '' : 'disabled'}>
               Next: Provision Services →
             </button>
           </div>
