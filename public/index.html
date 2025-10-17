@@ -1144,34 +1144,39 @@
       `;
 
       modal.innerHTML = `
-        <div style="background: white; border-radius: 16px; padding: 50px; max-width: 600px; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+        <div style="background: white; border-radius: 16px; padding: 50px; max-width: 650px; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
           <div style="font-size: 4rem; margin-bottom: 20px;">🚀</div>
           <h2 style="color: #0d122b; margin-bottom: 20px; font-size: 2rem;">Welcome to the Workshop!</h2>
-          <p style="color: #666; margin-bottom: 30px; line-height: 1.6; font-size: 1.1rem;">
-            Before you can start building, you'll need to connect your Twilio account and configure your workshop environment.
+          <p style="color: #666; margin-bottom: 25px; line-height: 1.6; font-size: 1.05rem;">
+            This workshop guides you through building AI-powered voice agents. You'll connect your accounts to test with real APIs.
           </p>
-          <div style="background: #f8f9fa; padding: 25px; border-radius: 12px; margin-bottom: 30px; text-align: left; border-left: 4px solid #F22F46;">
-            <strong style="color: #0d122b; display: block; margin-bottom: 15px; font-size: 1.1rem;">The setup wizard will help you:</strong>
+          <div style="background: #f8f9fa; padding: 25px; border-radius: 12px; margin-bottom: 25px; text-align: left; border-left: 4px solid #F22F46;">
+            <strong style="color: #0d122b; display: block; margin-bottom: 15px; font-size: 1.1rem;">You'll connect to:</strong>
             <ul style="margin-left: 20px; color: #666; line-height: 2;">
-              <li>✅ Connect your Twilio account (OAuth or API Key)</li>
-              <li>✅ Deploy workshop code to your account</li>
-              <li>✅ Configure phone numbers and services</li>
-              <li>✅ Get ready to build AI voice agents!</li>
+              <li>🐙 <strong>GitHub</strong> - Clone workshop code to your account</li>
+              <li>📞 <strong>Twilio</strong> - Make real phone calls and test voice APIs</li>
+              <li>🤖 <strong>OpenAI</strong> - Power your AI voice assistant with GPT</li>
             </ul>
           </div>
-          <p style="color: #666; margin-bottom: 30px; font-size: 0.95rem;">
-            <strong>Don't worry!</strong> Setup takes less than 5 minutes and is completely guided.
-          </p>
-          <div style="display: flex; gap: 15px; justify-content: center;">
-            <a href="/setup-wizard.html" style="flex: 1; max-width: 250px; padding: 18px 30px; background: linear-gradient(135deg, #F22F46 0%, #ff6b6b 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; display: inline-block; transition: transform 0.2s;">
-              Start Setup Wizard →
-            </a>
-            <button onclick="document.getElementById('setupModal').remove(); renderStepContent();" style="flex: 1; max-width: 200px; padding: 18px 30px; background: white; color: #666; border: 2px solid #ddd; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem;">
-              Continue Anyway
+          <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #4caf50;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+              <span style="font-size: 1.5rem;">🔒</span>
+              <strong style="color: #2e7d32; font-size: 1.05rem;">Your credentials are secure</strong>
+            </div>
+            <p style="color: #555; font-size: 0.95rem; line-height: 1.6; margin: 0; text-align: left;">
+              All credentials are stored <strong>only in your browser</strong> (localStorage). We never send or store your credentials on our servers. Everything runs client-side during the workshop.
+            </p>
+          </div>
+          <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button onclick="document.getElementById('setupModal').remove(); renderStepContent();" style="flex: 1; min-width: 220px; max-width: 280px; padding: 18px 30px; background: linear-gradient(135deg, #F22F46 0%, #ff6b6b 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s;">
+              Login with My Accounts
+            </button>
+            <button onclick="document.getElementById('setupModal').remove(); renderStepContent();" style="flex: 1; min-width: 220px; max-width: 280px; padding: 18px 30px; background: white; color: #666; border: 2px solid #ddd; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1.05rem;">
+              Run in Demo Mode
             </button>
           </div>
-          <p style="color: #999; margin-top: 20px; font-size: 0.85rem;">
-            Clicking "Continue Anyway" means you'll need to manually enter credentials in each step
+          <p style="color: #999; margin-top: 20px; font-size: 0.85rem; line-height: 1.5;">
+            <strong>Demo Mode:</strong> Explore the workshop interface without connecting accounts. You won't be able to test with real APIs.
           </p>
         </div>
       `;
