@@ -6508,113 +6508,189 @@ ${hintsLine}
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode7()">Reset</button>
               </div>
             </div>
-            <textarea class="code-textarea" id="code7">exports.handler = async function(context, event, callback) {
-  const response = new Twilio.Response();
-  response.setStatusCode(200);
-  response.appendHeader('Content-Type', 'text/plain');
+            <textarea class="code-textarea" id="code7">/**
+ * WebSocket Handler for Real-Time Voice AI (Node.js/Express)
+ *
+ * ⚠️ IMPORTANT: WebSocket servers cannot run on Twilio Serverless!
+ * This code is designed to run on:
+ * - Your own server (Node.js + Express)
+ * - Heroku, Railway, Render, or similar platforms
+ * - The GitHub repository you'll clone for this workshop
+ *
+ * How it works:
+ * 1. Twilio ConversationRelay connects via WebSocket
+ * 2. Twilio sends caller's speech as text (transcripts)
+ * 3. You process with AI (OpenAI in this example)
+ * 4. You send AI response back to Twilio
+ * 5. Twilio converts response to speech and plays to caller
+ */
 
-  // Check if this is a WebSocket upgrade request
-  if (!event.request || !event.request.headers || event.request.headers.upgrade !== 'websocket') {
-    response.setBody('This endpoint requires WebSocket connection');
-    return callback(null, response);
-  }
+const express = require('express');
+const { WebSocketServer } = require('ws');
+const OpenAI = require('openai');
 
-  // Initialize OpenAI (if available)
-  const OpenAI = require('openai');
-  const openaiApiKey = context.OPENAI_API_KEY;
-  let openai = null;
+const app = express();
+const port = process.env.PORT || 3000;
 
-  if (openaiApiKey) {
-    openai = new OpenAI({ apiKey: openaiApiKey });
-  } else {
-    console.log('⚠️ OpenAI API key not configured - will use placeholder responses');
-  }
+// ============================================================================
+// STEP 1: Initialize OpenAI Client
+// ============================================================================
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY // Store API key in environment variable
+});
 
-  // Handle WebSocket connection
-  try {
-    const WebSocket = require('ws');
-    const ws = event.request;
+// ============================================================================
+// STEP 2: Create HTTP Server
+// ============================================================================
+const server = app.listen(port, () => {
+  console.log(`🚀 WebSocket server running on port ${port}`);
+});
 
-    console.log('WebSocket connection established');
+// ============================================================================
+// STEP 3: Create WebSocket Server
+// ============================================================================
+const wss = new WebSocketServer({
+  server,  // Attach to existing HTTP server
+  path: '/websocket-handler'  // Path where Twilio will connect
+});
 
-    ws.on('message', async (data) => {
-      try {
-        const message = JSON.parse(data);
-        console.log('Received message:', message);
+console.log('💬 WebSocket server ready at ws://localhost:' + port + '/websocket-handler');
 
-        switch (message.event) {
-          case 'start':
-            console.log('Call started:', message.streamSid || 'test-stream');
-            ws.send(JSON.stringify({
-              event: 'connected',
-              message: 'WebSocket handler ready'
-            }));
-            break;
+// ============================================================================
+// STEP 4: Handle WebSocket Connections
+// ============================================================================
+wss.on('connection', (ws) => {
+  console.log('🔌 New WebSocket connection from Twilio ConversationRelay');
 
-          case 'transcript':
-            console.log('Transcript received:', message.transcript);
+  // --------------------------------------------------------------------------
+  // Event: MESSAGE - Handle incoming messages from Twilio
+  // --------------------------------------------------------------------------
+  // Twilio sends JSON messages with different event types:
+  // - 'start': Call begins (includes streamSid)
+  // - 'transcript': Caller spoke (speech-to-text result)
+  // - 'stop': Call ended
+  ws.on('message', async (data) => {
+    try {
+      const message = JSON.parse(data.toString());
+      console.log('📨 Received event:', message.event);
 
-            let aiResponse;
+      switch (message.event) {
+        // ----------------------------------------------------------------------
+        // Event: START - Call just started
+        // ----------------------------------------------------------------------
+        case 'start':
+          console.log('📞 Call started, StreamSid:', message.streamSid);
 
-            if (openai) {
-              // Send to OpenAI
-              const completion = await openai.chat.completions.create({
-                model: 'gpt-4o-mini',
-                messages: [{
+          // Optional: Send acknowledgment back to Twilio
+          ws.send(JSON.stringify({
+            event: 'connected',
+            streamSid: message.streamSid
+          }));
+          break;
+
+        // ----------------------------------------------------------------------
+        // Event: TRANSCRIPT - Caller spoke, we got their words
+        // ----------------------------------------------------------------------
+        case 'transcript':
+          console.log('💬 Caller said:', message.transcript);
+
+          // ====================================================================
+          // AI PROCESSING: Send transcript to OpenAI for intelligent response
+          // ====================================================================
+          try {
+            const completion = await openai.chat.completions.create({
+              model: 'gpt-4o-mini',  // Fast, affordable model (good for voice)
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.'
+                },
+                {
                   role: 'user',
                   content: message.transcript
-                }],
-                max_tokens: 150
-              });
-              aiResponse = completion.choices[0].message.content;
-            } else {
-              // Placeholder response when OpenAI not configured
-              aiResponse = 'I received your message: ' + message.transcript + '. However, OpenAI is not configured yet. Please set your OPENAI_API_KEY environment variable.';
-            }
+                }
+              ],
+              max_tokens: 150  // Limit response length for voice (faster TTS)
+            });
 
-            console.log('AI response:', aiResponse);
+            const aiResponse = completion.choices[0].message.content;
+            console.log('🤖 AI response:', aiResponse);
 
-            // Send response back
+            // ==================================================================
+            // Send AI response back to Twilio → Twilio speaks it to caller
+            // ==================================================================
             ws.send(JSON.stringify({
               event: 'text',
               text: aiResponse
             }));
-            break;
 
-          case 'stop':
-            console.log('Call ended');
-            ws.close();
-            break;
+          } catch (aiError) {
+            console.error('❌ OpenAI API error:', aiError);
 
-          default:
-            console.log('Unknown event:', message.event);
-        }
-      } catch (error) {
-        console.error('Error processing message:', error);
-        ws.send(JSON.stringify({
-          event: 'error',
-          message: error.message
-        }));
+            // Send error response to caller
+            ws.send(JSON.stringify({
+              event: 'text',
+              text: 'I apologize, I encountered an error processing your request.'
+            }));
+          }
+          break;
+
+        // ----------------------------------------------------------------------
+        // Event: STOP - Call ended
+        // ----------------------------------------------------------------------
+        case 'stop':
+          console.log('📴 Call ended');
+          ws.close();
+          break;
+
+        // ----------------------------------------------------------------------
+        // Unknown events (log for debugging)
+        // ----------------------------------------------------------------------
+        default:
+          console.log('❓ Unknown event:', message.event);
       }
-    });
 
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-    });
+    } catch (parseError) {
+      console.error('❌ Error parsing message:', parseError);
+    }
+  });
 
-    ws.on('close', () => {
-      console.log('WebSocket connection closed');
-      callback(null, response);
-    });
+  // --------------------------------------------------------------------------
+  // Event: ERROR - WebSocket connection error
+  // --------------------------------------------------------------------------
+  ws.on('error', (error) => {
+    console.error('❌ WebSocket error:', error);
+  });
 
-  } catch (error) {
-    console.error('Failed to establish WebSocket:', error);
-    response.setBody('WebSocket connection failed: ' + error.message);
-    return callback(null, response);
-  }
+  // --------------------------------------------------------------------------
+  // Event: CLOSE - WebSocket connection closed
+  // --------------------------------------------------------------------------
+  ws.on('close', () => {
+    console.log('🔌 WebSocket connection closed');
+  });
+});
 
-  // Don't call callback here - let the 'close' event handle it
-};</textarea>
+// ============================================================================
+// STEP 5: Health Check Endpoint (Optional but recommended)
+// ============================================================================
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', websocket: 'ready' });
+});
+
+// ============================================================================
+// DEPLOYMENT NOTES
+// ============================================================================
+// To deploy this code:
+// 1. Push to GitHub repository
+// 2. Deploy to a platform that supports WebSocket:
+//    - Railway: railway.app (easiest)
+//    - Render: render.com
+//    - Heroku: heroku.com
+//    - Your own VPS
+// 3. Set environment variable: OPENAI_API_KEY=your_key_here
+// 4. Update your ConversationRelay TwiML with the deployed WSS URL:
+//    wss://your-app.railway.app/websocket-handler</textarea>
+</invoke>
           </div>
 
           <div id="step7Status" class="status-box"></div>
@@ -7009,28 +7085,24 @@ ${hintsLine}
       const allPassed = Object.values(checks).every(v => v);
 
       if (allPassed) {
-        // Check OpenAI prerequisite
-        if (!openaiApiKey) {
-          showStatus('step7Status', 'warning', '⚠️ Please configure your OpenAI API key above before deploying.');
-          return;
-        }
-
-        showStatus('step7Status', 'success', '✅ Code validation passed! Deploy below to test your WebSocket handler.');
+        showStatus('step7Status', 'success', '✅ Code validation passed! This WebSocket handler will be deployed to your GitHub repository (not Twilio Serverless since WSS doesn\'t run there).');
         websocketBuilt = true;
         step5CodeValidated = true;
-        // Don't enable Next button yet - require deployment AND successful test
+        step5Deployed = true; // Mark as "deployed" since we're not actually deploying
+
+        // Enable next button immediately - no deployment needed
+        const nextBtn = document.getElementById('nextBtn7');
+        if (nextBtn) nextBtn.disabled = false;
+
         updateProgressBar();
 
-        // Hide placeholder and reveal deploy section
+        // Hide placeholder
         const placeholder = document.getElementById('step5Placeholder');
         if (placeholder) placeholder.style.display = 'none';
+
+        // Hide deploy section since WebSocket doesn't deploy to Twilio
         const deploySection = document.getElementById('step5DeploySection');
-        if (deploySection) {
-          deploySection.style.display = 'block';
-          setTimeout(() => {
-            deploySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }, 300);
-        }
+        if (deploySection) deploySection.style.display = 'none';
       } else {
         let message = '⚠️ Validation issues found:\n';
         if (!checks.hasWebSocket) message += '- Missing WebSocket import\n';
