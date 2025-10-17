@@ -211,16 +211,33 @@ export default async function handler(req, res) {
         break;
 
       case 'validateCredentials':
-        // Validate credentials by fetching account info
-        const account = await client.api.accounts(accountSid).fetch();
-        result = {
-          success: true,
-          account: {
-            sid: account.sid,
-            friendlyName: account.friendlyName,
-            status: account.status
+        // Validate credentials by making a simple API call
+        // For API Keys, we can't always fetch account details, so we'll list phone numbers instead
+        try {
+          // Try to list phone numbers as a validation test
+          await client.incomingPhoneNumbers.list({ limit: 1 });
+
+          // If that succeeds, try to get account info (might not work with API Keys)
+          let accountInfo = { sid: accountSid, friendlyName: 'Connected', status: 'active' };
+          try {
+            const account = await client.api.accounts(accountSid).fetch();
+            accountInfo = {
+              sid: account.sid,
+              friendlyName: account.friendlyName,
+              status: account.status
+            };
+          } catch (accountError) {
+            // API Key might not have permission to fetch account - that's okay
+            console.log('Could not fetch account details (normal for API Keys):', accountError.message);
           }
-        };
+
+          result = {
+            success: true,
+            account: accountInfo
+          };
+        } catch (validationError) {
+          throw validationError;
+        }
         break;
 
       case 'provisionPhoneNumber':
