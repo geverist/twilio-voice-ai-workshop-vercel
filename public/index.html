@@ -1925,13 +1925,21 @@
               </div>
             ` : githubToken && githubUsername && githubUsername !== 'demo_user' ? `
               <div style="background: rgba(76, 175, 80, 0.2); padding: 20px; border-radius: 8px; border: 1px solid rgba(76, 175, 80, 0.5);">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                  <span style="font-size: 1.5rem;">✅</span>
-                  <div>
-                    <strong style="color: #4caf50; font-size: 1.05rem;">Repository Cloned</strong><br>
-                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">${githubUsername}/twilio-voice-ai-workshop</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">✅</span>
+                    <div>
+                      <strong style="color: #4caf50; font-size: 1.05rem;">GitHub Connected</strong><br>
+                      <span style="color: rgba(255,255,255,0.8); font-size: 13px;">${githubUsername}/twilio-voice-ai-workshop</span>
+                    </div>
                   </div>
+                  <button class="btn btn-secondary" onclick="signOutGitHub()" style="padding: 8px 16px; font-size: 13px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white;">
+                    🚪 Sign Out
+                  </button>
                 </div>
+                <p style="color: rgba(255,255,255,0.85); margin: 0; font-size: 13px;">
+                  You can deploy your code to this repository throughout the workshop.
+                </p>
               </div>
             ` : `
               <button class="btn btn-primary" onclick="initiateGitHubOAuth()" style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #24292e; border: none;">
@@ -11366,6 +11374,37 @@ twilio serverless:deploy
     // =========================================================================
 
     // Initiate GitHub OAuth flow
+    // Sign out of GitHub
+    function signOutGitHub() {
+      const confirmSignOut = confirm(
+        '🚪 Sign Out of GitHub?\n\n' +
+        'This will disconnect your GitHub account from the workshop.\n\n' +
+        '• Your workshop progress will be saved\n' +
+        '• Your deployed code will remain in your repository\n' +
+        '• You can sign back in anytime\n\n' +
+        'Are you sure you want to sign out?'
+      );
+
+      if (confirmSignOut) {
+        // Clear GitHub credentials
+        githubToken = null;
+        githubUsername = null;
+        studentRepoName = null;
+
+        // Clear from localStorage
+        localStorage.removeItem('github_token');
+        localStorage.removeItem('github_username');
+
+        // Save progress (without GitHub credentials)
+        saveProgressToStorage();
+
+        // Refresh the UI to show login button
+        renderStepContent();
+
+        showStatus('githubCloneStatus', 'info', '👋 Signed out of GitHub. You can sign back in anytime.');
+      }
+    }
+
     async function initiateGitHubOAuth() {
       try {
         const response = await fetch('/api/github-oauth-init', {
