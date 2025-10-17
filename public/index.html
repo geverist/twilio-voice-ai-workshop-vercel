@@ -792,6 +792,7 @@
         <button class="btn-icon" onclick="exportProject()">📦 Export Project</button>
       </div>
       <div class="toolbar-right">
+        <button class="btn-icon" disabled style="opacity: 0.5; cursor: not-allowed; background: #2c313c; color: #666;">👥 Collaborate with your team</button>
         <button class="btn-icon" onclick="openPlayground()">🎓 What is CR?</button>
         <button class="btn-icon" onclick="toggleDebugger()">🐛 Debugger</button>
         <!-- Cost calculator temporarily removed - pricing needs to be verified -->
@@ -2430,6 +2431,7 @@
           });
         }
 
+        // In demo mode, always show services as configured but buttons remain visible
         displayServices({
           phoneNumbers: demoNumbers,
           messagingService: { sid: 'MGdemo', friendlyName: 'Demo Messaging Service' },
@@ -2537,9 +2539,11 @@
           </p>
           <div class="service-status">
             <span>${hasMessaging ? '✅ Configured' : '❌ Required'}</span>
-            ${!hasMessaging ? `
-              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="provisionMessaging()">Create Service</button>
+            ${!hasMessaging || (studentDemoMode || (typeof twilioCredentials !== 'undefined' && twilioCredentials?.demoMode)) ? `
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
+                <button class="btn btn-${hasMessaging ? 'secondary' : 'primary'}" onclick="provisionMessaging()" ${hasMessaging ? 'disabled style="opacity: 0.6;"' : ''}>
+                  ${hasMessaging ? '✅ Service Created' : 'Create Service'}
+                </button>
                 <span style="color: #666;">or</span>
                 <a href="https://console.twilio.com/us1/develop/sms/services" target="_blank" style="color: #4fc1ff; text-decoration: none; font-size: 13px;">
                   🔗 Create in Console
@@ -2556,10 +2560,14 @@
           </p>
           <div class="service-status">
             <span>${hasSync ? '✅ Configured' : (syncServiceSkipped ? '⚪ Skipped' : '⚠️ Optional')}</span>
-            ${!hasSync && !syncServiceSkipped ? `
-              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <button class="btn btn-primary" onclick="provisionSync()">Yes, Enable Sync</button>
-                <button class="btn btn-secondary" onclick="skipSync()">No, Skip This</button>
+            ${(!hasSync && !syncServiceSkipped) || (studentDemoMode || (typeof twilioCredentials !== 'undefined' && twilioCredentials?.demoMode)) ? `
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
+                <button class="btn btn-${hasSync ? 'secondary' : 'primary'}" onclick="provisionSync()" ${hasSync ? 'disabled style="opacity: 0.6;"' : ''}>
+                  ${hasSync ? '✅ Sync Created' : 'Yes, Enable Sync'}
+                </button>
+                <button class="btn btn-secondary" onclick="skipSync()" ${hasSync || syncServiceSkipped ? 'disabled style="opacity: 0.6;"' : ''}>
+                  ${syncServiceSkipped ? '⚪ Skipped' : 'No, Skip This'}
+                </button>
                 <span style="color: #666;">or</span>
                 <a href="https://console.twilio.com/us1/develop/sync/services" target="_blank" style="color: #4fc1ff; text-decoration: none; font-size: 13px;">
                   🔗 Create in Console
@@ -2689,9 +2697,10 @@
     }
 
     async function provisionMessaging() {
-      if (twilioCredentials?.demoMode) {
+      if (studentDemoMode || twilioCredentials?.demoMode) {
         showStatus('step3Status', 'info', '📝 Demo Mode: Simulating messaging service creation...');
         setTimeout(() => {
+          localStorage.setItem('demoMessagingProvisioned', 'true');
           showStatus('step3Status', 'success', '✅ Demo messaging service created!');
           loadServices();
         }, 1000);
@@ -2722,9 +2731,10 @@
     }
 
     async function provisionSync() {
-      if (twilioCredentials?.demoMode) {
+      if (studentDemoMode || twilioCredentials?.demoMode) {
         showStatus('step3Status', 'info', '📝 Demo Mode: Simulating Sync service creation...');
         setTimeout(() => {
+          localStorage.setItem('demoSyncProvisioned', 'true');
           showStatus('step3Status', 'success', '✅ Demo Sync service created!');
           loadServices();
         }, 1000);
@@ -9318,6 +9328,8 @@ twilio serverless:deploy
         localStorage.removeItem('workshopProgress');
         localStorage.removeItem('studentDemoMode');
         localStorage.removeItem('demoPurchasedNumber');
+        localStorage.removeItem('demoMessagingProvisioned');
+        localStorage.removeItem('demoSyncProvisioned');
         localStorage.removeItem('workshopCredentials');
         sessionStorage.clear();
 

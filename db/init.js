@@ -1,6 +1,7 @@
 // Initialize Vercel Postgres database for Twilio Voice AI Workshop
 // Run this once to set up your database schema
 
+import 'dotenv/config';
 import { sql } from '@vercel/postgres';
 import fs from 'fs';
 import path from 'path';
