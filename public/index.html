@@ -1112,6 +1112,9 @@
     let studentRepoName = null; // Student's GitHub repository name
     let studentName = localStorage.getItem('studentName') || '';
     let studentDemoMode = localStorage.getItem('studentDemoMode') === 'true';
+
+    // Session token for identifying student across requests (works for both live and demo mode)
+    let sessionToken = localStorage.getItem('sessionToken') || null;
     let ttsProvider = 'amazon-polly'; // Default TTS provider
     let elevenlabsApiKey = null; // For ElevenLabs TTS
     let conversationRelayVoice = null; // Selected voice for ConversationRelay
@@ -1706,6 +1709,14 @@
 
     // Initialize
     function init() {
+      // Generate or restore session token (used for identifying student across workshop)
+      if (!sessionToken) {
+        // Generate a unique session token
+        sessionToken = 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('sessionToken', sessionToken);
+        console.log('Generated new session token:', sessionToken);
+      }
+
       // Restore GitHub credentials from localStorage if they exist
       const savedGithubToken = localStorage.getItem('github_token');
       const savedGithubUsername = localStorage.getItem('github_username');
@@ -6954,18 +6965,21 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
           try {
             // Commit code to GitHub
+            const commitBody = {
+              accessToken: githubToken,
+              githubUsername: githubUsername,
+              repoName: studentRepoName || 'my-conversationrelay-app',
+              filePath: filePath,
+              fileContent: functionCode,
+              commitMessage: commitMessage,
+              stepNumber: stepNumber,
+              sessionToken: sessionToken // Pass session token for student identification
+            };
+
             const commitResponse = await fetch('/api/github-commit-code', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                accessToken: githubToken,
-                githubUsername: githubUsername,
-                repoName: studentRepoName || 'my-conversationrelay-app',
-                filePath: filePath,
-                fileContent: functionCode,
-                commitMessage: commitMessage,
-                stepNumber: stepNumber
-              })
+              body: JSON.stringify(commitBody)
             });
 
             const commitData = await commitResponse.json();

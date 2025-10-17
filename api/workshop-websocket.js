@@ -22,20 +22,23 @@ export default async function handler(req) {
     return new Response('Expected WebSocket upgrade', { status: 426 });
   }
 
-  // Get OpenAI API key from query params (students pass their own key)
+  // Get session token from query params to load their custom settings (optional)
   const url = new URL(req.url);
-  const openaiApiKey = url.searchParams.get('apiKey');
-  const sessionId = url.searchParams.get('sessionId') || 'default';
+  const sessionToken = url.searchParams.get('sessionToken') || null;
+  const sessionId = sessionToken || 'default';
 
+  // Use workshop owner's OpenAI API key (not student's)
+  const openaiApiKey = process.env.OPENAI_API_KEY;
   if (!openaiApiKey) {
-    return new Response('Missing apiKey parameter', { status: 400 });
+    console.error('OPENAI_API_KEY not configured in environment');
+    return new Response('Server configuration error', { status: 500 });
   }
 
   // Create WebSocket pair
   const { 0: client, 1: server } = new WebSocketPair();
 
-  // Handle WebSocket connection
-  handleWebSocket(server, openaiApiKey, sessionId);
+  // Handle WebSocket connection with student's custom settings
+  handleWebSocket(server, openaiApiKey, sessionToken, sessionId);
 
   return new Response(null, {
     status: 101,
@@ -43,10 +46,42 @@ export default async function handler(req) {
   });
 }
 
-async function handleWebSocket(ws, openaiApiKey, sessionId) {
-  console.log(`[${sessionId}] WebSocket connected`);
+async function handleWebSocket(ws, openaiApiKey, sessionToken, sessionId) {
+  console.log(`[${sessionId}] WebSocket connected (session: ${sessionToken || 'demo'})`);
 
-  // Initialize OpenAI client with student's API key
+  // Load student's custom AI settings
+  let studentSettings = {
+    systemPrompt: 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.',
+    greeting: 'Hello! How can I help you today?',
+    voice: 'alloy',
+    tools: []
+  };
+
+  if (sessionToken) {
+    try {
+      // Fetch student settings from database
+      const settingsResponse = await fetch(
+        `https://${process.env.VERCEL_URL || 'localhost:3000'}/api/get-student-ai-settings?sessionToken=${encodeURIComponent(sessionToken)}`
+      );
+
+      if (settingsResponse.ok) {
+        const data = await settingsResponse.json();
+        if (data.success && data.settings) {
+          studentSettings = {
+            systemPrompt: data.settings.systemPrompt || studentSettings.systemPrompt,
+            greeting: data.settings.greeting || studentSettings.greeting,
+            voice: data.settings.voice || studentSettings.voice,
+            tools: data.settings.tools || studentSettings.tools
+          };
+          console.log(`[${sessionId}] Loaded custom settings for session ${sessionToken}`);
+        }
+      }
+    } catch (error) {
+      console.warn(`[${sessionId}] Could not load student settings, using defaults:`, error.message);
+    }
+  }
+
+  // Initialize OpenAI client with workshop owner's API key
   const openai = new OpenAI({ apiKey: openaiApiKey });
 
   // Store conversation history
@@ -54,6 +89,11 @@ async function handleWebSocket(ws, openaiApiKey, sessionId) {
 
   // Accept the WebSocket connection
   ws.accept();
+
+  // Send greeting when connection opens
+  ws.addEventListener('open', () => {
+    console.log(`[${sessionId}] Sending greeting: "${studentSettings.greeting}"`);
+  });
 
   ws.addEventListener('message', async (event) => {
     try {
@@ -81,13 +121,13 @@ async function handleWebSocket(ws, openaiApiKey, sessionId) {
           });
 
           try {
-            // Call OpenAI
+            // Call OpenAI with student's custom system prompt
             const completion = await openai.chat.completions.create({
               model: 'gpt-4o-mini',
               messages: [
                 {
                   role: 'system',
-                  content: 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.'
+                  content: studentSettings.systemPrompt
                 },
                 ...conversationHistory
               ],

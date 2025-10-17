@@ -35,7 +35,8 @@ export default async function handler(req, res) {
       filePath,
       fileContent,
       commitMessage,
-      stepNumber
+      stepNumber,
+      sessionToken
     } = req.body;
 
     if (!accessToken || !githubUsername || !repoName || !filePath || !fileContent) {
@@ -116,16 +117,51 @@ export default async function handler(req, res) {
     const commitResult = await commitResponse.json();
     console.log(`✓ Committed to ${repoFullName}:${filePath}`);
 
-    // Step 3: Simulate deployment wait
+    // Step 3: Extract AI settings from code and save to database (if session token provided)
+    if (sessionToken && (stepNumber === 5 || stepNumber === 7 || stepNumber === 8)) {
+      try {
+        // Parse code to extract AI settings
+        const systemPromptMatch = fileContent.match(/systemPrompt\s*[=:]\s*[`'"](.+?)[`'"]/s);
+        const greetingMatch = fileContent.match(/greeting\s*[=:]\s*[`'"](.+?)[`'"]/s);
+        const voiceMatch = fileContent.match(/voice\s*[=:]\s*[`'"](.+?)[`'"]/);
+
+        const aiSettings = {
+          systemPrompt: systemPromptMatch ? systemPromptMatch[1] : null,
+          greeting: greetingMatch ? greetingMatch[1] : null,
+          voice: voiceMatch ? voiceMatch[1] : null
+        };
+
+        // Save settings to database
+        if (aiSettings.systemPrompt || aiSettings.greeting || aiSettings.voice) {
+          await fetch(`https://${req.headers.host}/api/update-student-ai-settings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionToken,
+              ...aiSettings
+            })
+          });
+          console.log(`✓ Saved AI settings for session ${sessionToken}`);
+        }
+      } catch (parseError) {
+        console.warn('Could not parse AI settings from code:', parseError.message);
+        // Continue anyway - not critical
+      }
+    }
+
+    // Step 4: Simulate deployment wait
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Step 4: Return WORKSHOP WebSocket URL (shared endpoint)
+    // Step 5: Return WORKSHOP WebSocket URL (shared endpoint)
     // NOTE: This is a workshop-only approach. For production, students would
     // deploy to their own hosting. But for learning, we use a shared endpoint
     // hosted by the workshop itself.
     const workshopDomain = req.headers.host || 'localhost:3000';
     const protocol = workshopDomain.includes('localhost') ? 'ws' : 'wss';
-    const deployedUrl = `${protocol}://${workshopDomain}/api/workshop-websocket`;
+
+    // Include session token in URL so WebSocket can load their custom settings
+    const sessionParam = sessionToken ? `?sessionToken=${encodeURIComponent(sessionToken)}` : '';
+    const deployedUrl = `${protocol}://${workshopDomain}/api/workshop-websocket${sessionParam}`;
 
     return res.status(200).json({
       success: true,
