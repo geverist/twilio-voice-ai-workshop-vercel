@@ -2484,7 +2484,10 @@
 
     function checkStep1Complete() {
       if (twilioConnected) {
-        document.getElementById('nextBtn1').disabled = false;
+        const nextBtn = document.getElementById('nextBtn1');
+        if (nextBtn) {
+          nextBtn.disabled = false;
+        }
         showStatus('step1Status', 'success', '🎉 Twilio connected! Click Next to continue.');
       }
     }
@@ -11430,7 +11433,10 @@ twilio serverless:deploy
     // Update progress bar whenever state changes
     function checkStep1Complete() {
       if (twilioConnected) {
-        document.getElementById('nextBtn1').disabled = false;
+        const nextBtn = document.getElementById('nextBtn1');
+        if (nextBtn) {
+          nextBtn.disabled = false;
+        }
         showStatus('step1Status', 'success', '🎉 Twilio connected! Click Next to continue.');
         updateProgressBar();
       }
