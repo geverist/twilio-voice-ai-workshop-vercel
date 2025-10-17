@@ -2434,12 +2434,22 @@
           });
         }
 
-        // In demo mode, always show services as configured but buttons remain visible
-        displayServices({
-          phoneNumbers: demoNumbers,
-          messagingService: { sid: 'MGdemo', friendlyName: 'Demo Messaging Service' },
-          syncService: { sid: 'ISdemo', friendlyName: 'Demo Sync Service' }
-        });
+        // In demo mode, only show services as configured if user has provisioned them
+        const demoSetup = {
+          phoneNumbers: demoNumbers
+        };
+
+        // Only add messaging service if user has provisioned it
+        if (localStorage.getItem('demoMessagingProvisioned')) {
+          demoSetup.messagingService = { sid: 'MGdemo', friendlyName: 'Demo Messaging Service' };
+        }
+
+        // Only add sync service if user has provisioned it
+        if (localStorage.getItem('demoSyncProvisioned')) {
+          demoSetup.syncService = { sid: 'ISdemo', friendlyName: 'Demo Sync Service' };
+        }
+
+        displayServices(demoSetup);
         return;
       }
 
@@ -2632,16 +2642,22 @@
 
     async function provisionPhone() {
       if (studentDemoMode || twilioCredentials?.demoMode) {
-        showStatus('step3Status', 'info', '📝 Demo Mode: Simulating phone number purchase...');
+        showStatus('step3Status', 'info', '📝 Demo Mode: Searching for available phone numbers...');
+
         setTimeout(() => {
-          // Mark as purchased in localStorage
-          localStorage.setItem('demoPurchasedNumber', 'true');
-          showStatus('step3Status', 'success', '✅ Demo phone number +1 (555) 321-0987 purchased successfully!');
-          // Reload services to show the new number
+          showStatus('step3Status', 'info', '📝 Demo Mode: Found 3 numbers, purchasing +1 (555) 321-0987...');
+
           setTimeout(() => {
-            loadServices();
-          }, 500);
-        }, 1500);
+            // Mark as purchased in localStorage
+            localStorage.setItem('demoPurchasedNumber', 'true');
+            showStatus('step3Status', 'success', '✅ Demo phone number +1 (555) 321-0987 purchased successfully!');
+
+            // Reload services to show the new number
+            setTimeout(() => {
+              loadServices();
+            }, 500);
+          }, 1000);
+        }, 1000);
         return;
       }
 
