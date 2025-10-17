@@ -949,6 +949,65 @@
     </div>
   </div>
 
+  <!-- Feedback Modal -->
+  <div class="modal" id="feedbackModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 style="color: #667eea;">💬 Share Your Feedback</h2>
+        <span class="modal-close" onclick="closeModal('feedbackModal')">&times;</span>
+      </div>
+      <div style="padding: 20px;">
+        <p style="margin-bottom: 20px; color: #666;">
+          Your feedback helps us improve the workshop! Please share your thoughts about your experience.
+        </p>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600;">Your Name (optional)</label>
+          <input type="text" id="feedbackUserName" placeholder="Your name"
+                 style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 1rem;">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600;">Your Feedback <span style="color: #667eea;">*</span></label>
+          <textarea id="feedbackMessage" rows="6" placeholder="What did you think of the workshop? What could we improve?"
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 1rem; resize: vertical;" required></textarea>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600;">Overall Rating</label>
+          <div style="display: flex; gap: 10px;">
+            <button onclick="setFeedbackRating(1)" id="rating-1" class="rating-btn" style="padding: 10px 15px; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 6px; cursor: pointer; font-size: 1.2rem;">⭐</button>
+            <button onclick="setFeedbackRating(2)" id="rating-2" class="rating-btn" style="padding: 10px 15px; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 6px; cursor: pointer; font-size: 1.2rem;">⭐⭐</button>
+            <button onclick="setFeedbackRating(3)" id="rating-3" class="rating-btn" style="padding: 10px 15px; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 6px; cursor: pointer; font-size: 1.2rem;">⭐⭐⭐</button>
+            <button onclick="setFeedbackRating(4)" id="rating-4" class="rating-btn" style="padding: 10px 15px; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 6px; cursor: pointer; font-size: 1.2rem;">⭐⭐⭐⭐</button>
+            <button onclick="setFeedbackRating(5)" id="rating-5" class="rating-btn" style="padding: 10px 15px; background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 6px; cursor: pointer; font-size: 1.2rem;">⭐⭐⭐⭐⭐</button>
+          </div>
+        </div>
+
+        <div style="padding: 15px; background: #f8f9fa; border-radius: 6px; margin-bottom: 20px;">
+          <div style="font-size: 13px; color: #666; margin-bottom: 8px;"><strong>Auto-captured info:</strong></div>
+          <div style="font-size: 13px; color: #333;">
+            <div>📍 Completed Steps: <span id="feedbackCompletedSteps">-</span></div>
+            <div>⏱️ Time Spent: <span id="feedbackTimeSpent">-</span></div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button onclick="submitFeedback()"
+                  style="flex: 1; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer;">
+            📤 Submit Feedback
+          </button>
+          <button onclick="closeModal('feedbackModal')"
+                  style="padding: 14px 20px; background: #6c757d; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer;">
+            Cancel
+          </button>
+        </div>
+
+        <div id="feedbackStatus" style="margin-top: 15px;"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Workshop Steps Configuration
     const steps = [
@@ -5811,7 +5870,7 @@ Remember: You're having a natural conversation, not reading a script!\`;
             </p>
             <button
               class="btn"
-              onclick="window.open('https://github.com/geverist/twilio-voice-ai-workshop/issues/new?title=Workshop%20Feedback&body=Please%20share%20your%20feedback%20about%20the%20workshop%20here!', '_blank')"
+              onclick="showFeedbackModal()"
               style="font-size: 1.1rem; padding: 15px 40px; background: white; color: #667eea; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
               💬 Share Your Feedback
             </button>
@@ -10478,6 +10537,129 @@ twilio serverless:deploy
         showStatus('bugReportStatus', 'error', '❌ Failed to send bug report. Please try again.');
         submitBtn.disabled = false;
         submitBtn.innerHTML = '📤 Submit Bug Report';
+      }
+    }
+
+    // ==========================================================================
+    // FEEDBACK FUNCTIONS
+    // ==========================================================================
+
+    let selectedRating = 0;
+
+    function showFeedbackModal() {
+      const modal = document.getElementById('feedbackModal');
+
+      // Auto-fill context information
+      const completedStepsCount = steps.filter((_, index) => {
+        if (index === 0) return step1Completed;
+        if (index === 1) return step2Completed;
+        if (index === 2) return step3Completed;
+        if (index === 3) return step4Committed;
+        if (index === 4) return step5Committed;
+        if (index === 5) return step6Committed;
+        if (index === 6) return step7Committed;
+        if (index === 7) return step8Committed;
+        return false;
+      }).length;
+
+      document.getElementById('feedbackCompletedSteps').textContent = `${completedStepsCount} of ${steps.length}`;
+      document.getElementById('feedbackTimeSpent').textContent = 'N/A'; // Could track this with timestamps
+
+      // Clear previous inputs
+      document.getElementById('feedbackUserName').value = studentName || '';
+      document.getElementById('feedbackMessage').value = '';
+      selectedRating = 0;
+
+      // Reset rating buttons
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.getElementById(`rating-${i}`);
+        if (btn) {
+          btn.style.background = '#f8f9fa';
+          btn.style.borderColor = '#e0e0e0';
+        }
+      }
+
+      modal.classList.add('show');
+    }
+
+    function setFeedbackRating(rating) {
+      selectedRating = rating;
+
+      // Update button styles
+      for (let i = 1; i <= 5; i++) {
+        const btn = document.getElementById(`rating-${i}`);
+        if (btn) {
+          if (i <= rating) {
+            btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            btn.style.borderColor = '#667eea';
+            btn.style.color = 'white';
+          } else {
+            btn.style.background = '#f8f9fa';
+            btn.style.borderColor = '#e0e0e0';
+            btn.style.color = 'inherit';
+          }
+        }
+      }
+    }
+
+    async function submitFeedback() {
+      const message = document.getElementById('feedbackMessage').value.trim();
+
+      if (!message) {
+        showStatus('feedbackStatus', 'error', '❌ Please share your feedback');
+        return;
+      }
+
+      // Disable submit button
+      const submitBtn = event.target;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '⏳ Sending...';
+
+      showStatus('feedbackStatus', 'info', '📤 Sending feedback...');
+
+      try {
+        const feedbackData = {
+          name: document.getElementById('feedbackUserName').value.trim(),
+          message: message,
+          rating: selectedRating,
+          completedSteps: document.getElementById('feedbackCompletedSteps').textContent,
+          timestamp: new Date().toISOString(),
+          context: {
+            currentStep: currentStep + 1,
+            studentDemoMode,
+            callDirection,
+            step4Committed,
+            step5Committed,
+            step6Committed,
+            step7Committed,
+            step8Committed
+          }
+        };
+
+        const response = await fetch('/api/submit-feedback', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(feedbackData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showStatus('feedbackStatus', 'success', '✅ Thank you for your feedback!');
+          // Clear form after successful submission
+          setTimeout(() => {
+            closeModal('feedbackModal');
+          }, 2000);
+        } else {
+          showStatus('feedbackStatus', 'error', '❌ ' + result.error);
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '📤 Submit Feedback';
+        }
+      } catch (error) {
+        console.error('Error submitting feedback:', error);
+        showStatus('feedbackStatus', 'error', '❌ Failed to send feedback. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '📤 Submit Feedback';
       }
     }
 
