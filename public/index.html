@@ -1923,14 +1923,15 @@
                   📝 In demo mode, repository operations are simulated. Exit demo mode to clone to your real GitHub account.
                 </p>
               </div>
-            ` : githubToken && githubUsername && githubUsername !== 'demo_user' ? `
+            ` : githubToken && githubUsername && githubUsername !== 'demo_user' && studentRepoName ? `
+              <!-- GitHub connected AND repo cloned -->
               <div style="background: rgba(76, 175, 80, 0.2); padding: 20px; border-radius: 8px; border: 1px solid rgba(76, 175, 80, 0.5);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                   <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.5rem;">✅</span>
                     <div>
-                      <strong style="color: #4caf50; font-size: 1.05rem;">GitHub Connected</strong><br>
-                      <span style="color: rgba(255,255,255,0.8); font-size: 13px;">${githubUsername}/twilio-voice-ai-workshop</span>
+                      <strong style="color: #4caf50; font-size: 1.05rem;">Repository Ready</strong><br>
+                      <span style="color: rgba(255,255,255,0.8); font-size: 13px;">${githubUsername}/${studentRepoName}</span>
                     </div>
                   </div>
                   <button class="btn btn-secondary" onclick="signOutGitHub()" style="padding: 8px 16px; font-size: 13px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white;">
@@ -1940,6 +1941,28 @@
                 <p style="color: rgba(255,255,255,0.85); margin: 0; font-size: 13px;">
                   You can deploy your code to this repository throughout the workshop.
                 </p>
+              </div>
+            ` : githubToken && githubUsername && githubUsername !== 'demo_user' ? `
+              <!-- GitHub connected but NO repo cloned yet -->
+              <div style="background: rgba(33, 150, 243, 0.2); padding: 20px; border-radius: 8px; border: 1px solid rgba(33, 150, 243, 0.5);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">🔐</span>
+                    <div>
+                      <strong style="color: #2196f3; font-size: 1.05rem;">GitHub Connected</strong><br>
+                      <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Logged in as ${githubUsername}</span>
+                    </div>
+                  </div>
+                  <button class="btn btn-secondary" onclick="signOutGitHub()" style="padding: 8px 16px; font-size: 13px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white;">
+                    🚪 Sign Out
+                  </button>
+                </div>
+                <p style="color: rgba(255,255,255,0.85); margin: 0 0 15px 0; font-size: 13px;">
+                  Next step: Clone the workshop repository to your GitHub account.
+                </p>
+                <button class="btn btn-primary" onclick="cloneWorkshopRepo()" style="width: 100%; padding: 12px; font-size: 15px; background: white; color: #24292e; border: none;">
+                  <strong>📦 Clone Workshop Repository</strong>
+                </button>
               </div>
             ` : `
               <button class="btn btn-primary" onclick="initiateGitHubOAuth()" style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #24292e; border: none;">
