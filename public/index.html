@@ -1412,7 +1412,11 @@
       localStorage.removeItem('demoMessagingProvisioned');
       localStorage.removeItem('demoSyncProvisioned');
       localStorage.removeItem('workshopCredentials');
+      localStorage.removeItem('workshop_setup_complete');  // Also clear setup flag
       sessionStorage.clear();
+
+      // Set flag to prevent resume modal from showing
+      sessionStorage.setItem('startingFresh', 'true');
 
       // Reset all state variables to initial values
       currentStep = 0;
@@ -1460,8 +1464,8 @@
       renderStepContent();
       updateProgressBar();
 
-      // Save cleared state
-      saveProgressToStorage();
+      // DON'T save progress after clearing - we want a completely fresh start
+      // saveProgressToStorage();
 
       // Show the setup modal
       showSetupRequiredModal();
@@ -1659,9 +1663,12 @@
       }
 
       // Check for saved progress
-      if (savedProgress && !setupComplete) {
-        // Only show resume modal if NOT coming from setup wizard
+      if (savedProgress && !setupComplete && sessionStorage.getItem('startingFresh') !== 'true') {
+        // Only show resume modal if NOT coming from setup wizard AND not starting fresh
         showResumeModal(savedProgress);
+      } else if (sessionStorage.getItem('startingFresh') === 'true') {
+        // Clear the flag after checking
+        sessionStorage.removeItem('startingFresh');
       }
 
       // Always render content first
@@ -9908,6 +9915,12 @@ app.get('/health', (req, res) => {
     }
 
     function loadProgress() {
+      // Check if user just clicked "Start Fresh"
+      if (sessionStorage.getItem('startingFresh') === 'true') {
+        sessionStorage.removeItem('startingFresh');
+        return;
+      }
+
       const progress = loadProgressFromStorage();
 
       if (!progress) {
