@@ -1422,7 +1422,45 @@
       // Re-enable buttons based on restored state
       restoreButtonStates();
 
+      // Reveal test sections that should be visible based on deployment flags
+      revealTestSections();
+
       celebrate('✅ Progress restored! Continue where you left off.', 'light');
+    }
+
+    function revealTestSections() {
+      // Explicitly reveal test sections based on deployment flags
+      // This helps when resuming progress or when template rendering has timing issues
+
+      if (step5Deployed) {
+        setTimeout(() => {
+          const step5Test = document.getElementById('step5TestSection');
+          if (step5Test) {
+            step5Test.style.display = 'block';
+            console.log('✅ Step 5 test section revealed (step5Deployed=true)');
+          }
+        }, 100);
+      }
+
+      if (step4Deployed && callDirection === 'outbound') {
+        setTimeout(() => {
+          const step4Test = document.getElementById('step4TestSection');
+          if (step4Test) {
+            step4Test.style.display = 'block';
+            console.log('✅ Step 4 test section revealed (step4Deployed=true, outbound)');
+          }
+        }, 100);
+      }
+
+      if (step6Deployed) {
+        setTimeout(() => {
+          const step6Test = document.getElementById('step6TestCallSection');
+          if (step6Test) {
+            step6Test.style.display = 'block';
+            console.log('✅ Step 6 test section revealed (step6Deployed=true)');
+          }
+        }, 100);
+      }
     }
 
     function restoreButtonStates() {
@@ -1899,6 +1937,9 @@
           container.innerHTML = renderStep9_Deploy();
           break;
       }
+
+      // After rendering, explicitly reveal test sections that should be visible
+      revealTestSections();
     }
 
     // =========================================================================
