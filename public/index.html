@@ -8053,10 +8053,23 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     // Syntax validation helper for debugger
     function validateJavaScriptSyntax(code) {
       try {
-        // Use Function constructor to check syntax without executing
-        // Wrap in async function to support await syntax
-        new Function(`return (async function() { ${code} });`)();
-        return { valid: true };
+        // Special handling for Node.js/Express code (Step 5 WebSocket handler)
+        // These files use top-level statements like const app = express(), app.listen(), etc.
+        // They don't fit in a function wrapper, so we need a different validation approach
+        const isNodeJSCode = code.includes('require(') &&
+                             (code.includes('express()') || code.includes('WebSocketServer') ||
+                              code.includes('app.listen('));
+
+        if (isNodeJSCode) {
+          // For Node.js code, wrap the entire code as a module
+          // This allows top-level statements like const app = express()
+          new Function('require', 'module', 'exports', '__dirname', '__filename', 'process', code);
+          return { valid: true };
+        } else {
+          // For Twilio Serverless functions (exports.handler), wrap in async function
+          new Function(`return (async function() { ${code} });`)();
+          return { valid: true };
+        }
       } catch (error) {
         return {
           valid: false,
@@ -11380,16 +11393,70 @@ twilio serverless:deploy
         return;
       }
 
-      showStatus('githubCloneStatus', 'info', '📦 Cloning repository...');
+      const repoName = 'twilio-voice-ai-workshop';
+
+      // First, check if repository already exists
+      showStatus('githubCloneStatus', 'info', '🔍 Checking for existing repository...');
 
       try {
+        const checkResponse = await fetch('/api/github-check-repo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: githubToken,
+            githubUsername: githubUsername,
+            repoName: repoName
+          })
+        });
+
+        const checkData = await checkResponse.json();
+
+        if (checkData.success && checkData.exists) {
+          // Repository exists - prompt user
+          const useExisting = confirm(
+            `📦 Existing Repository Found!\n\n` +
+            `You already have a repository named "${repoName}" in your GitHub account.\n\n` +
+            `Repository: ${checkData.repo.url}\n` +
+            `Created: ${new Date(checkData.repo.createdAt).toLocaleDateString()}\n` +
+            `Last updated: ${new Date(checkData.repo.updatedAt).toLocaleDateString()}\n\n` +
+            `Would you like to:\n` +
+            `• Click OK to USE the existing repository\n` +
+            `• Click Cancel to create a NEW repository (you'll need to delete the old one first or choose a different name)`
+          );
+
+          if (useExisting) {
+            // Use existing repository
+            showStatus('githubCloneStatus', 'success',
+              `✅ Using existing repository! <a href="${checkData.repo.url}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
+            );
+
+            // Store repo name for later commits
+            studentRepoName = checkData.repo.name;
+            saveProgressToStorage();
+
+            celebrate('🎉 Repository connected! You can now deploy your code.', 'normal');
+            return;
+          } else {
+            showStatus('githubCloneStatus', 'warning',
+              '⚠️ To create a new repository, please either:<br>' +
+              '1. Delete the existing repository from GitHub first, or<br>' +
+              '2. Choose a different repository name<br><br>' +
+              `<a href="${checkData.repo.url}/settings" target="_blank" style="color: #ff9800; text-decoration: underline;">Go to repository settings →</a>`
+            );
+            return;
+          }
+        }
+
+        // Repository doesn't exist - create it
+        showStatus('githubCloneStatus', 'info', '📦 Creating repository from template...');
+
         const response = await fetch('/api/github-create-repo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             accessToken: githubToken,
             githubUsername: githubUsername,
-            repoName: 'twilio-voice-ai-workshop'
+            repoName: repoName
           })
         });
 
@@ -11397,14 +11464,14 @@ twilio serverless:deploy
 
         if (data.success) {
           showStatus('githubCloneStatus', 'success',
-            `✅ Repository cloned! <a href="${data.repoUrl}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
+            `✅ Repository created! <a href="${data.repoUrl}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
           );
 
           // Store repo name and URL for later commits
-          studentRepoName = data.repoName || 'twilio-voice-ai-workshop';
+          studentRepoName = data.repoName || repoName;
           saveProgressToStorage();
 
-          celebrate('🎉 Repository cloned successfully! You can now proceed with the workshop.', 'normal');
+          celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
         } else {
           showStatus('githubCloneStatus', 'error', '❌ ' + data.error);
         }
