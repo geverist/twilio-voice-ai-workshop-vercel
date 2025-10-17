@@ -1637,6 +1637,31 @@
 
     // Initialize
     function init() {
+      // Check for GitHub OAuth callback parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const githubTokenParam = urlParams.get('github_token');
+      const githubUserParam = urlParams.get('github_user');
+      const isGithubCallback = !!(githubTokenParam && githubUserParam);
+
+      if (isGithubCallback) {
+        // Decode the token
+        try {
+          githubToken = atob(githubTokenParam);
+          githubUsername = githubUserParam;
+
+          // Store in localStorage
+          localStorage.setItem('github_token', githubToken);
+          localStorage.setItem('github_username', githubUsername);
+
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          celebrate(`✅ GitHub connected as ${githubUsername}!`, 'normal');
+        } catch (e) {
+          console.error('Failed to decode GitHub token:', e);
+        }
+      }
+
       // Check if coming from setup wizard
       const setupComplete = localStorage.getItem('workshop_setup_complete');
       const savedProgress = loadProgressFromStorage();
@@ -1663,8 +1688,8 @@
       }
 
       // Check for saved progress
-      if (savedProgress && !setupComplete && sessionStorage.getItem('startingFresh') !== 'true') {
-        // Only show resume modal if NOT coming from setup wizard AND not starting fresh
+      if (savedProgress && !setupComplete && !isGithubCallback && sessionStorage.getItem('startingFresh') !== 'true') {
+        // Only show resume modal if NOT coming from setup wizard, NOT from GitHub callback, AND not starting fresh
         showResumeModal(savedProgress);
       } else if (sessionStorage.getItem('startingFresh') === 'true') {
         // Clear the flag after checking
