@@ -11530,12 +11530,50 @@ twilio serverless:deploy
             celebrate('🎉 Repository connected! You can now deploy your code.', 'normal');
             return;
           } else {
-            showStatus('githubCloneStatus', 'warning',
-              '⚠️ To create a new repository, please either:<br>' +
-              '1. Delete the existing repository from GitHub first, or<br>' +
-              '2. Choose a different repository name<br><br>' +
-              `<a href="${checkData.repo.url}/settings" target="_blank" style="color: #ff9800; text-decoration: underline;">Go to repository settings →</a>`
+            // User wants a different name - prompt for custom name
+            const customName = prompt(
+              `Enter a name for your new repository:\n\n` +
+              `(Must be unique in your GitHub account)\n\n` +
+              `Suggested names:\n` +
+              `• twilio-voice-ai-workshop-2\n` +
+              `• my-voice-ai-app\n` +
+              `• conversationrelay-demo`,
+              'twilio-voice-ai-workshop-2'
             );
+
+            if (!customName || customName.trim() === '') {
+              showStatus('githubCloneStatus', 'info', 'Repository creation cancelled.');
+              return;
+            }
+
+            // Try creating with the custom name
+            const cleanName = customName.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
+            showStatus('githubCloneStatus', 'info', `📦 Creating repository: ${cleanName}...`);
+
+            const createResponse = await fetch('/api/github-create-repo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                accessToken: githubToken,
+                githubUsername: githubUsername,
+                repoName: cleanName
+              })
+            });
+
+            const createData = await createResponse.json();
+
+            if (createData.success) {
+              showStatus('githubCloneStatus', 'success',
+                `✅ Repository created! <a href="${createData.repoUrl}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
+              );
+
+              studentRepoName = createData.repoName || cleanName;
+              saveProgressToStorage();
+
+              celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
+            } else {
+              showStatus('githubCloneStatus', 'error', '❌ ' + createData.error);
+            }
             return;
           }
         }
