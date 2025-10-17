@@ -596,13 +596,11 @@
     .modal-content {
       background: white;
       border-radius: 12px;
-      padding: 25px;
+      padding: 30px;
       max-width: 600px;
       width: 90%;
-      max-height: 95vh;
+      max-height: 90vh;
       overflow-y: auto;
-      display: flex;
-      flex-direction: column;
     }
 
     .modal-header {
@@ -768,28 +766,29 @@
         <span class="modal-close" onclick="dismissGitHubModal()" style="cursor: pointer; color: #666; font-size: 28px;">&times;</span>
       </div>
 
-      <div style="margin: 15px 0;">
-        <div style="font-size: 2.5rem; text-align: center; margin-bottom: 10px;">🎙️</div>
-        <p style="color: #666; font-size: 1rem; line-height: 1.5; text-align: center; margin-bottom: 15px;">
-          Build an AI-powered voice assistant with real-time conversations!
+      <div style="margin: 25px 0;">
+        <div style="font-size: 3rem; text-align: center; margin-bottom: 15px;">🎙️</div>
+        <p style="color: #666; font-size: 1.1rem; line-height: 1.6; text-align: center; margin-bottom: 25px;">
+          Build an AI-powered voice assistant with real-time conversations, OpenAI integration, and function calling!
         </p>
       </div>
 
-      <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 15px;">
-        <h4 style="margin: 0 0 10px 0; color: #155724; font-size: 0.9rem;">📚 What You'll Build:</h4>
-        <ul style="margin: 0; padding-left: 20px; color: #666; line-height: 1.6; font-size: 0.85rem;">
-          <li>AI voice assistant with OpenAI</li>
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 12px 0; color: #155724; font-size: 0.95rem;">📚 What You'll Build:</h4>
+        <ul style="margin: 0; padding-left: 20px; color: #666; line-height: 1.8; font-size: 0.9rem;">
+          <li>AI-powered voice assistant with OpenAI</li>
           <li>Real-time conversation with ConversationRelay</li>
           <li>Function calling and tool integration</li>
+          <li>Your own GitHub repository to keep!</li>
         </ul>
       </div>
 
-      <div style="background: #e7f3ff; padding: 18px; border-radius: 12px; margin-bottom: 15px; border: 2px solid #0066cc;">
-        <h3 style="color: #0066cc; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 1rem;">
+      <div style="background: #e7f3ff; padding: 25px; border-radius: 12px; margin-bottom: 20px; border: 2px solid #0066cc;">
+        <h3 style="color: #0066cc; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
           <span>🔗 Connect with GitHub</span>
         </h3>
-        <p style="color: #333; margin-bottom: 15px; line-height: 1.5; font-size: 0.9rem;">
-          Create your own repository automatically.
+        <p style="color: #333; margin-bottom: 20px; line-height: 1.6; font-size: 0.95rem;">
+          Sign in with GitHub to create your own voice AI repository. We'll set up a project in your account automatically.
         </p>
 
         <div id="githubErrorMessage" style="display: none; color: #dc3545; background: #f8d7da; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem;"></div>
@@ -801,31 +800,32 @@
           Continue with GitHub
         </button>
 
-        <p style="color: #999; font-size: 0.75rem; text-align: center; margin-top: 12px;">
+        <p style="color: #999; font-size: 0.8rem; text-align: center; margin-top: 15px;">
           🔒 We only request repository creation permissions
         </p>
       </div>
 
-      <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #856404; margin-bottom: 15px;">
-        <h4 style="margin: 0 0 10px 0; color: #856404; font-size: 0.9rem;">👀 Just Want to Explore?</h4>
-        <p style="color: #666; font-size: 0.85rem; margin-bottom: 12px; line-height: 1.5;">
-          Try Demo Mode - no credentials needed!
+      <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #856404; margin-bottom: 20px;">
+        <h4 style="margin: 0 0 12px 0; color: #856404; font-size: 0.95rem;">👀 Just Want to Explore?</h4>
+        <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px; line-height: 1.6;">
+          Try Demo Mode to explore the workshop with simulated authentication. No credentials needed!
         </p>
-        <button onclick="startDemoMode()" class="btn" style="width: 100%; background: #856404; color: white; padding: 10px 20px; font-size: 0.9rem;">
+        <button onclick="startDemoMode()" class="btn" style="width: 100%; background: #856404; color: white; padding: 12px 24px; font-size: 0.95rem;">
           👀 Start Demo Mode
         </button>
       </div>
 
-      <div style="text-align: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
-        <p style="color: #666; font-size: 0.85rem; margin-bottom: 10px;">Don't have a GitHub account?</p>
+      <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+        <p style="color: #666; font-size: 0.9rem; margin-bottom: 12px;">Don't have a GitHub account?</p>
         <a href="https://github.com/signup" target="_blank"
-           style="display: inline-block; padding: 8px 20px; background: #24292e; color: white;
-                  text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s; font-size: 0.85rem; margin-bottom: 10px;">
-          Create Account →
+           style="display: inline-block; padding: 10px 24px; background: #24292e; color: white;
+                  text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s; font-size: 0.9rem; margin-bottom: 12px;">
+          Create GitHub Account →
         </a>
+        <p style="color: #999; font-size: 0.8rem;">It's free and takes less than 2 minutes</p>
 
-        <div style="margin-top: 12px;">
-          <button onclick="dismissGitHubModal()" style="background: none; border: none; color: #999; cursor: pointer; text-decoration: underline; font-size: 0.85rem;">
+        <div style="margin-top: 20px;">
+          <button onclick="dismissGitHubModal()" style="background: none; border: none; color: #999; cursor: pointer; text-decoration: underline; font-size: 0.9rem;">
             Skip for now
           </button>
         </div>
