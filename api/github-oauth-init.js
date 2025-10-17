@@ -20,9 +20,9 @@ export default function handler(req, res) {
   try {
     // GitHub OAuth configuration
     const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-    const DOMAIN_NAME = process.env.VERCEL_URL || req.headers.host;
-    const PROTOCOL = process.env.VERCEL_URL ? 'https' : (req.headers['x-forwarded-proto'] || 'http');
-    const REDIRECT_URI = `${PROTOCOL}://${DOMAIN_NAME}/api/github-oauth-callback`;
+    // Use production domain for OAuth callback
+    const DOMAIN_NAME = 'voice-ai-workshop.vercel.app';
+    const REDIRECT_URI = `https://${DOMAIN_NAME}/api/github-oauth-callback`;
 
     if (!GITHUB_CLIENT_ID) {
       return res.status(500).json({
