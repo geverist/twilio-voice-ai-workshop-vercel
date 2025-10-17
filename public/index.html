@@ -3619,29 +3619,22 @@
           if (!isOutbound) {
             document.getElementById('nextBtn4').disabled = false;
           }
-          showStatus('step4Status', 'success', '✅ Perfect! Your IVR is ready. ' + (isOutbound ? 'Test it live below!' : 'Deploy it below!'));
+          showStatus('step4Status', 'success', '✅ Perfect! Your IVR is ready. Deploy it below!');
           updateProgressBar();
 
-          // Hide the placeholder hint and reveal next sections
+          // Hide the placeholder hint and reveal deploy section
           const placeholder = document.getElementById('step4Placeholder');
           if (placeholder) placeholder.style.display = 'none';
 
-          const testSection = document.getElementById('step4TestSection');
           const deploySection = document.getElementById('step4DeploySection');
 
-          if (isOutbound) {
-            // For outbound: show test section, deploy will show after test
-            if (testSection) testSection.style.display = 'block';
-          } else {
-            // For inbound: show deploy section immediately (can't test until deployed)
-            if (deploySection) deploySection.style.display = 'block';
-          }
+          // Show deploy section for both inbound and outbound after validation
+          // (Test section will show after deployment via step4Deployed flag)
+          if (deploySection) deploySection.style.display = 'block';
 
-          // Scroll to reveal
+          // Scroll to reveal deploy section
           setTimeout(() => {
-            if (isOutbound && testSection) {
-              testSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } else if (deploySection) {
+            if (deploySection) {
               deploySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
           }, 300);
