@@ -1230,6 +1230,9 @@
       document.getElementById('setupModal').remove();
       renderStepContent();
 
+      // Update demo mode banner visibility
+      updateDemoModeBanner();
+
       // Show personalized welcome message
       const welcomeMsg = studentName
         ? `👋 Welcome, ${studentName}! ${isDemoMode ? 'Running in demo mode.' : "Let's build an AI voice agent together."}`
@@ -1599,6 +1602,9 @@
       // Apply language preference
       switchLanguage(currentLanguage);
 
+      // Update demo mode banner if in demo mode
+      updateDemoModeBanner();
+
       // Show setup modal AFTER rendering content (so page isn't blank)
       // If user hasn't completed setup and has no saved progress, show setup modal
       if (!setupComplete && !savedProgress && !hasWorkshopCredentials) {
@@ -1690,14 +1696,29 @@
 
             <div id="githubCloneStatus" style="margin-bottom: 15px;"></div>
 
-            ${githubToken && githubUsername ? `
-              <div style="background: rgba(76, 175, 80, 0.2); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(76, 175, 80, 0.5);">
-                <strong style="color: #4caf50;">✅ GitHub Connected</strong><br>
-                <span style="color: rgba(255,255,255,0.9); font-size: 14px;">Logged in as: <strong>${githubUsername}</strong></span>
+            ${studentDemoMode ? `
+              <div style="background: rgba(76, 175, 80, 0.2); padding: 20px; border-radius: 8px; border: 1px solid rgba(76, 175, 80, 0.5);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                  <span style="font-size: 1.5rem;">✅</span>
+                  <div>
+                    <strong style="color: #4caf50; font-size: 1.05rem;">Repository Cloned (Demo)</strong><br>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">demo-user/twilio-voice-ai-workshop-demo</span>
+                  </div>
+                </div>
+                <p style="color: rgba(255,255,255,0.85); margin: 0; font-size: 13px;">
+                  📝 In demo mode, repository operations are simulated. Exit demo mode to clone to your real GitHub account.
+                </p>
               </div>
-              <button class="btn btn-success" onclick="cloneWorkshopRepo()" style="width: 100%; padding: 15px; font-size: 16px; background: #4caf50; border: none;">
-                📦 Clone Repository to Your Account
-              </button>
+            ` : githubToken && githubUsername && githubUsername !== 'demo_user' ? `
+              <div style="background: rgba(76, 175, 80, 0.2); padding: 20px; border-radius: 8px; border: 1px solid rgba(76, 175, 80, 0.5);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                  <span style="font-size: 1.5rem;">✅</span>
+                  <div>
+                    <strong style="color: #4caf50; font-size: 1.05rem;">Repository Cloned</strong><br>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">${githubUsername}/twilio-voice-ai-workshop</span>
+                  </div>
+                </div>
+              </div>
             ` : `
               <button class="btn btn-primary" onclick="initiateGitHubOAuth()" style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #24292e; border: none;">
                 <strong>🔐 Login with GitHub</strong>
@@ -1729,14 +1750,16 @@
               <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c3e6cb;">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                   <span style="font-size: 1.5rem;">✅</span>
-                  <strong style="color: #155724; font-size: 1.1rem;">Connected${studentDemoMode ? ' (Demo Mode)' : ''}</strong>
+                  <div>
+                    <strong style="color: #155724; font-size: 1.05rem;">Logged into Twilio Account${studentDemoMode ? ' (Demo)' : ''}</strong><br>
+                    <span style="color: #155724; font-size: 13px;">${studentDemoMode ? 'Demo Workshop Account' : (twilioCredentials?.accountName || twilioCredentials?.accountSid || 'Your Account')}</span>
+                  </div>
                 </div>
-                <p style="color: #155724; margin: 0; font-size: 14px;">
-                  ${studentDemoMode
-                    ? 'Running in demo mode - exploring the workshop interface with simulated data.'
-                    : `Account: ${twilioCredentials?.accountSid || 'Connected'}`
-                  }
-                </p>
+                ${studentDemoMode ? `
+                  <p style="color: #155724; margin: 0; font-size: 13px;">
+                    📝 Running in demo mode - API calls are simulated for exploration.
+                  </p>
+                ` : ''}
               </div>
             ` : `
               <!-- Auth Method Selection -->
@@ -9197,7 +9220,7 @@ twilio serverless:deploy
     // Show demo mode banner when demo mode is active
     function updateDemoModeBanner() {
       const banner = document.getElementById('demoModeBanner');
-      if (twilioCredentials?.demoMode === true) {
+      if (studentDemoMode || twilioCredentials?.demoMode === true) {
         banner.style.display = 'block';
       } else {
         banner.style.display = 'none';
@@ -9210,6 +9233,10 @@ twilio serverless:deploy
         // Clear all state
         twilioCredentials = null;
         twilioConnected = false;
+        openaiConnected = false;
+        githubToken = null;
+        githubUsername = null;
+        studentDemoMode = false;
         currentStep = 0;
 
         // Clear all progress flags
@@ -9226,6 +9253,7 @@ twilio serverless:deploy
 
         // Clear storage
         localStorage.removeItem('workshopProgress');
+        localStorage.removeItem('studentDemoMode');
         sessionStorage.clear();
 
         // Hide banner
