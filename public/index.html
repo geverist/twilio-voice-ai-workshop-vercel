@@ -1742,7 +1742,11 @@
           localStorage.setItem('github_username', githubUsername);
 
           // Load any existing progress (including studentRepoName)
-          loadProgressFromStorage();
+          const existingProgress = loadProgressFromStorage();
+          if (existingProgress && existingProgress.studentRepoName) {
+            studentRepoName = existingProgress.studentRepoName;
+            console.log(`Restored studentRepoName from storage: ${studentRepoName}`);
+          }
 
           // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
