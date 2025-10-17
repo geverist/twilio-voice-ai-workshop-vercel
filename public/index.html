@@ -792,7 +792,7 @@
         <button class="btn-icon" onclick="exportProject()">📦 Export Project</button>
       </div>
       <div class="toolbar-right">
-        <button class="btn-icon" disabled style="opacity: 0.5; cursor: not-allowed; background: #2c313c; color: #666;">👥 Collaborate with your team</button>
+        <button class="btn-icon" disabled style="opacity: 0.5; cursor: not-allowed; background: #2c313c; color: #666;">👥 Collaborate</button>
         <button class="btn-icon" onclick="openPlayground()">🎓 What is CR?</button>
         <button class="btn-icon" onclick="toggleDebugger()">🐛 Debugger</button>
         <!-- Cost calculator temporarily removed - pricing needs to be verified -->
@@ -2539,17 +2539,15 @@
           </p>
           <div class="service-status">
             <span>${hasMessaging ? '✅ Configured' : '❌ Required'}</span>
-            ${!hasMessaging || (studentDemoMode || (typeof twilioCredentials !== 'undefined' && twilioCredentials?.demoMode)) ? `
-              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
-                <button class="btn btn-${hasMessaging ? 'secondary' : 'primary'}" onclick="provisionMessaging()" ${hasMessaging ? 'disabled style="opacity: 0.6;"' : ''}>
-                  ${hasMessaging ? '✅ Service Created' : 'Create Service'}
-                </button>
-                <span style="color: #666;">or</span>
-                <a href="https://console.twilio.com/us1/develop/sms/services" target="_blank" style="color: #4fc1ff; text-decoration: none; font-size: 13px;">
-                  🔗 Create in Console
-                </a>
-              </div>
-            ` : ''}
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
+              <button class="btn btn-${hasMessaging ? 'secondary' : 'primary'}" onclick="provisionMessaging()" ${hasMessaging ? 'disabled style="opacity: 0.6;"' : ''}>
+                ${hasMessaging ? '✅ Service Created' : 'Create Service'}
+              </button>
+              <span style="color: #666;">or</span>
+              <a href="https://console.twilio.com/us1/develop/sms/services" target="_blank" style="color: #4fc1ff; text-decoration: none; font-size: 13px;">
+                🔗 Create in Console
+              </a>
+            </div>
           </div>
         </div>
 
@@ -2560,20 +2558,18 @@
           </p>
           <div class="service-status">
             <span>${hasSync ? '✅ Configured' : (syncServiceSkipped ? '⚪ Skipped' : '⚠️ Optional')}</span>
-            ${(!hasSync && !syncServiceSkipped) || (studentDemoMode || (typeof twilioCredentials !== 'undefined' && twilioCredentials?.demoMode)) ? `
-              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
-                <button class="btn btn-${hasSync ? 'secondary' : 'primary'}" onclick="provisionSync()" ${hasSync ? 'disabled style="opacity: 0.6;"' : ''}>
-                  ${hasSync ? '✅ Sync Created' : 'Yes, Enable Sync'}
-                </button>
-                <button class="btn btn-secondary" onclick="skipSync()" ${hasSync || syncServiceSkipped ? 'disabled style="opacity: 0.6;"' : ''}>
-                  ${syncServiceSkipped ? '⚪ Skipped' : 'No, Skip This'}
-                </button>
-                <span style="color: #666;">or</span>
-                <a href="https://console.twilio.com/us1/develop/sync/services" target="_blank" style="color: #4fc1ff; text-decoration: none; font-size: 13px;">
-                  🔗 Create in Console
-                </a>
-              </div>
-            ` : ''}
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
+              <button class="btn btn-${hasSync ? 'secondary' : 'primary'}" onclick="provisionSync()" ${hasSync ? 'disabled style="opacity: 0.6;"' : ''}>
+                ${hasSync ? '✅ Sync Created' : 'Yes, Enable Sync'}
+              </button>
+              <button class="btn btn-secondary" onclick="skipSync()" ${hasSync || syncServiceSkipped ? 'disabled style="opacity: 0.6;"' : ''}>
+                ${syncServiceSkipped ? '⚪ Skipped' : 'No, Skip This'}
+              </button>
+              <span style="color: #666;">or</span>
+              <a href="https://console.twilio.com/us1/develop/sync/services" target="_blank" style="color: #4fc1ff; text-decoration: none; font-size: 13px;">
+                🔗 Create in Console
+              </a>
+            </div>
           </div>
         </div>
       `;
