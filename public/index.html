@@ -5444,7 +5444,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       showStatus(statusId, 'info', '⏳ Starting deployment...');
 
       // DEMO MODE: Simulate deployment
-      if (twilioCredentials?.demoMode) {
+      if (studentDemoMode || twilioCredentials?.demoMode) {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
         // Set deployed flags based on step
