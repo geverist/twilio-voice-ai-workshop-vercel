@@ -1222,8 +1222,12 @@
       localStorage.setItem('studentDemoMode', isDemoMode ? 'true' : 'false');
 
       // Set flag to indicate we're setting up accounts (not resuming)
+      // Add timestamp so we can expire old flags
       if (!isDemoMode) {
-        localStorage.setItem('settingUpAccounts', 'true');
+        localStorage.setItem('settingUpAccounts', JSON.stringify({
+          flag: true,
+          timestamp: Date.now()
+        }));
       }
 
       // In demo mode, auto-connect all accounts with demo credentials
@@ -1643,6 +1647,14 @@
 
     // Initialize
     function init() {
+      // Restore GitHub credentials from localStorage if they exist
+      const savedGithubToken = localStorage.getItem('github_token');
+      const savedGithubUsername = localStorage.getItem('github_username');
+      if (savedGithubToken && savedGithubUsername) {
+        githubToken = savedGithubToken;
+        githubUsername = savedGithubUsername;
+      }
+
       // Check for GitHub OAuth callback parameters
       const urlParams = new URLSearchParams(window.location.search);
       const githubTokenParam = urlParams.get('github_token');
@@ -1694,7 +1706,24 @@
       }
 
       // Check for saved progress
-      const isSettingUpAccounts = localStorage.getItem('settingUpAccounts') === 'true';
+      // Check if user is in the middle of setting up accounts (with expiration)
+      let isSettingUpAccounts = false;
+      try {
+        const settingUpData = localStorage.getItem('settingUpAccounts');
+        if (settingUpData) {
+          const parsed = JSON.parse(settingUpData);
+          const tenMinutes = 10 * 60 * 1000;
+          if (parsed.flag && (Date.now() - parsed.timestamp) < tenMinutes) {
+            isSettingUpAccounts = true;
+          } else {
+            // Expired, remove it
+            localStorage.removeItem('settingUpAccounts');
+          }
+        }
+      } catch (e) {
+        // If parsing fails, remove invalid data
+        localStorage.removeItem('settingUpAccounts');
+      }
 
       if (savedProgress && !setupComplete && !isGithubCallback && !isSettingUpAccounts && sessionStorage.getItem('startingFresh') !== 'true') {
         // Only show resume modal if NOT coming from setup wizard, NOT from GitHub callback, NOT setting up accounts, AND not starting fresh
