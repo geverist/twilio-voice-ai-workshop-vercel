@@ -8685,6 +8685,59 @@ app.get('/health', (req, res) => {
 
           <div class="console-output" id="console7" style="display: none;"></div>
 
+          <!-- WebSocket Test Section (revealed after deployment) -->
+          <div id="step5TestSection" style="display: ${step5Deployed ? 'block' : 'none'}; margin-top: 30px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 12px; border: 2px solid #5a67d8;">
+              <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.3rem;">🧪 Test Your WebSocket Handler</h3>
+              <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px; line-height: 1.6;">
+                See real-time WebSocket communication in action! This interactive test shows you exactly how messages flow between your handler and the AI.
+              </p>
+
+              <!-- Message Log Window -->
+              <div style="background: #1e1e1e; border-radius: 8px; padding: 15px; margin-bottom: 20px; min-height: 300px; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 13px;" id="websocketMessageLog">
+                <div style="color: #888; text-align: center; padding: 40px 20px;">
+                  <div style="font-size: 48px; margin-bottom: 10px;">📡</div>
+                  <div>WebSocket message log will appear here...</div>
+                  <div style="font-size: 11px; margin-top: 10px;">Connect and send messages to see real-time communication</div>
+                </div>
+              </div>
+
+              <!-- Audio File Upload Test -->
+              <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                <h4 style="color: white; margin: 0 0 15px 0;">🎤 Send Audio to WebSocket</h4>
+                <p style="color: rgba(255,255,255,0.85); margin-bottom: 15px; font-size: 14px; line-height: 1.6;">
+                  Upload a WAV audio file (or use the sample) to simulate a caller speaking. Watch the message flow in real-time!
+                </p>
+
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
+                  <input type="file" id="audioFileInput" accept="audio/wav,audio/wave" style="flex: 1; min-width: 200px; padding: 10px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white;" />
+                  <button class="btn btn-success" onclick="sendAudioToWebSocket()" style="padding: 10px 20px; white-space: nowrap;">
+                    📤 Send Audio
+                  </button>
+                  <button class="btn btn-secondary" onclick="useSampleAudio()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: none; white-space: nowrap;">
+                    🎵 Use Sample
+                  </button>
+                </div>
+
+                <div id="audioTestStatus" style="color: white; font-size: 13px; min-height: 20px;"></div>
+              </div>
+
+              <!-- Connection Status -->
+              <div style="display: flex; gap: 15px; align-items: center; margin-top: 20px;">
+                <div id="wsConnectionStatus" style="display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.7); font-size: 13px;">
+                  <div style="width: 10px; height: 10px; border-radius: 50%; background: #666;" id="wsStatusIndicator"></div>
+                  <span id="wsStatusText">Not connected</span>
+                </div>
+                <button class="btn" onclick="connectWebSocketTest()" id="wsConnectBtn" style="padding: 8px 16px; font-size: 13px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);">
+                  🔌 Connect
+                </button>
+                <button class="btn" onclick="clearWebSocketLog()" style="padding: 8px 16px; font-size: 13px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">
+                  🗑️ Clear Log
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
             <button class="btn btn-primary" id="nextBtn7" onclick="nextStep()" disabled>
@@ -9376,6 +9429,268 @@ app.get('/health', (req, res) => {
         if (!checks.hasImplementation) message += `- Not enough implementation code (found ${codeLines} lines of code, ${todoLines} TODOs)\n`;
         showStatus('step7Status', 'warning', message);
       }
+    }
+
+    // =========================================================================
+    // WEBSOCKET TEST FUNCTIONS
+    // =========================================================================
+    let testWebSocket = null;
+    let isConnected = false;
+
+    function logWebSocketMessage(type, message, data = null) {
+      const log = document.getElementById('websocketMessageLog');
+      if (!log) return;
+
+      // Clear placeholder if it exists
+      if (log.querySelector('[style*="text-align: center"]')) {
+        log.innerHTML = '';
+      }
+
+      const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false, fractionalSecondDigits: 3 });
+      const colors = {
+        sent: '#4caf50',
+        received: '#2196f3',
+        error: '#f44336',
+        info: '#ff9800',
+        success: '#8bc34a'
+      };
+
+      const color = colors[type] || '#888';
+      const icon = {
+        sent: '⬆️',
+        received: '⬇️',
+        error: '❌',
+        info: 'ℹ️',
+        success: '✅'
+      }[type] || '•';
+
+      const messageDiv = document.createElement('div');
+      messageDiv.style.cssText = `
+        margin-bottom: 8px;
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.05);
+        border-left: 3px solid ${color};
+        border-radius: 4px;
+      `;
+
+      let content = `
+        <div style="display: flex; gap: 10px; align-items: flex-start;">
+          <span style="font-size: 16px;">${icon}</span>
+          <div style="flex: 1;">
+            <div style="color: ${color}; font-weight: 600; margin-bottom: 4px;">
+              ${timestamp} - ${type.toUpperCase()}
+            </div>
+            <div style="color: #ddd; word-break: break-word;">
+              ${message}
+            </div>
+      `;
+
+      if (data) {
+        content += `
+            <details style="margin-top: 6px;">
+              <summary style="color: #888; cursor: pointer; font-size: 12px;">View data</summary>
+              <pre style="margin: 6px 0 0 0; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; overflow-x: auto; font-size: 11px; color: #aaa;">${JSON.stringify(data, null, 2)}</pre>
+            </details>
+        `;
+      }
+
+      content += `
+          </div>
+        </div>
+      `;
+
+      messageDiv.innerHTML = content;
+      log.appendChild(messageDiv);
+
+      // Auto-scroll to bottom
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function updateConnectionStatus(connected) {
+      isConnected = connected;
+      const indicator = document.getElementById('wsStatusIndicator');
+      const text = document.getElementById('wsStatusText');
+      const btn = document.getElementById('wsConnectBtn');
+
+      if (connected) {
+        indicator.style.background = '#4caf50';
+        text.textContent = 'Connected';
+        text.style.color = '#4caf50';
+        btn.textContent = '🔌 Disconnect';
+        btn.onclick = disconnectWebSocketTest;
+      } else {
+        indicator.style.background = '#666';
+        text.textContent = 'Not connected';
+        text.style.color = 'rgba(255,255,255,0.7)';
+        btn.textContent = '🔌 Connect';
+        btn.onclick = connectWebSocketTest;
+      }
+    }
+
+    function connectWebSocketTest() {
+      if (isConnected) return;
+
+      if (!websocketUrl) {
+        logWebSocketMessage('error', 'No WebSocket URL available. Please deploy your handler first.');
+        return;
+      }
+
+      logWebSocketMessage('info', `Connecting to ${websocketUrl}...`);
+
+      try {
+        testWebSocket = new WebSocket(websocketUrl);
+
+        testWebSocket.onopen = () => {
+          updateConnectionStatus(true);
+          logWebSocketMessage('success', 'WebSocket connection established!');
+
+          // Send setup event
+          const setupEvent = {
+            type: 'setup',
+            callSid: 'TEST-' + Date.now(),
+            from: '+1234567890',
+            to: selectedPhoneNumber || '+1987654321',
+            direction: 'inbound'
+          };
+          testWebSocket.send(JSON.stringify(setupEvent));
+          logWebSocketMessage('sent', 'Setup event sent', setupEvent);
+        };
+
+        testWebSocket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            logWebSocketMessage('received', `Received ${data.type} event`, data);
+          } catch (err) {
+            logWebSocketMessage('received', event.data);
+          }
+        };
+
+        testWebSocket.onerror = (error) => {
+          logWebSocketMessage('error', 'WebSocket error occurred', error);
+        };
+
+        testWebSocket.onclose = () => {
+          updateConnectionStatus(false);
+          logWebSocketMessage('info', 'WebSocket connection closed');
+        };
+
+      } catch (error) {
+        logWebSocketMessage('error', `Connection failed: ${error.message}`);
+      }
+    }
+
+    function disconnectWebSocketTest() {
+      if (testWebSocket) {
+        testWebSocket.close();
+        testWebSocket = null;
+        updateConnectionStatus(false);
+        logWebSocketMessage('info', 'Disconnected by user');
+      }
+    }
+
+    function clearWebSocketLog() {
+      const log = document.getElementById('websocketMessageLog');
+      if (log) {
+        log.innerHTML = `
+          <div style="color: #888; text-align: center; padding: 40px 20px;">
+            <div style="font-size: 48px; margin-bottom: 10px;">📡</div>
+            <div>WebSocket message log cleared</div>
+            <div style="font-size: 11px; margin-top: 10px;">Connect and send messages to see real-time communication</div>
+          </div>
+        `;
+      }
+    }
+
+    async function sendAudioToWebSocket() {
+      const statusDiv = document.getElementById('audioTestStatus');
+
+      if (!isConnected) {
+        statusDiv.innerHTML = '⚠️ Please connect to WebSocket first!';
+        statusDiv.style.color = '#ff9800';
+        return;
+      }
+
+      const fileInput = document.getElementById('audioFileInput');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        statusDiv.innerHTML = '⚠️ Please select a WAV file first (or click "Use Sample")';
+        statusDiv.style.color = '#ff9800';
+        return;
+      }
+
+      statusDiv.innerHTML = '📤 Sending audio data...';
+      statusDiv.style.color = '#4fc1ff';
+
+      try {
+        // Read the file as array buffer
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+
+        // Convert to base64 for transmission
+        const base64 = btoa(String.fromCharCode.apply(null, uint8Array));
+
+        // Send as media event
+        const mediaEvent = {
+          type: 'media',
+          payload: base64,
+          timestamp: Date.now()
+        };
+
+        testWebSocket.send(JSON.stringify(mediaEvent));
+        logWebSocketMessage('sent', `Sent audio data (${(arrayBuffer.byteLength / 1024).toFixed(2)} KB)`, {
+          type: 'media',
+          size: arrayBuffer.byteLength,
+          filename: file.name
+        });
+
+        // Simulate transcription result (since we're testing)
+        setTimeout(() => {
+          const promptEvent = {
+            type: 'prompt',
+            voicePrompt: 'Hello, this is a test message from the audio file!',
+            confidence: 0.95
+          };
+          testWebSocket.send(JSON.stringify(promptEvent));
+          logWebSocketMessage('sent', 'Simulated transcription result', promptEvent);
+
+          statusDiv.innerHTML = '✅ Audio sent successfully!';
+          statusDiv.style.color = '#4caf50';
+        }, 500);
+
+      } catch (error) {
+        logWebSocketMessage('error', `Failed to send audio: ${error.message}`);
+        statusDiv.innerHTML = `❌ Error: ${error.message}`;
+        statusDiv.style.color = '#f44336';
+      }
+    }
+
+    function useSampleAudio() {
+      const statusDiv = document.getElementById('audioTestStatus');
+
+      if (!isConnected) {
+        statusDiv.innerHTML = '⚠️ Please connect to WebSocket first!';
+        statusDiv.style.color = '#ff9800';
+        return;
+      }
+
+      // Send a sample prompt event (simulating audio transcription)
+      const promptEvent = {
+        type: 'prompt',
+        voicePrompt: 'Hello! Can you tell me about yourself?',
+        confidence: 0.98,
+        isSample: true
+      };
+
+      testWebSocket.send(JSON.stringify(promptEvent));
+      logWebSocketMessage('sent', 'Sample audio prompt sent (simulated transcription)', promptEvent);
+
+      statusDiv.innerHTML = '✅ Sample message sent!';
+      statusDiv.style.color = '#4caf50';
+
+      setTimeout(() => {
+        statusDiv.innerHTML = '';
+      }, 3000);
     }
 
     function validateCode7_OLD_WEBSOCKET() {
