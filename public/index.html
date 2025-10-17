@@ -3187,37 +3187,47 @@
         return;
       }
 
-      // Get the IVR code from the code editor
+      // Get the IVR TwiML from the code editor
       const code = document.getElementById('code4')?.value || '';
 
       // Extract greeting for display
       const greetingMatch = code.match(/twiml\.say\(['"]([^'"]+)['"]/);
       const greeting = greetingMatch ? greetingMatch[1] : 'Hello world';
 
+      console.log('makeLiveTestCall - twilioCredentials:', twilioCredentials);
+      console.log('makeLiveTestCall - demoMode:', twilioCredentials?.demoMode);
+
+      // Demo mode simulation
+      if (twilioCredentials?.demoMode === true) {
+        document.getElementById('liveTestStatus').innerHTML =
+          '<div style="color: #4fc1ff; padding: 10px; background: #2c313c; border-radius: 4px;">📞 Demo Mode: Simulating call...</div>';
+
+        setTimeout(() => {
+          document.getElementById('liveTestStatus').innerHTML = `
+            <div style="color: #98c379; padding: 15px; background: #2c313c; border-radius: 4px;">
+              <strong>✅ Demo call completed successfully!</strong><br>
+              <div style="margin-top: 10px; font-size: 13px; line-height: 1.6;">
+                📱 CallSid: CA_demo_${Date.now()}<br>
+                📞 Calling: ${yourNumber}
+              </div>
+              <div style="margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 4px; font-size: 12px;">
+                <strong>What would happen in live mode:</strong><br>
+                1. Your phone (${yourNumber}) would ring<br>
+                2. Answer it and you'd hear: "${greeting}"<br>
+                3. You'd hear the menu options<br>
+                4. Press 1 or 2 to test Gather, or wait 10 seconds<br>
+                5. Call ends with "Goodbye!" and hangs up
+              </div>
+            </div>
+          `;
+        }, 2000);
+        return;
+      }
+
       document.getElementById('liveTestStatus').innerHTML =
-        '<div style="color: #4fc1ff; padding: 10px; background: #2c313c; border-radius: 4px;">📞 Generating TwiML and initiating call...</div>';
+        '<div style="color: #4fc1ff; padding: 10px; background: #2c313c; border-radius: 4px;">📞 Initiating call...</div>';
 
       try {
-        // First, execute the code to generate TwiML
-        const twimlResponse = await fetch('/api/tutorial-proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'executeTwimlCode',
-            code: code,
-            ...twilioCredentials
-          })
-        });
-
-        const twimlData = await twimlResponse.json();
-
-        if (!twimlData.success) {
-          document.getElementById('liveTestStatus').innerHTML =
-            `<div style="color: #e06c75; padding: 10px; background: #2c313c; border-radius: 4px;">❌ Code execution failed: ${twimlData.error}</div>`;
-          return;
-        }
-
-        // Now make the call using the generated TwiML inline
         const response = await fetch('/api/tutorial-proxy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3225,7 +3235,7 @@
             action: 'makeCall',
             to: yourNumber,
             from: selectedPhoneNumber,
-            ivrTwiml: twimlData.twiml, // Use generated TwiML XML
+            ivrTwiml: code, // TwiML will play greeting, gather, then hangup
             ...twilioCredentials
           })
         });
@@ -3233,14 +3243,6 @@
         const data = await response.json();
 
         if (data.success) {
-          // Store the test phone number for use in Step 7 voice test
-          window.savedTestPhoneNumber = yourNumber;
-
-          // Mark test as completed and reveal deploy section
-          step4LiveTestCompleted = true;
-          const deploySection = document.getElementById('step4DeploySection');
-          if (deploySection) deploySection.style.display = 'block';
-
           document.getElementById('liveTestStatus').innerHTML = `
             <div style="color: #98c379; padding: 15px; background: #2c313c; border-radius: 4px;">
               <strong>✅ Call initiated successfully!</strong><br>
@@ -3258,13 +3260,6 @@
               </div>
             </div>
           `;
-
-          // Scroll to deploy section
-          setTimeout(() => {
-            if (deploySection) {
-              deploySection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-          }, 300);
         } else {
           document.getElementById('liveTestStatus').innerHTML =
             `<div style="color: #e06c75; padding: 10px; background: #2c313c; border-radius: 4px;">❌ Call failed: ${data.error}</div>`;
