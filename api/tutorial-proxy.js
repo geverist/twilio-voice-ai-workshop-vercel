@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { action, accountSid, authToken, ...params } = req.body;
+    const { action, accountSid, authToken, apiKey, ...params } = req.body;
 
     // Special case: getOAuthConfig doesn't need accountSid/authToken
     if (action === 'getOAuthConfig') {
@@ -63,7 +63,15 @@ export default async function handler(req, res) {
     }
 
     // Initialize Twilio client with user's credentials
-    const client = twilio(accountSid, authToken);
+    // Support both API Key and Auth Token authentication
+    let client;
+    if (apiKey) {
+      // API Key authentication: use API Key SID as username, API Key Secret as password
+      client = twilio(apiKey, authToken, { accountSid });
+    } else {
+      // Standard authentication: use Account SID and Auth Token
+      client = twilio(accountSid, authToken);
+    }
 
     let result;
 
