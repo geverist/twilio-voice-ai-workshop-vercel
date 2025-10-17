@@ -2970,7 +2970,7 @@
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
             <button class="btn btn-primary" id="nextBtn4" onclick="nextStep()" disabled>
-              Next: ${callDirection === 'inbound' ? 'Build WebSocket Handler' : 'Test Your Deployment'} →
+              Next: Build WebSocket Handler →
             </button>
           </div>
         </div>
@@ -3220,6 +3220,10 @@
               </div>
             </div>
           `;
+
+          // Enable next button after demo call
+          const nextBtn = document.getElementById('nextBtn4');
+          if (nextBtn) nextBtn.disabled = false;
         }, 2000);
         return;
       }
