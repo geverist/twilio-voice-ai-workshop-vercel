@@ -6631,7 +6631,7 @@ const openai = new OpenAI({
 // STEP 2: Create HTTP Server
 // ============================================================================
 const server = app.listen(port, () => {
-  console.log(\`🚀 WebSocket server running on port \${port}\`);
+  console.log(\`[SERVER] WebSocket server running on port \${port}\`);
 });
 
 // ============================================================================
@@ -6642,13 +6642,13 @@ const wss = new WebSocketServer({
   path: '/websocket-handler'  // Path where Twilio will connect
 });
 
-console.log('💬 WebSocket server ready at ws://localhost:' + port + '/websocket-handler');
+console.log('[SERVER] WebSocket server ready at ws://localhost:' + port + '/websocket-handler');
 
 // ============================================================================
 // STEP 4: Handle WebSocket Connections
 // ============================================================================
 wss.on('connection', (ws) => {
-  console.log('🔌 New WebSocket connection from Twilio ConversationRelay');
+  console.log('[WEBSOCKET] New connection from Twilio ConversationRelay');
 
   // --------------------------------------------------------------------------
   // Event: MESSAGE - Handle incoming messages from Twilio
@@ -6660,14 +6660,14 @@ wss.on('connection', (ws) => {
   ws.on('message', async (data) => {
     try {
       const message = JSON.parse(data.toString());
-      console.log('📨 Received event:', message.event);
+      console.log('[EVENT] Received event:', message.event);
 
       switch (message.event) {
         // ----------------------------------------------------------------------
         // Event: START - Call just started
         // ----------------------------------------------------------------------
         case 'start':
-          console.log('📞 Call started, StreamSid:', message.streamSid);
+          console.log('[CALL] Call started, StreamSid:', message.streamSid);
 
           // Optional: Send acknowledgment back to Twilio
           ws.send(JSON.stringify({
@@ -6680,7 +6680,7 @@ wss.on('connection', (ws) => {
         // Event: TRANSCRIPT - Caller spoke, we got their words
         // ----------------------------------------------------------------------
         case 'transcript':
-          console.log('💬 Caller said:', message.transcript);
+          console.log('[TRANSCRIPT] Caller said:', message.transcript);
 
           // ====================================================================
           // AI PROCESSING: Send transcript to OpenAI for intelligent response
@@ -6702,7 +6702,7 @@ wss.on('connection', (ws) => {
             });
 
             const aiResponse = completion.choices[0].message.content;
-            console.log('🤖 AI response:', aiResponse);
+            console.log('[AI] AI response:', aiResponse);
 
             // ==================================================================
             // Send AI response back to Twilio → Twilio speaks it to caller
@@ -6713,7 +6713,7 @@ wss.on('connection', (ws) => {
             }));
 
           } catch (aiError) {
-            console.error('❌ OpenAI API error:', aiError);
+            console.error('[ERROR] OpenAI API error:', aiError);
 
             // Send error response to caller
             ws.send(JSON.stringify({
@@ -6727,7 +6727,7 @@ wss.on('connection', (ws) => {
         // Event: STOP - Call ended
         // ----------------------------------------------------------------------
         case 'stop':
-          console.log('📴 Call ended');
+          console.log('[CALL] Call ended');
           ws.close();
           break;
 
@@ -6735,11 +6735,11 @@ wss.on('connection', (ws) => {
         // Unknown events (log for debugging)
         // ----------------------------------------------------------------------
         default:
-          console.log('❓ Unknown event:', message.event);
+          console.log('[EVENT] Unknown event:', message.event);
       }
 
     } catch (parseError) {
-      console.error('❌ Error parsing message:', parseError);
+      console.error('[ERROR] Error parsing message:', parseError);
     }
   });
 
@@ -6754,7 +6754,7 @@ wss.on('connection', (ws) => {
   // Event: CLOSE - WebSocket connection closed
   // --------------------------------------------------------------------------
   ws.on('close', () => {
-    console.log('🔌 WebSocket connection closed');
+    console.log('[WEBSOCKET] Connection closed');
   });
 });
 
