@@ -11830,6 +11830,183 @@ twilio serverless:deploy
       }
     }
 
+    // Show modal to select from existing repositories or create new one
+    async function showRepositorySelectionModal(repos) {
+      return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.id = 'repoSelectionModal';
+        modal.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.9);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10000;
+          animation: fadeIn 0.3s;
+        `;
+
+        const repoList = repos.map((repo, index) => `
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+               onmouseover="this.style.borderColor='#4caf50'; this.style.background='#e8f5e9';"
+               onmouseout="this.style.borderColor='transparent'; this.style.background='#f8f9fa';"
+               onclick="selectRepository('${repo.name}')">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="color: #0d122b; font-size: 1.05rem;">${repo.name}</strong>
+                ${repo.description ? `<p style="color: #666; margin: 5px 0 0 0; font-size: 0.9rem;">${repo.description}</p>` : ''}
+                <p style="color: #999; margin: 5px 0 0 0; font-size: 0.85rem;">
+                  Updated: ${new Date(repo.updatedAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div style="color: #4caf50; font-size: 1.2rem;">→</div>
+            </div>
+          </div>
+        `).join('');
+
+        modal.innerHTML = `
+          <div style="background: white; border-radius: 16px; padding: 40px; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
+            <h2 style="color: #0d122b; margin-bottom: 15px; font-size: 1.8rem;">📦 Select Repository</h2>
+            <p style="color: #666; margin-bottom: 25px; line-height: 1.6;">
+              We found ${repos.length} workshop-related ${repos.length === 1 ? 'repository' : 'repositories'} in your GitHub account.
+              Select one to continue, or create a new repository.
+            </p>
+            <div style="margin-bottom: 20px;">
+              ${repoList}
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: space-between; margin-top: 25px;">
+              <button onclick="createNewRepositoryFromModal()" style="flex: 1; padding: 12px 24px; background: #2196f3; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 500;">
+                ✨ Create New Repository
+              </button>
+              <button onclick="closeRepoSelectionModal()" style="padding: 12px 24px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem;">
+                Cancel
+              </button>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Add global functions for modal buttons
+        window.selectRepository = async (repoName) => {
+          // Use this repository
+          studentRepoName = repoName;
+          saveProgressToStorage();
+
+          const selectedRepo = repos.find(r => r.name === repoName);
+          if (selectedRepo) {
+            showStatus('githubCloneStatus', 'success',
+              `✅ Using repository: ${repoName} <a href="${selectedRepo.url}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
+            );
+          }
+
+          celebrate(`🎉 Repository "${repoName}" connected! You can now deploy your code.`, 'normal');
+
+          // Close modal and re-render
+          closeRepoSelectionModal();
+          renderStepContent();
+          resolve();
+        };
+
+        window.createNewRepositoryFromModal = async () => {
+          closeRepoSelectionModal();
+          await createNewRepository();
+          resolve();
+        };
+
+        window.closeRepoSelectionModal = () => {
+          const modalEl = document.getElementById('repoSelectionModal');
+          if (modalEl) {
+            modalEl.remove();
+          }
+          delete window.selectRepository;
+          delete window.createNewRepositoryFromModal;
+          delete window.closeRepoSelectionModal;
+          resolve();
+        };
+      });
+    }
+
+    // Create a new repository (prompts for name)
+    async function createNewRepository() {
+      let customName = '';
+      let createSuccess = false;
+
+      while (!createSuccess) {
+        customName = prompt(
+          `Enter a name for your new repository:\n\n` +
+          `(Must be unique in your GitHub account)\n\n` +
+          `Suggested names:\n` +
+          `• twilio-voice-ai-workshop\n` +
+          `• my-voice-ai-app\n` +
+          `• conversationrelay-demo`,
+          'twilio-voice-ai-workshop'
+        );
+
+        if (!customName || customName.trim() === '') {
+          showStatus('githubCloneStatus', 'info', 'Repository creation cancelled.');
+          return;
+        }
+
+        // Try creating with the custom name
+        const cleanName = customName.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
+        showStatus('githubCloneStatus', 'info', `📦 Creating repository: ${cleanName}...`);
+
+        try {
+          const createResponse = await fetch('/api/github-create-repo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              accessToken: githubToken,
+              githubUsername: githubUsername,
+              repoName: cleanName
+            })
+          });
+
+          const createData = await createResponse.json();
+
+          if (createData.success) {
+            showStatus('githubCloneStatus', 'success',
+              `✅ Repository created! <a href="${createData.repoUrl}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
+            );
+
+            studentRepoName = createData.repoName || cleanName;
+            saveProgressToStorage();
+
+            celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
+            renderStepContent();
+            createSuccess = true;
+          } else {
+            // Check if it's a name conflict error
+            if (createData.error && createData.error.includes('already exists')) {
+              const retry = confirm(
+                `⚠️ Repository name "${cleanName}" already exists in your account.\n\n` +
+                `Would you like to try a different name?\n\n` +
+                `• Click OK to enter a new name\n` +
+                `• Click Cancel to stop`
+              );
+
+              if (!retry) {
+                showStatus('githubCloneStatus', 'info', 'Repository creation cancelled.');
+                return;
+              }
+              // Loop continues to prompt again
+            } else {
+              // Other error - show and exit
+              showStatus('githubCloneStatus', 'error', '❌ ' + createData.error);
+              return;
+            }
+          }
+        } catch (error) {
+          showStatus('githubCloneStatus', 'error', '❌ Error creating repository: ' + error.message);
+          return;
+        }
+      }
+    }
+
     // Clone workshop repository to student's GitHub account
     async function cloneWorkshopRepo() {
       if (!githubToken || !githubUsername) {
@@ -11837,12 +12014,33 @@ twilio serverless:deploy
         return;
       }
 
-      const repoName = 'twilio-voice-ai-workshop';
-
-      // First, check if repository already exists
-      showStatus('githubCloneStatus', 'info', '🔍 Checking for existing repository...');
+      // First, list all workshop-related repositories
+      showStatus('githubCloneStatus', 'info', '🔍 Checking for existing repositories...');
 
       try {
+        const listResponse = await fetch('/api/github-list-repos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: githubToken,
+            githubUsername: githubUsername
+          })
+        });
+
+        const listData = await listResponse.json();
+
+        if (listData.success && listData.repos && listData.repos.length > 0) {
+          // User has existing workshop repositories - show selection modal
+          await showRepositorySelectionModal(listData.repos);
+          return;
+        }
+
+        // No existing repos found - proceed with creating default
+        const repoName = 'twilio-voice-ai-workshop';
+
+        // Check if default repository name exists (backup check)
+        showStatus('githubCloneStatus', 'info', '🔍 Checking repository availability...');
+
         const checkResponse = await fetch('/api/github-check-repo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
