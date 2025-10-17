@@ -1049,6 +1049,8 @@
     let deployedServiceSid = null;
     let githubToken = null;
     let githubUsername = null;
+    let studentName = localStorage.getItem('studentName') || '';
+    let studentDemoMode = localStorage.getItem('studentDemoMode') === 'true';
     let ttsProvider = 'amazon-polly'; // Default TTS provider
     let elevenlabsApiKey = null; // For ElevenLabs TTS
     let conversationRelayVoice = null; // Selected voice for ConversationRelay
@@ -1158,7 +1160,7 @@
               <li>🤖 <strong>OpenAI</strong> - Power your AI voice assistant with GPT</li>
             </ul>
           </div>
-          <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; margin-bottom: 30px; border-left: 4px solid #4caf50;">
+          <div style="background: #e8f5e9; padding: 20px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #4caf50;">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
               <span style="font-size: 1.5rem;">🔒</span>
               <strong style="color: #2e7d32; font-size: 1.05rem;">Your credentials are secure</strong>
@@ -1167,11 +1169,27 @@
               All credentials are stored <strong>only in your browser</strong> (localStorage). We never send or store your credentials on our servers. Everything runs client-side during the workshop.
             </p>
           </div>
+          <div style="margin-bottom: 25px;">
+            <label for="studentName" style="display: block; text-align: left; color: #666; font-size: 0.95rem; margin-bottom: 8px; font-weight: 500;">
+              Your Name <span style="color: #999; font-weight: 400;">(optional)</span>
+            </label>
+            <input
+              type="text"
+              id="studentName"
+              placeholder="e.g., Alex Johnson"
+              style="width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;"
+              onfocus="this.style.borderColor='#F22F46'"
+              onblur="this.style.borderColor='#ddd'"
+            />
+            <p style="color: #999; font-size: 0.85rem; margin-top: 6px; text-align: left;">
+              Optional: Helps instructors track your progress during the workshop
+            </p>
+          </div>
           <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-            <button onclick="document.getElementById('setupModal').remove(); renderStepContent();" style="flex: 1; min-width: 220px; max-width: 280px; padding: 18px 30px; background: linear-gradient(135deg, #F22F46 0%, #ff6b6b 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s;">
+            <button onclick="saveStudentNameAndStart(false)" style="flex: 1; min-width: 220px; max-width: 280px; padding: 18px 30px; background: linear-gradient(135deg, #F22F46 0%, #ff6b6b 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s;">
               Login with My Accounts
             </button>
-            <button onclick="document.getElementById('setupModal').remove(); renderStepContent();" style="flex: 1; min-width: 220px; max-width: 280px; padding: 18px 30px; background: white; color: #666; border: 2px solid #ddd; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1.05rem;">
+            <button onclick="saveStudentNameAndStart(true)" style="flex: 1; min-width: 220px; max-width: 280px; padding: 18px 30px; background: white; color: #666; border: 2px solid #ddd; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1.05rem;">
               Run in Demo Mode
             </button>
           </div>
@@ -1182,6 +1200,28 @@
       `;
 
       document.body.appendChild(modal);
+    }
+
+    function saveStudentNameAndStart(isDemoMode) {
+      const nameInput = document.getElementById('studentName');
+      const name = nameInput ? nameInput.value.trim() : '';
+
+      if (name) {
+        studentName = name;
+        studentDemoMode = isDemoMode;
+        localStorage.setItem('studentName', name);
+        localStorage.setItem('studentDemoMode', isDemoMode ? 'true' : 'false');
+      }
+
+      document.getElementById('setupModal').remove();
+      renderStepContent();
+
+      // Show personalized welcome message
+      if (studentName) {
+        setTimeout(() => {
+          celebrate(`👋 Welcome${studentName ? ', ' + studentName : ''}! Let's build an AI voice agent together.`, 'normal');
+        }, 300);
+      }
     }
 
     function showResumeModal(progress) {
@@ -1516,7 +1556,10 @@
           selectedPhoneNumber = setupData.phoneNumber;
 
           // Show success message
-          celebrate('✅ Setup complete! Your credentials are loaded.', 'normal');
+          const setupMessage = studentName
+            ? `✅ Welcome back, ${studentName}! Your credentials are loaded.`
+            : '✅ Setup complete! Your credentials are loaded.';
+          celebrate(setupMessage, 'normal');
         }
 
         // Clear the setup flag (one-time use)
@@ -7846,7 +7889,10 @@ app.get('/health', (req, res) => {
         // Epic celebration on completion
         if (currentStep === steps.length - 1) {
           setTimeout(() => {
-            celebrate('🏆 Congratulations! Workshop Complete!', 'epic');
+            const message = studentName
+              ? `🏆 Congratulations, ${studentName}! Workshop Complete!`
+              : '🏆 Congratulations! Workshop Complete!';
+            celebrate(message, 'epic');
           }, 1000);
         }
 
