@@ -1,0 +1,404 @@
+/**
+ * Twilio API Proxy for Interactive Tutorial (Vercel Version)
+ *
+ * This function safely proxies Twilio API calls from the tutorial frontend
+ * Users provide their own Account SID and Auth Token
+ */
+
+import twilio from 'twilio';
+
+export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Content-Type', 'application/json');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // Only allow POST
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { action, accountSid, authToken, ...params } = req.body;
+
+    // Special case: getOAuthConfig doesn't need accountSid/authToken
+    if (action === 'getOAuthConfig') {
+      try {
+        // Return OAuth Client ID (NOT secret!) for frontend to initiate OAuth
+        const clientId = process.env.TWILIO_OAUTH_CLIENT_ID;
+
+        if (!clientId) {
+          return res.status(400).json({
+            success: false,
+            error: 'OAuth not configured. Please set TWILIO_OAUTH_CLIENT_ID in environment variables.'
+          });
+        }
+
+        return res.status(200).json({
+          success: true,
+          clientId: clientId
+          // NEVER return clientSecret!
+        });
+      } catch (error) {
+        console.error('getOAuthConfig error:', error);
+        return res.status(500).json({
+          success: false,
+          error: `Failed to get OAuth config: ${error.message}`
+        });
+      }
+    }
+
+    // Validate required params for other actions
+    if (!action || !accountSid || !authToken) {
+      return res.status(400).json({
+        error: 'Missing required parameters: action, accountSid, authToken'
+      });
+    }
+
+    // Initialize Twilio client with user's credentials
+    const client = twilio(accountSid, authToken);
+
+    let result;
+
+    switch (action) {
+      case 'listPhoneNumbers':
+        // Fetch user's phone numbers
+        const phoneNumbersList = await client.incomingPhoneNumbers.list({ limit: 50 });
+        result = {
+          success: true,
+          phoneNumbers: phoneNumbersList.map(num => ({
+            sid: num.sid,
+            phoneNumber: num.phoneNumber,
+            friendlyName: num.friendlyName,
+            capabilities: num.capabilities
+          }))
+        };
+        break;
+
+      case 'makeCall':
+        // Make an outbound call
+        // Accept pre-generated TwiML or declarative config (no code execution)
+        let twimlResponse;
+
+        if (params.ivrTwiml) {
+          // SECURITY FIX: Accept pre-generated TwiML XML instead of executing code
+          // Validate that it's valid TwiML XML
+          const VoiceResponse = twilio.twiml.VoiceResponse;
+
+          try {
+            // If it looks like XML (starts with <), treat as TwiML
+            if (typeof params.ivrTwiml === 'string' && params.ivrTwiml.trim().startsWith('<')) {
+              // Validate TwiML by attempting to parse
+              const xmlCheck = params.ivrTwiml.trim();
+              if (xmlCheck.includes('<Response>') || xmlCheck.includes('<response>')) {
+                twimlResponse = xmlCheck;
+              } else {
+                throw new Error('Invalid TwiML: must contain <Response> element');
+              }
+            } else {
+              // Treat as declarative config object for safety
+              // Example: { say: "Hello world", voice: "alice" }
+              const config = typeof params.ivrTwiml === 'string' ?
+                JSON.parse(params.ivrTwiml) : params.ivrTwiml;
+
+              const twiml = new VoiceResponse();
+
+              if (config.say) {
+                const sayOptions = {};
+                if (config.voice) sayOptions.voice = config.voice;
+                if (config.language) sayOptions.language = config.language;
+                twiml.say(sayOptions, config.say);
+              }
+
+              if (config.gather) {
+                const gather = twiml.gather({
+                  input: config.gather.input || 'speech dtmf',
+                  action: config.gather.action,
+                  method: config.gather.method || 'POST'
+                });
+                if (config.gather.say) {
+                  gather.say(config.gather.say);
+                }
+              }
+
+              if (config.dial) {
+                twiml.dial({}, config.dial);
+              }
+
+              twimlResponse = twiml.toString();
+            }
+          } catch (error) {
+            console.error('Error processing TwiML:', error);
+            const fallbackTwiml = new VoiceResponse();
+            fallbackTwiml.say('There was an error with your TwiML configuration.');
+            twimlResponse = fallbackTwiml.toString();
+          }
+        } else if (params.dialTarget) {
+          // Generate Dial TwiML inline
+          const VoiceResponse = twilio.twiml.VoiceResponse;
+          const twiml = new VoiceResponse();
+          const dialOptions = {};
+
+          if (params.timeout) dialOptions.timeout = parseInt(params.timeout);
+          if (params.machineDetection) dialOptions.machineDetection = params.machineDetection;
+
+          const dial = twiml.dial(dialOptions);
+          dial.number(params.dialTarget);
+          twimlResponse = twiml.toString();
+        }
+
+        const callParams = {
+          to: params.to,
+          from: params.from,
+          statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed']
+        };
+
+        // Use either TwiML inline or URL
+        if (twimlResponse) {
+          callParams.twiml = twimlResponse;
+        } else if (params.url) {
+          callParams.url = params.url;
+          if (params.machineDetection) {
+            callParams.machineDetection = params.machineDetection;
+          }
+        }
+
+        if (params.statusCallback) {
+          callParams.statusCallback = params.statusCallback;
+        }
+
+        const call = await client.calls.create(callParams);
+
+        result = {
+          success: true,
+          callSid: call.sid,
+          status: call.status,
+          to: call.to,
+          from: call.from
+        };
+        break;
+
+      case 'getCall':
+        // Get call details
+        const callInfo = await client.calls(params.callSid).fetch();
+        result = {
+          success: true,
+          call: {
+            sid: callInfo.sid,
+            status: callInfo.status,
+            duration: callInfo.duration,
+            to: callInfo.to,
+            from: callInfo.from,
+            startTime: callInfo.startTime,
+            endTime: callInfo.endTime
+          }
+        };
+        break;
+
+      case 'validateCredentials':
+        // Validate credentials by fetching account info
+        const account = await client.api.accounts(accountSid).fetch();
+        result = {
+          success: true,
+          account: {
+            sid: account.sid,
+            friendlyName: account.friendlyName,
+            status: account.status
+          }
+        };
+        break;
+
+      case 'provisionPhoneNumber':
+        // Search and purchase available phone number
+        const { areaCode, countryCode } = params;
+
+        // Search for available numbers
+        const availableNumbers = await client.availablePhoneNumbers(countryCode || 'US')
+          .local
+          .list({
+            areaCode: areaCode,
+            voiceEnabled: true,
+            limit: 5
+          });
+
+        if (availableNumbers.length === 0) {
+          result = { success: false, error: 'No available numbers found in this area' };
+          break;
+        }
+
+        // Purchase the first available number
+        const purchasedNumber = await client.incomingPhoneNumbers.create({
+          phoneNumber: availableNumbers[0].phoneNumber,
+          voiceUrl: params.voiceUrl || 'https://demo.twilio.com/welcome/voice/',
+          friendlyName: params.friendlyName || 'Tutorial Number'
+        });
+
+        result = {
+          success: true,
+          phoneNumber: {
+            sid: purchasedNumber.sid,
+            phoneNumber: purchasedNumber.phoneNumber,
+            friendlyName: purchasedNumber.friendlyName
+          }
+        };
+        break;
+
+      case 'createMessagingService':
+        // Create a messaging service
+        const messagingService = await client.messaging.v1.services.create({
+          friendlyName: params.friendlyName || 'Tutorial Messaging Service'
+        });
+
+        result = {
+          success: true,
+          service: {
+            sid: messagingService.sid,
+            friendlyName: messagingService.friendlyName
+          }
+        };
+        break;
+
+      case 'addNumberToMessagingService':
+        // Add phone number to messaging service
+        await client.messaging.v1
+          .services(params.serviceSid)
+          .phoneNumbers
+          .create({ phoneNumberSid: params.phoneNumberSid });
+
+        result = {
+          success: true,
+          message: 'Phone number added to messaging service'
+        };
+        break;
+
+      case 'createSyncService':
+        // Create Sync service for conversation storage
+        const syncService = await client.sync.v1.services.create({
+          friendlyName: params.friendlyName || 'Tutorial Sync Service'
+        });
+
+        result = {
+          success: true,
+          service: {
+            sid: syncService.sid,
+            friendlyName: syncService.friendlyName
+          }
+        };
+        break;
+
+      case 'checkConversationalIntelligence':
+        // Check if Conversational Intelligence is available
+        // CI is enabled at account level, check by trying to access it
+        try {
+          const intelligence = await client.intelligence.v2.transcripts.list({ limit: 1 });
+          result = {
+            success: true,
+            available: true,
+            message: 'Conversational Intelligence is available'
+          };
+        } catch (error) {
+          result = {
+            success: true,
+            available: false,
+            message: 'Conversational Intelligence not available. Contact Twilio Sales to enable.',
+            upgradeUrl: 'https://www.twilio.com/docs/voice/intelligence'
+          };
+        }
+        break;
+
+      case 'listMessagingServices':
+        // List existing messaging services
+        const services = await client.messaging.v1.services.list({ limit: 50 });
+        result = {
+          success: true,
+          services: services.map(s => ({
+            sid: s.sid,
+            friendlyName: s.friendlyName
+          }))
+        };
+        break;
+
+      case 'listSyncServices':
+        // List existing Sync services
+        const syncServices = await client.sync.v1.services.list({ limit: 50 });
+        result = {
+          success: true,
+          services: syncServices.map(s => ({
+            sid: s.sid,
+            uniqueName: s.uniqueName,
+            friendlyName: s.friendlyName
+          }))
+        };
+        break;
+
+      case 'setupComplete':
+        // Check all required services and return status
+        const setupStatus = {
+          phoneNumbers: [],
+          messagingService: null,
+          syncService: null,
+          conversationalIntelligence: false
+        };
+
+        // Check phone numbers
+        const numbers = await client.incomingPhoneNumbers.list({ limit: 50 });
+        setupStatus.phoneNumbers = numbers.map(n => ({
+          sid: n.sid,
+          phoneNumber: n.phoneNumber,
+          friendlyName: n.friendlyName
+        }));
+
+        // Check messaging services
+        const msgServices = await client.messaging.v1.services.list({ limit: 1 });
+        if (msgServices.length > 0) {
+          setupStatus.messagingService = {
+            sid: msgServices[0].sid,
+            friendlyName: msgServices[0].friendlyName
+          };
+        }
+
+        // Check Sync services
+        const sServices = await client.sync.v1.services.list({ limit: 1 });
+        if (sServices.length > 0) {
+          setupStatus.syncService = {
+            sid: sServices[0].sid,
+            friendlyName: sServices[0].friendlyName
+          };
+        }
+
+        // Check CI
+        try {
+          await client.intelligence.v2.transcripts.list({ limit: 1 });
+          setupStatus.conversationalIntelligence = true;
+        } catch (error) {
+          setupStatus.conversationalIntelligence = false;
+        }
+
+        result = {
+          success: true,
+          setup: setupStatus
+        };
+        break;
+
+      default:
+        return res.status(400).json({ error: 'Invalid action' });
+    }
+
+    return res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Twilio API Error:', error);
+
+    return res.status(500).json({
+      error: error.message,
+      code: error.code || 'UNKNOWN_ERROR'
+    });
+  }
+}

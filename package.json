@@ -1,0 +1,27 @@
+{
+  "name": "twilio-voice-ai-workshop",
+  "version": "1.0.0",
+  "description": "Interactive workshop for building AI-powered voice assistants with Twilio ConversationRelay",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required'",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "twilio",
+    "voice",
+    "ai",
+    "conversationrelay",
+    "workshop",
+    "tutorial"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "twilio": "^5.3.4"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}
