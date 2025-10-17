@@ -39,7 +39,8 @@ export default function handler(req, res) {
 
     // GitHub OAuth scopes needed:
     // - public_repo: Create repos from template
-    const scopes = 'public_repo';
+    // - codespace: Create and manage Codespaces
+    const scopes = 'public_repo codespace';
 
     // Build OAuth URL
     const githubOAuthUrl = `https://github.com/login/oauth/authorize?` +
