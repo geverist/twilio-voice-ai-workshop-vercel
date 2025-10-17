@@ -1366,16 +1366,19 @@
           container.innerHTML = renderStep4_BasicTwiML();
           break;
         case 4:
-          container.innerHTML = renderStep5_TestBasic();
-          break;
-        case 5:
           container.innerHTML = renderStep6_WebSocket();
           break;
+        case 5:
+          container.innerHTML = renderStep9_ConversationRelay();
+          break;
         case 6:
-          container.innerHTML = renderStep7_ConversationRelay();
+          container.innerHTML = renderStep5();
           break;
         case 7:
           container.innerHTML = renderStep8_Tooling();
+          break;
+        case 8:
+          container.innerHTML = renderStep6_Deploy();
           break;
       }
     }
