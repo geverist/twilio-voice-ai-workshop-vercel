@@ -3845,6 +3845,9 @@
         '<div style="color: #4fc1ff; padding: 10px; background: #2c313c; border-radius: 4px;">📞 Initiating call...</div>';
 
       try {
+        // Use the deployed Twilio Serverless function URL
+        const voiceHandlerUrl = `https://${websocketUrl}/voice-handler`;
+
         const response = await fetch('/api/tutorial-proxy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -3852,7 +3855,7 @@
             action: 'makeCall',
             to: yourNumber,
             from: selectedPhoneNumber,
-            ivrTwiml: code, // TwiML will play greeting, gather, then hangup
+            url: voiceHandlerUrl, // Use deployed function URL, not inline code
             ...twilioCredentials
           })
         });
