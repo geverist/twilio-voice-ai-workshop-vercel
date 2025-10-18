@@ -12407,6 +12407,8 @@ twilio serverless:deploy
           saveProgressToStorage();
 
           celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
+
+          // Re-render to show next steps (Codespace deployment)
           renderStepContent();
         } else {
           showStatus('githubCloneStatus', 'error', '❌ ' + createData.error);
@@ -12472,6 +12474,9 @@ twilio serverless:deploy
           saveProgressToStorage();
 
           celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
+
+          // Re-render to show next steps (Codespace deployment)
+          renderStepContent();
         } else {
           // Check if it's a name conflict error (unlikely with session-based names, but handle it)
           if (data.error && data.error.includes('already exists')) {
@@ -12521,6 +12526,9 @@ twilio serverless:deploy
                 saveProgressToStorage();
 
                 celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
+
+                // Re-render to show next steps (Codespace deployment)
+                renderStepContent();
                 createSuccess = true;
               } else {
                 // Check if it's another name conflict
