@@ -2342,14 +2342,25 @@
                 ` : ''}
               </div>
             ` : `
-              <!-- Auth Method Selection -->
-              <div class="form-group">
-                <label>Authentication Method</label>
-                <select id="authMethod" onchange="toggleAuthMethod()" style="width: 100%; padding: 10px;">
-                  <option value="apikey">🔑 API Key (Recommended - Most Secure)</option>
-                  <option value="token">Account SID + Auth Token</option>
-                  <option value="demo">Demo Mode (No credentials needed)</option>
-                </select>
+              <!-- Auth Method Selection - Horizontal Button Selector -->
+              <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #333;">Authentication Method</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                  <button
+                    id="authMethodApiKey"
+                    onclick="selectAuthMethod('apikey')"
+                    class="auth-method-btn"
+                    style="flex: 1; padding: 12px 20px; border: 2px solid #0066cc; background: #0066cc; color: white; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    🔑 API Key<br><span style="font-size: 11px; font-weight: 400; opacity: 0.9;">Recommended</span>
+                  </button>
+                  <button
+                    id="authMethodToken"
+                    onclick="selectAuthMethod('token')"
+                    class="auth-method-btn"
+                    style="flex: 1; padding: 12px 20px; border: 2px solid #ddd; background: white; color: #666; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    🔐 SID + Token<br><span style="font-size: 11px; font-weight: 400;">Account Credentials</span>
+                  </button>
+                </div>
               </div>
             `}
 
@@ -2530,9 +2541,30 @@
       `;
     }
 
-    function toggleAuthMethod() {
-      const method = document.getElementById('authMethod').value;
+    function selectAuthMethod(method) {
+      // Update button styles
+      const apiKeyBtn = document.getElementById('authMethodApiKey');
+      const tokenBtn = document.getElementById('authMethodToken');
 
+      if (method === 'apikey') {
+        apiKeyBtn.style.background = '#0066cc';
+        apiKeyBtn.style.color = 'white';
+        apiKeyBtn.style.borderColor = '#0066cc';
+
+        tokenBtn.style.background = 'white';
+        tokenBtn.style.color = '#666';
+        tokenBtn.style.borderColor = '#ddd';
+      } else if (method === 'token') {
+        tokenBtn.style.background = '#0066cc';
+        tokenBtn.style.color = 'white';
+        tokenBtn.style.borderColor = '#0066cc';
+
+        apiKeyBtn.style.background = 'white';
+        apiKeyBtn.style.color = '#666';
+        apiKeyBtn.style.borderColor = '#ddd';
+      }
+
+      // Show/hide auth sections
       document.getElementById('selfhostedAuth').style.display = method === 'selfhosted' ? 'block' : 'none';
       document.getElementById('tokenAuth').style.display = method === 'token' ? 'block' : 'none';
       document.getElementById('apiKeyAuth').style.display = method === 'apikey' ? 'block' : 'none';

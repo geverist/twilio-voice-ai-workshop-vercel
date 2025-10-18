@@ -105,12 +105,13 @@ async function cleanupRepos() {
       const name = repo.name.toLowerCase();
       const description = (repo.description || '').toLowerCase();
 
-      // Don't include the original template itself
-      if (name === 'conversationrelay-starter-pack') {
+      // NEVER delete these critical repos
+      if (name === 'conversationrelay-starter-pack' ||
+          name === 'twilio-voice-ai-workshop-vercel') {
         return false;
       }
 
-      // Match workshop repos
+      // Match workshop repos created by students/testing
       if (description === TEMPLATE_DESCRIPTION.toLowerCase()) {
         return true;
       }
@@ -119,7 +120,17 @@ async function cleanupRepos() {
         return true;
       }
 
-      if (name.includes('conversationrelay') || name.includes('voice-ai-workshop')) {
+      if (name.startsWith('workshop-') && name.includes('voice-ai')) {
+        return true;
+      }
+
+      // Match test repos with numbered suffixes
+      if (name.match(/^(twilio-voice-ai-workshop|geverist-voice-ai-workshop)-\d+/)) {
+        return true;
+      }
+
+      // Match student repos
+      if (name.includes('conversationrelay') || name.includes('voice-ai-workshop-student')) {
         return true;
       }
 
