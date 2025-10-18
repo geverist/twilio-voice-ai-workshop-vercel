@@ -60,6 +60,11 @@ export default async function handler(req, res) {
       const name = repo.name.toLowerCase();
       const description = (repo.description || '').toLowerCase();
 
+      // EXCLUDE the original template repo itself - we only want student clones
+      if (name === 'conversationrelay-starter-pack') {
+        return false;
+      }
+
       // Primary check: exact description match (most reliable)
       if (description === TEMPLATE_DESCRIPTION.toLowerCase()) {
         return true;
@@ -71,6 +76,7 @@ export default async function handler(req, res) {
       }
 
       // Tertiary check: contains conversationrelay (for custom named repos)
+      // But exclude exact template name (already handled above)
       if (name.includes('conversationrelay')) {
         return true;
       }
