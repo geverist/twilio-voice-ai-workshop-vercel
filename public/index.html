@@ -4096,7 +4096,9 @@
 
       try {
         // Use the deployed Twilio Serverless function URL
-        const voiceHandlerUrl = `https://${websocketUrl}/voice-handler`;
+        // Convert wss:// to https:// for HTTP endpoint
+        const httpDomain = (websocketUrl || '').replace('wss://', '').replace('ws://', '');
+        const voiceHandlerUrl = `https://${httpDomain}/voice-handler`;
 
         const response = await fetch('/api/tutorial-proxy', {
           method: 'POST',
@@ -6843,7 +6845,9 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         return;
       }
 
-      const voiceHandlerUrl = `https://${websocketUrl}/voice-handler`;
+      // Convert wss:// to https:// for HTTP endpoint
+      const httpDomain = (websocketUrl || '').replace('wss://', '').replace('ws://', '');
+      const voiceHandlerUrl = `https://${httpDomain}/voice-handler`;
 
       try {
         console.log('Updating phone number webhook to:', voiceHandlerUrl);
@@ -10613,7 +10617,9 @@ app.get('/health', (req, res) => {
       // LIVE MODE: Make actual call
       try {
         // Use the deployed voice-handler URL which now has ConversationRelay
-        const voiceHandlerUrl = `https://${websocketUrl}/voice-handler`;
+        // Convert wss:// to https:// for HTTP endpoint
+        const httpDomain = (websocketUrl || '').replace('wss://', '').replace('ws://', '');
+        const voiceHandlerUrl = `https://${httpDomain}/voice-handler`;
 
         const response = await fetch('/api/tutorial-proxy', {
           method: 'POST',
