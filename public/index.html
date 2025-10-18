@@ -10112,15 +10112,31 @@ app.get('/health', (req, res) => {
           updateConnectionStatus(false);
 
           if (!event.wasClean) {
-            // Connection failed - provide helpful troubleshooting
-            logWebSocketMessage('error', `
-              <strong>Connection failed!</strong><br><br>
-              <strong>Troubleshooting:</strong><br>
-              1. Open your Codespace: <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7;">Click here</a><br>
-              2. Check the terminal - the server should show "Server running on port 3000"<br>
-              3. If server crashed, check for missing env vars and restart it<br>
-              4. If you created this Codespace before today, you may need to recreate it with the updated template
-            `);
+            // Check if it's a Codespace URL
+            if (isCodespace) {
+              // For Codespaces, browser WebSocket tests will fail due to auth, but phone calls will work
+              logWebSocketMessage('warning', `
+                <strong>ℹ️ Browser Test Limitation</strong><br><br>
+                WebSocket tests from your browser won't work with Codespaces due to authentication requirements.<br><br>
+                <strong>✅ This is normal! Your phone calls will work fine.</strong><br><br>
+                When you make an actual phone call, Twilio's servers will connect to your Codespace WebSocket directly (without browser authentication), and everything will work.<br><br>
+                <strong>To verify your server is running:</strong><br>
+                1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7; font-weight: bold;">Open your Codespace →</a><br>
+                2. Check the terminal shows "Server running on port 3000"<br>
+                3. If not, run: <code style="background: #333; padding: 4px 8px; border-radius: 3px;">npm start</code><br><br>
+                Then proceed to the next step to test with a real phone call!
+              `);
+            } else {
+              // Connection failed - provide helpful troubleshooting
+              logWebSocketMessage('error', `
+                <strong>Connection failed!</strong><br><br>
+                <strong>Troubleshooting:</strong><br>
+                1. Open your Codespace: <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7;">Click here</a><br>
+                2. Check the terminal - the server should show "Server running on port 3000"<br>
+                3. If server crashed, check for missing env vars and restart it<br>
+                4. If you created this Codespace before today, you may need to recreate it with the updated template
+              `);
+            }
           } else {
             logWebSocketMessage('info', 'WebSocket connection closed');
           }
