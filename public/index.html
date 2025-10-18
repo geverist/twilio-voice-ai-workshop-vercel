@@ -12689,7 +12689,24 @@ twilio serverless:deploy
 
       } catch (error) {
         console.error('Codespace deployment error:', error);
-        showStatus('codespaceDeployStatus', 'error', '❌ ' + error.message);
+
+        // Check for specific error types and provide helpful messages
+        let errorMessage = error.message;
+
+        if (errorMessage.includes('too many codespaces') || errorMessage.includes('codespace limit')) {
+          errorMessage = `
+            <strong>⚠️ Too many Codespaces running!</strong><br><br>
+            You've hit GitHub's Codespace limit. Please stop some unused Codespaces:<br><br>
+            <strong>How to stop Codespaces:</strong><br>
+            1. Go to <a href="https://github.com/codespaces" target="_blank" style="color: #4fc3f7;">github.com/codespaces</a><br>
+            2. Find old/unused workshop Codespaces<br>
+            3. Click the "..." menu and select "Stop codespace"<br>
+            4. Come back here and try again<br><br>
+            💡 <strong>Tip:</strong> You only need ONE Codespace running at a time for this workshop!
+          `;
+        }
+
+        showStatus('codespaceDeployStatus', 'error', '❌ ' + errorMessage);
         btn.disabled = false;
         btn.textContent = '🚀 Launch Codespace with WebSocket Server';
       }
