@@ -12310,17 +12310,24 @@ twilio serverless:deploy
 
         modal.innerHTML = `
           <div style="background: white; border-radius: 16px; padding: 40px; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
-            <h2 style="color: #0d122b; margin-bottom: 15px; font-size: 1.8rem;">📦 Select Repository</h2>
+            <h2 style="color: #0d122b; margin-bottom: 15px; font-size: 1.8rem;">📦 Resume or Start Fresh?</h2>
             <p style="color: #666; margin-bottom: 25px; line-height: 1.6;">
-              We found ${repos.length} workshop-related ${repos.length === 1 ? 'repository' : 'repositories'} in your GitHub account.
-              Select one to continue, or create a new repository.
+              We found ${repos.length} workshop ${repos.length === 1 ? 'repository' : 'repositories'} from your previous sessions.
+              <strong>Resume from a previous session</strong> or <strong>start fresh</strong> with a new clone of the starter pack.
             </p>
+
+            ${repos.length > 0 ? `
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <strong style="color: #0d122b; font-size: 0.95rem;">📂 Your Previous Workshop Sessions:</strong>
+              </div>
+            ` : ''}
+
             <div style="margin-bottom: 20px;">
               ${repoList}
             </div>
             <div style="display: flex; gap: 10px; justify-content: space-between; margin-top: 25px;">
               <button onclick="createNewRepositoryFromModal()" style="flex: 1; padding: 12px 24px; background: #2196f3; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 500;">
-                ✨ Create New Repository
+                ✨ Clone Fresh Starter Pack
               </button>
               <button onclick="closeRepoSelectionModal()" style="padding: 12px 24px; background: #e0e0e0; color: #666; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem;">
                 Cancel
