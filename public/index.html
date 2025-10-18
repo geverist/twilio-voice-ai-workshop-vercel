@@ -2109,15 +2109,22 @@
                   </button>
                 </div>
                 <details style="margin-top: 15px;">
-                  <summary style="color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer;">Troubleshooting</summary>
+                  <summary style="color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer;">⚠️ Troubleshooting</summary>
                   <div style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 12px; color: rgba(255,255,255,0.85);">
-                    <p style="margin: 0 0 10px 0;">If WebSocket connection fails:</p>
-                    <ol style="margin: 0; padding-left: 20px; line-height: 1.6;">
-                      <li>Open your Codespace and check the terminal</li>
-                      <li>Look for "Server running on port 3000"</li>
-                      <li>If server crashed, it may need env vars to be optional</li>
-                      <li><a href="https://github.com/${githubUsername}/${studentRepoName}/codespaces" target="_blank" style="color: #4fc3f7;">Delete this Codespace</a> and create a new one with updated template</li>
+                    <p style="margin: 0 0 10px 0;"><strong>If WebSocket connection fails:</strong></p>
+                    <ol style="margin: 0 0 15px 0; padding-left: 20px; line-height: 1.6;">
+                      <li>Port may not be public (created before latest update)</li>
+                      <li>Server may have crashed on startup</li>
+                      <li>Codespace may be using old template code</li>
                     </ol>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                      <button class="btn" onclick="deleteAndRecreateCodespace()" style="padding: 8px 16px; background: rgba(220, 53, 69, 0.8); border: 1px solid rgba(220, 53, 69, 1); color: white; font-size: 12px;">
+                        🗑️ Delete & Recreate Codespace
+                      </button>
+                      <a href="https://github.com/${githubUsername}/${studentRepoName}/codespaces" target="_blank" style="padding: 8px 16px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 12px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                        🔗 Manage on GitHub
+                      </a>
+                    </div>
                   </div>
                 </details>
               </div>
@@ -12401,6 +12408,35 @@ twilio serverless:deploy
       } catch (error) {
         console.error('Error checking for existing Codespace:', error);
         // Don't show error to user - this is a background check
+      }
+    }
+
+    /**
+     * Delete existing Codespace and create a new one
+     */
+    async function deleteAndRecreateCodespace() {
+      if (!confirm('⚠️ This will delete your current Codespace and create a new one with the latest template.\n\nAny unsaved changes in the Codespace will be lost.\n\nContinue?')) {
+        return;
+      }
+
+      try {
+        // Clear current Codespace data
+        codespaceUrl = '';
+        codespaceWebUrl = '';
+        codespaceName = '';
+        websocketUrl = '';
+        saveProgressToStorage();
+
+        showStatus('codespaceDeployStatus', 'info', '🗑️ Preparing to recreate Codespace...');
+        renderStepContent();
+
+        // Wait a moment for UI to update
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Create new Codespace
+        await deployToCodespaces();
+      } catch (error) {
+        showStatus('codespaceDeployStatus', 'error', '❌ Error: ' + error.message);
       }
     }
 
