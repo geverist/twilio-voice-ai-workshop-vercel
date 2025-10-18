@@ -1493,14 +1493,19 @@
     }
 
     function revealTestSections() {
-      // Always show test sections - no validation checks
+      // Show test sections only when their respective deployment flags are true
       setTimeout(() => {
+        // Step 5 - Always show for now (to be fixed later)
         const step5Test = document.getElementById('step5TestSection');
         if (step5Test) step5Test.style.display = 'block';
 
+        // Step 4 - Only show if deployed
         const step4Test = document.getElementById('step4TestSection');
-        if (step4Test) step4Test.style.display = 'block';
+        if (step4Test && step4Deployed) {
+          step4Test.style.display = 'block';
+        }
 
+        // Step 6 - Always show for now (to be fixed later)
         const step6Test = document.getElementById('step6TestCallSection');
         if (step6Test) step6Test.style.display = 'block';
       }, 100);
