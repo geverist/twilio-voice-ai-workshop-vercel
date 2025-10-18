@@ -8822,6 +8822,129 @@ ${hintsLine}
             </p>
           </div>
 
+          <!-- Media Stream Events Reference -->
+          <div class="service-card" style="background: #f8f9fa; border-left: 4px solid #667eea;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">📡 Understanding Media Stream Events</h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
+              When a call connects, Twilio sends these WebSocket events to your server. Here's what they look like:
+            </p>
+
+            <details style="margin-bottom: 15px;">
+              <summary style="cursor: pointer; font-weight: 600; color: #667eea; padding: 10px; background: white; border-radius: 6px;">
+                1️⃣ <code>connected</code> Event - WebSocket Connection Established
+              </summary>
+              <div style="margin-top: 10px; padding: 15px; background: white; border-radius: 6px;">
+                <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 12px; margin: 0;">{
+  "event": "connected",
+  "protocol": "Call",
+  "version": "1.0.0"
+}</pre>
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">
+                  First message sent when WebSocket connects. Confirms protocol version.
+                </p>
+              </div>
+            </details>
+
+            <details style="margin-bottom: 15px;">
+              <summary style="cursor: pointer; font-weight: 600; color: #667eea; padding: 10px; background: white; border-radius: 6px;">
+                2️⃣ <code>start</code> Event - Call Metadata & Audio Format
+              </summary>
+              <div style="margin-top: 10px; padding: 15px; background: white; border-radius: 6px;">
+                <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 12px; margin: 0;">{
+  "event": "start",
+  "sequenceNumber": "1",
+  "start": {
+    "streamSid": "MZxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "accountSid": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "callSid": "CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "tracks": ["inbound"],
+    "mediaFormat": {
+      "encoding": "audio/x-mulaw",
+      "sampleRate": 8000,
+      "channels": 1
+    }
+  },
+  "streamSid": "MZxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}</pre>
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">
+                  Sent when call starts. Contains call identifiers and audio format specifications.
+                </p>
+              </div>
+            </details>
+
+            <details style="margin-bottom: 15px;">
+              <summary style="cursor: pointer; font-weight: 600; color: #667eea; padding: 10px; background: white; border-radius: 6px;">
+                3️⃣ <code>media</code> Event - Audio Data Packets
+              </summary>
+              <div style="margin-top: 10px; padding: 15px; background: white; border-radius: 6px;">
+                <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 12px; margin: 0;">{
+  "event": "media",
+  "sequenceNumber": "2",
+  "media": {
+    "track": "inbound",
+    "chunk": "1",
+    "timestamp": "1234567890",
+    "payload": "base64-encoded-audio-data..."
+  },
+  "streamSid": "MZxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}</pre>
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">
+                  <strong>Sent continuously (every 20ms) during the call.</strong> Contains raw audio in mulaw format (160 bytes = 20ms of audio).
+                  This is the actual voice data from the caller!
+                </p>
+              </div>
+            </details>
+
+            <details style="margin-bottom: 15px;">
+              <summary style="cursor: pointer; font-weight: 600; color: #667eea; padding: 10px; background: white; border-radius: 6px;">
+                4️⃣ <code>mark</code> Event - Playback Confirmation
+              </summary>
+              <div style="margin-top: 10px; padding: 15px; background: white; border-radius: 6px;">
+                <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 12px; margin: 0;">{
+  "event": "mark",
+  "sequenceNumber": "345",
+  "mark": {
+    "name": "response-123"
+  },
+  "streamSid": "MZxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}</pre>
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">
+                  Sent when audio you sent to the caller has finished playing. Useful for timing and turn-taking.
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary style="cursor: pointer; font-weight: 600; color: #667eea; padding: 10px; background: white; border-radius: 6px;">
+                5️⃣ <code>stop</code> Event - Call Ended
+              </summary>
+              <div style="margin-top: 10px; padding: 15px; background: white; border-radius: 6px;">
+                <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 12px; margin: 0;">{
+  "event": "stop",
+  "sequenceNumber": "678",
+  "stop": {
+    "accountSid": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "callSid": "CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  },
+  "streamSid": "MZxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}</pre>
+                <p style="margin: 10px 0 0 0; font-size: 13px; color: #666;">
+                  Sent when the call ends or media stream stops. Clean up resources here.
+                </p>
+              </div>
+            </details>
+
+            <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white;">
+              <h4 style="color: white; margin-top: 0;">🎯 The Challenge:</h4>
+              <p style="color: rgba(255,255,255,0.95); margin: 0; line-height: 1.6;">
+                Processing raw <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">media</code> events requires:
+                speech-to-text, audio buffering, silence detection, LLM integration, text-to-speech, and more.
+                <strong style="display: block; margin-top: 10px;">That's why ConversationRelay exists!</strong>
+                It handles all this complexity for you.
+              </p>
+            </div>
+          </div>
+
           <!-- OpenAI Configuration -->
           <div class="service-card">
             <h4>🤖 OpenAI Configuration</h4>
