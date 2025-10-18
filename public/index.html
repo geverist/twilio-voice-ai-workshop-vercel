@@ -2055,7 +2055,7 @@
           </div>
 
           <!-- GitHub Codespaces Deployment -->
-          ${githubToken && studentRepoName && !studentDemoMode ? `
+          ${githubToken && studentRepoName ? `
           <div class="service-card" style="background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; margin-bottom: 30px;">
             <h4 style="color: white; margin-bottom: 15px;">🚀 Step 1b: Deploy Your Development Environment</h4>
             <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
@@ -2146,7 +2146,8 @@
             </p>
           </div>
 
-          <!-- Twilio Credentials -->
+          <!-- Twilio Credentials (Only shown after Codespace is ready) -->
+          ${codespaceUrl || studentDemoMode ? `
           <div class="service-card">
             <h4>🔴 Twilio Account</h4>
 
@@ -2284,11 +2285,29 @@
             <div id="twilioStatus" class="connection-status" style="display: none; margin-top: 10px;"></div>
             ` : ''}
           </div>
+          ` : `
+          <!-- Locked Twilio Section -->
+          <div class="service-card" style="opacity: 0.6; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); z-index: 10; display: flex; align-items: center; justify-content: center;">
+              <div style="text-align: center; padding: 40px;">
+                <div style="font-size: 3rem; margin-bottom: 15px;">🔒</div>
+                <h4 style="margin: 0 0 10px 0; color: #666;">Step 1c: Connect to Twilio</h4>
+                <p style="color: #999; margin: 0; font-size: 14px;">Complete Codespace deployment first</p>
+              </div>
+            </div>
+            <h4 style="opacity: 0.3;">🔴 Twilio Account</h4>
+            <div style="opacity: 0.3; filter: blur(2px);">
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
+                <p>Twilio credentials will be available after your development environment is ready...</p>
+              </div>
+            </div>
+          </div>
+          `}
 
           <div id="step1Status" class="status-box"></div>
 
           <div class="button-group">
-            <button class="btn btn-primary" id="nextBtn1" onclick="nextStep()" ${twilioConnected ? '' : 'disabled'}>
+            <button class="btn btn-primary" id="nextBtn1" onclick="nextStep()" ${twilioConnected && (codespaceUrl || studentDemoMode) ? '' : 'disabled'}>
               Next: Select Use Case →
             </button>
           </div>
@@ -8900,6 +8919,12 @@ app.get('/health', (req, res) => {
                 <div id="audioTestStatus" style="color: white; font-size: 13px; min-height: 20px;"></div>
               </div>
 
+              <!-- Current WebSocket URL Display -->
+              <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+                <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 5px;">Testing URL:</div>
+                <code id="wsTestUrlDisplay" style="color: white; font-size: 12px; word-break: break-all; font-family: monospace;">${codespaceUrl || websocketUrl || 'No WebSocket URL available'}</code>
+              </div>
+
               <!-- Connection Status -->
               <div style="display: flex; gap: 15px; align-items: center; margin-top: 20px;">
                 <div id="wsConnectionStatus" style="display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.7); font-size: 13px;">
@@ -9708,15 +9733,18 @@ app.get('/health', (req, res) => {
     function connectWebSocketTest() {
       if (isConnected) return;
 
-      if (!websocketUrl) {
+      // Prefer Codespace URL over generic websocketUrl
+      const urlToUse = codespaceUrl || websocketUrl;
+
+      if (!urlToUse) {
         logWebSocketMessage('error', 'No WebSocket URL available. Please deploy your handler first.');
         return;
       }
 
-      logWebSocketMessage('info', `Connecting to ${websocketUrl}...`);
+      logWebSocketMessage('info', `Connecting to ${urlToUse}...`);
 
       try {
-        testWebSocket = new WebSocket(websocketUrl);
+        testWebSocket = new WebSocket(urlToUse);
 
         testWebSocket.onopen = () => {
           updateConnectionStatus(true);
