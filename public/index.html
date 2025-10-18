@@ -2018,14 +2018,22 @@
     }
 
     /**
+     * Clears all highlight effects immediately
+     * Called when user takes an action
+     */
+    function clearHighlights() {
+      document.querySelectorAll('.next-action').forEach(el => {
+        el.classList.remove('next-action');
+      });
+    }
+
+    /**
      * Highlights the next button/action the student should click
      * Adds pulsing animation to guide their workflow
      */
     function highlightNextAction() {
       // Remove all existing next-action highlights
-      document.querySelectorAll('.next-action').forEach(el => {
-        el.classList.remove('next-action');
-      });
+      clearHighlights();
 
       // Determine which button to highlight based on current state
       let nextButton = null;
@@ -2537,6 +2545,7 @@
     }
 
     async function connectTwilio() {
+      clearHighlights(); // Remove highlight immediately when clicked
       const accountSid = document.getElementById('twilioAccountSid').value.trim();
       const authToken = document.getElementById('twilioAuthToken').value.trim();
       const status = document.getElementById('twilioStatus');
@@ -2599,6 +2608,7 @@
     }
 
     async function connectTwilioWithApiKey() {
+      clearHighlights(); // Remove highlight immediately when clicked
       const accountSid = document.getElementById('twilioAccountSidKey').value.trim();
       const apiKeySid = document.getElementById('twilioApiKeySid').value.trim();
       const apiKeySecret = document.getElementById('twilioApiKeySecret').value.trim();
@@ -2658,6 +2668,7 @@
     }
 
     function connectDemoMode() {
+      clearHighlights(); // Remove highlight immediately when clicked
       const status = document.getElementById('twilioStatus');
 
       status.innerHTML = '<span class="live-indicator"></span> Demo Mode Active';
@@ -12197,6 +12208,7 @@ twilio serverless:deploy
     }
 
     async function initiateGitHubOAuth() {
+      clearHighlights(); // Remove highlight immediately when clicked
       try {
         const response = await fetch('/api/github-oauth-init', {
           method: 'POST',
@@ -12378,6 +12390,7 @@ twilio serverless:deploy
 
     // Clone workshop repository to student's GitHub account
     async function cloneWorkshopRepo() {
+      clearHighlights(); // Remove highlight immediately when clicked
       if (!githubToken || !githubUsername) {
         showStatus('githubCloneStatus', 'error', '❌ Please login with GitHub first');
         return;
@@ -12602,6 +12615,7 @@ twilio serverless:deploy
      * Creates a cloud development environment with WebSocket server
      */
     async function deployToCodespaces() {
+      clearHighlights(); // Remove highlight immediately when clicked
       const btn = document.getElementById('deployCodespaceBtn');
       const statusEl = document.getElementById('codespaceDeployStatus');
 
