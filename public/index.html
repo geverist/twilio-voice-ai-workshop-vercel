@@ -9743,7 +9743,7 @@ app.get('/health', (req, res) => {
       }
     }
 
-    function connectWebSocketTest() {
+    async function connectWebSocketTest() {
       if (isConnected) return;
 
       // Prefer Codespace URL over generic websocketUrl
@@ -9751,6 +9751,29 @@ app.get('/health', (req, res) => {
 
       if (!urlToUse) {
         logWebSocketMessage('error', 'No WebSocket URL available. Please deploy your handler first.');
+        return;
+      }
+
+      // First, check if the server is responding via HTTP health check
+      const httpUrl = urlToUse.replace('wss://', 'https://').replace(':3000', '-3000');
+      logWebSocketMessage('info', `Checking server health...`);
+
+      try {
+        const healthCheck = await fetch(`${httpUrl}/health`, { method: 'GET' });
+        if (!healthCheck.ok) {
+          logWebSocketMessage('error', `Server not responding (HTTP ${healthCheck.status}). The Codespace may be asleep or the server isn't running.`);
+          return;
+        }
+        logWebSocketMessage('success', `✓ Server is running!`);
+      } catch (healthError) {
+        logWebSocketMessage('error', `
+          <strong>Cannot reach server!</strong><br><br>
+          Possible causes:<br>
+          1. Codespace is stopped/sleeping - <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7;">Open it here to wake it up</a><br>
+          2. Server crashed on startup - Check terminal for errors<br>
+          3. Port 3000 not forwarded correctly<br><br>
+          Error: ${healthError.message}
+        `);
         return;
       }
 
