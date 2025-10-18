@@ -9952,16 +9952,16 @@ app.get('/health', (req, res) => {
 
         if (isCorsError) {
           logWebSocketMessage('error', `
-            <strong>⚠️ Your Codespace needs an update!</strong><br><br>
-            The server is running old code without CORS headers. You need to pull the latest template changes:<br><br>
-            <strong>Steps to fix:</strong><br>
-            1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7;">Open your Codespace</a><br>
-            2. In the terminal, run: <code style="background: #333; padding: 2px 6px; border-radius: 3px;">git pull origin main</code><br>
-            3. Restart the server (Ctrl+C then <code style="background: #333; padding: 2px 6px; border-radius: 3px;">npm start</code>)<br>
-            4. Come back here and try connecting again<br><br>
-            <strong>Or use the quick fix:</strong><br>
+            <strong>⚠️ Server Not Running!</strong><br><br>
+            Your Codespace is created but the server isn't running yet.<br><br>
+            <strong>Quick Fix (30 seconds):</strong><br>
+            1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7; font-weight: bold;">Click here to open your Codespace →</a><br>
+            2. In the terminal at the bottom, type: <code style="background: #333; padding: 4px 8px; border-radius: 3px; font-weight: bold;">npm start</code><br>
+            3. Wait for "Server running on port 3000" message<br>
+            4. Come back here and refresh<br><br>
+            <strong>Still not working?</strong><br>
             <button onclick="deleteAndRecreateCodespace()" style="background: #f22f46; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px;">
-              🔄 Delete & Recreate Codespace with Latest Code
+              🔄 Delete & Recreate Codespace
             </button>
           `);
         } else {
