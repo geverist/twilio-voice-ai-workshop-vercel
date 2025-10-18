@@ -2030,16 +2030,23 @@
           // Need to login with GitHub
           nextButton = document.querySelector('[onclick*="initiateGitHubOAuth"]');
         } else if (!studentRepoName) {
-          // Need to clone repository
-          nextButton = document.querySelector('[onclick*="cloneWorkshopRepo"]');
+          // Need to clone repository - but only if not currently processing
+          const cloneBtn = document.querySelector('[onclick*="cloneWorkshopRepo"]');
+          if (cloneBtn && !cloneBtn.disabled) {
+            nextButton = cloneBtn;
+          }
         } else if (!codespaceUrl) {
-          // Need to deploy Codespace
-          nextButton = document.querySelector('[onclick*="deployToCodespaces"]');
+          // Need to deploy Codespace - but only if button exists and not disabled
+          const deployBtn = document.querySelector('[onclick*="deployToCodespaces"]');
+          if (deployBtn && !deployBtn.disabled) {
+            nextButton = deployBtn;
+          }
+          // If button is disabled/missing, we're in the middle of deployment - don't highlight anything
         } else if (!twilioConnected) {
-          // Need to connect Twilio
-          const connectBtn = document.querySelector('[onclick*="connectTwilio"]') ||
-                           document.querySelector('[onclick*="connectTwilioWithApiKey"]') ||
-                           document.querySelector('[onclick*="connectDemoMode"]');
+          // Need to connect Twilio - find the visible connect button
+          const connectBtn = document.querySelector('[onclick*="connectTwilio"]:not([disabled])') ||
+                           document.querySelector('[onclick*="connectTwilioWithApiKey"]:not([disabled])') ||
+                           document.querySelector('[onclick*="connectDemoMode"]:not([disabled])');
           nextButton = connectBtn;
         } else {
           // All done - highlight Next button
