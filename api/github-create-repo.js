@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { accessToken, githubUsername, repoName } = req.body;
+    const { accessToken, githubUsername, repoName, sessionToken } = req.body;
 
     if (!accessToken || !githubUsername) {
       return res.status(401).json({
@@ -38,8 +38,21 @@ export default async function handler(req, res) {
     const TEMPLATE_OWNER = process.env.GITHUB_TEMPLATE_OWNER || 'geverist';
     const TEMPLATE_REPO = process.env.GITHUB_TEMPLATE_REPO || 'conversationrelay-starter-pack';
 
-    // Default repo name if not provided
-    const finalRepoName = repoName || 'my-conversationrelay-app';
+    // Generate unique repo name using session token prefix
+    // Format: ws-{timestamp}-{random}-voice-ai-app
+    let finalRepoName;
+    if (repoName) {
+      // User provided custom name - use it as-is
+      finalRepoName = repoName;
+    } else if (sessionToken) {
+      // Generate unique name from session token
+      // Session token format: ws_{timestamp}_{random}
+      // Repo name format: ws-{timestamp}-{random}-voice-ai
+      finalRepoName = sessionToken.replace(/_/g, '-') + '-voice-ai';
+    } else {
+      // Fallback to timestamp-based name
+      finalRepoName = 'workshop-' + Date.now() + '-voice-ai';
+    }
 
     // Create repository from template using GitHub API
     const createRepoResponse = await fetch(

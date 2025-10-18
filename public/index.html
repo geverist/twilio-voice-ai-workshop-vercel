@@ -12123,7 +12123,8 @@ twilio serverless:deploy
             body: JSON.stringify({
               accessToken: githubToken,
               githubUsername: githubUsername,
-              repoName: cleanName
+              repoName: cleanName,
+              sessionToken: sessionToken
             })
           });
 
@@ -12270,7 +12271,8 @@ twilio serverless:deploy
                 body: JSON.stringify({
                   accessToken: githubToken,
                   githubUsername: githubUsername,
-                  repoName: cleanName
+                  repoName: cleanName,
+                  sessionToken: sessionToken
                 })
               });
 
@@ -12321,7 +12323,8 @@ twilio serverless:deploy
           body: JSON.stringify({
             accessToken: githubToken,
             githubUsername: githubUsername,
-            repoName: repoName
+            repoName: repoName,
+            sessionToken: sessionToken
           })
         });
 
@@ -12370,7 +12373,8 @@ twilio serverless:deploy
                 body: JSON.stringify({
                   accessToken: githubToken,
                   githubUsername: githubUsername,
-                  repoName: cleanName
+                  repoName: cleanName,
+                  sessionToken: sessionToken
                 })
               });
 
