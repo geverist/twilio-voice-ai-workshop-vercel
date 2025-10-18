@@ -12499,7 +12499,7 @@ twilio serverless:deploy
             celebrate('🎉 Your development environment is ready!', 'normal');
             renderStepContent(); // Refresh to show the Codespace URL
 
-          } else if (state === 'Starting' || state === 'Created') {
+          } else if (state === 'Starting' || state === 'Created' || state === 'Provisioning') {
             // Still starting, continue polling
             showStatus('codespaceDeployStatus', 'info',
               `⏳ Server starting... (${Math.round(attempts * 5)} seconds)<br>` +
