@@ -1884,6 +1884,12 @@
       if (!setupComplete && !savedProgress && !hasWorkshopCredentials && !isSettingUpAccounts && !isGithubCallback) {
         setTimeout(() => showSetupRequiredModal(), 100);
       }
+
+      // Check for existing Codespace if we have GitHub credentials and a repo
+      if (githubToken && githubUsername && studentRepoName && !codespaceUrl) {
+        console.log('🔍 Checking for existing Codespace...');
+        checkForExistingCodespace();
+      }
     }
 
     // Render progress indicator
@@ -2086,6 +2092,27 @@
                   </button>
                   <button class="btn" onclick="refreshCodespaceStatus()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 13px;">
                     🔄 Refresh Status
+                  </button>
+                </div>
+              </div>
+            ` : codespaceName ? `
+              <div style="background: rgba(255, 193, 7, 0.3); padding: 20px; border-radius: 8px; border: 2px solid rgba(255, 193, 7, 0.6);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                  <span style="font-size: 1.5rem;">⏸️</span>
+                  <div>
+                    <strong style="color: white; font-size: 1.05rem;">Codespace Found (Stopped)</strong><br>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Click below to restart it</span>
+                  </div>
+                </div>
+                <p style="color: rgba(255,255,255,0.85); margin-bottom: 15px; font-size: 13px;">
+                  💡 Opening your Codespace will automatically restart it. This takes about 30-60 seconds.
+                </p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <button class="btn" onclick="window.open('${codespaceWebUrl}', '_blank')" style="padding: 10px 20px; background: rgba(255,255,255,0.9); border: none; color: #1a7f37; font-size: 13px; font-weight: bold;">
+                    🔄 Restart Codespace
+                  </button>
+                  <button class="btn" onclick="refreshCodespaceStatus()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 13px;">
+                    🔄 Check Status
                   </button>
                 </div>
               </div>
@@ -12394,6 +12421,57 @@ twilio serverless:deploy
     // =========================================================================
     // GITHUB CODESPACES DEPLOYMENT
     // =========================================================================
+
+    /**
+     * Check if a Codespace already exists for the student's repository
+     * Called on page load to auto-detect existing Codespaces
+     */
+    async function checkForExistingCodespace() {
+      if (!githubToken || !githubUsername || !studentRepoName) {
+        return;
+      }
+
+      try {
+        console.log(`🔍 Checking for existing Codespace for ${githubUsername}/${studentRepoName}...`);
+
+        const response = await fetch('/api/github-get-codespace', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: githubToken,
+            repoFullName: `${githubUsername}/${studentRepoName}`
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.codespace) {
+          console.log(`✅ Found existing Codespace: ${data.codespace.name} (${data.codespace.state})`);
+
+          // Save Codespace info
+          codespaceName = data.codespace.name;
+          codespaceWebUrl = data.codespace.webUrl;
+
+          // If Codespace is Available, get the WebSocket URL
+          if (data.codespace.state === 'Available' && data.codespace.websocketUrl) {
+            codespaceUrl = data.codespace.websocketUrl;
+            websocketUrl = codespaceUrl;
+            console.log(`✅ Codespace is running with WebSocket URL: ${codespaceUrl}`);
+          } else {
+            console.log(`ℹ️ Codespace exists but is ${data.codespace.state}`);
+          }
+
+          // Save to storage and re-render
+          saveProgressToStorage();
+          renderStepContent();
+        } else {
+          console.log('ℹ️ No existing Codespace found');
+        }
+      } catch (error) {
+        console.error('Error checking for existing Codespace:', error);
+        // Don't show error to user - this is a background check
+      }
+    }
 
     /**
      * Deploy student repository to GitHub Codespaces
