@@ -49,14 +49,33 @@ export default async function handler(req, res) {
 
     const allRepos = await listResponse.json();
 
-    // Filter for workshop-related repositories (containing 'twilio', 'voice', 'workshop', 'ws-', etc.)
-    const workshopKeywords = ['twilio', 'voice', 'workshop', 'conversationrelay', 'ai', 'ws-'];
+    // Filter for repositories created from conversationrelay-starter-pack template
+    // Check for:
+    // 1. Exact description match (set during template generation)
+    // 2. Repo name starts with 'ws-' (our session-based naming)
+    // 3. Repo name contains 'conversationrelay' or 'voice-ai'
+    const TEMPLATE_DESCRIPTION = 'My AI-powered voice assistant built with Twilio ConversationRelay';
+
     const workshopRepos = allRepos.filter(repo => {
       const name = repo.name.toLowerCase();
       const description = (repo.description || '').toLowerCase();
-      return workshopKeywords.some(keyword =>
-        name.includes(keyword) || description.includes(keyword)
-      );
+
+      // Primary check: exact description match (most reliable)
+      if (description === TEMPLATE_DESCRIPTION.toLowerCase()) {
+        return true;
+      }
+
+      // Secondary check: session-based naming (ws-*)
+      if (name.startsWith('ws-') && name.includes('voice-ai')) {
+        return true;
+      }
+
+      // Tertiary check: contains conversationrelay (for custom named repos)
+      if (name.includes('conversationrelay')) {
+        return true;
+      }
+
+      return false;
     });
 
     return res.status(200).json({
