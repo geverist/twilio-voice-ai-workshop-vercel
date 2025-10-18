@@ -49,8 +49,8 @@ export default async function handler(req, res) {
 
     const allRepos = await listResponse.json();
 
-    // Filter for workshop-related repositories (containing 'twilio', 'voice', 'workshop', etc.)
-    const workshopKeywords = ['twilio', 'voice', 'workshop', 'conversationrelay', 'ai'];
+    // Filter for workshop-related repositories (containing 'twilio', 'voice', 'workshop', 'ws-', etc.)
+    const workshopKeywords = ['twilio', 'voice', 'workshop', 'conversationrelay', 'ai', 'ws-'];
     const workshopRepos = allRepos.filter(repo => {
       const name = repo.name.toLowerCase();
       const description = (repo.description || '').toLowerCase();

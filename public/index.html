@@ -1966,6 +1966,20 @@
             <p>Let's connect your Twilio and OpenAI accounts to get started</p>
           </div>
 
+          <div class="instructions">
+            <h3>📋 What You'll Need</h3>
+            <ul>
+              <li><strong>GitHub Account</strong> - For cloning the workshop repository and hosting your code</li>
+              <li><strong>Twilio Account SID & Auth Token</strong> - Get from <a href="https://console.twilio.com" target="_blank">Twilio Console</a></li>
+              <li><strong>OpenAI API Key</strong> - You'll configure this later in Step 6</li>
+            </ul>
+            <p style="margin-top: 15px;">
+              📚 <strong>Documentation:</strong>
+              <a href="https://www.twilio.com/docs/voice/api" target="_blank">Twilio Voice API</a> |
+              <a href="https://www.twilio.com/docs/iam/api-keys" target="_blank">API Authentication</a>
+            </p>
+          </div>
+
           <!-- GitHub Repository Clone -->
           <div class="service-card" style="background: linear-gradient(135deg, #24292e 0%, #0d1117 100%); color: white; margin-bottom: 30px;">
             <h4 style="color: white; margin-bottom: 15px;">🐙 Step 1a: Clone Workshop Repository</h4>
@@ -2132,19 +2146,6 @@
             <div id="codespaceDeployStatus" style="margin-top: 15px;"></div>
           </div>
           ` : ''}
-
-          <div class="instructions">
-            <h3>📋 What You'll Need</h3>
-            <ul>
-              <li><strong>Twilio Account SID & Auth Token</strong> - Get from <a href="https://console.twilio.com" target="_blank">Twilio Console</a></li>
-              <li><strong>OpenAI API Key</strong> - You'll configure this later in Step 6</li>
-            </ul>
-            <p style="margin-top: 15px;">
-              📚 <strong>Documentation:</strong>
-              <a href="https://www.twilio.com/docs/voice/api" target="_blank">Twilio Voice API</a> |
-              <a href="https://www.twilio.com/docs/iam/api-keys" target="_blank">API Authentication</a>
-            </p>
-          </div>
 
           <!-- Twilio Credentials (Only shown after Codespace is ready) -->
           ${codespaceUrl || studentDemoMode ? `
@@ -12225,125 +12226,9 @@ twilio serverless:deploy
           return;
         }
 
-        // No existing repos found - proceed with creating default
-        const repoName = 'twilio-voice-ai-workshop';
-
-        // Check if default repository name exists (backup check)
-        showStatus('githubCloneStatus', 'info', '🔍 Checking repository availability...');
-
-        const checkResponse = await fetch('/api/github-check-repo', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            accessToken: githubToken,
-            githubUsername: githubUsername,
-            repoName: repoName
-          })
-        });
-
-        const checkData = await checkResponse.json();
-
-        if (checkData.success && checkData.exists) {
-          // Repository exists - prompt user
-          const useExisting = confirm(
-            `📦 Existing Repository Found!\n\n` +
-            `You already have a repository named "${repoName}" in your GitHub account.\n\n` +
-            `Repository: ${checkData.repo.url}\n` +
-            `Created: ${new Date(checkData.repo.createdAt).toLocaleDateString()}\n` +
-            `Last updated: ${new Date(checkData.repo.updatedAt).toLocaleDateString()}\n\n` +
-            `Would you like to:\n` +
-            `• Click OK to USE the existing repository\n` +
-            `• Click Cancel to create a NEW repository (you'll need to delete the old one first or choose a different name)`
-          );
-
-          if (useExisting) {
-            // Use existing repository
-            showStatus('githubCloneStatus', 'success',
-              `✅ Using existing repository! <a href="${checkData.repo.url}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
-            );
-
-            // Store repo name for later commits
-            studentRepoName = checkData.repo.name;
-            saveProgressToStorage();
-
-            celebrate('🎉 Repository connected! You can now deploy your code.', 'normal');
-            return;
-          } else {
-            // User wants a different name - prompt for custom name with retry logic
-            let customName = '';
-            let createSuccess = false;
-
-            while (!createSuccess) {
-              customName = prompt(
-                `Enter a name for your new repository:\n\n` +
-                `(Must be unique in your GitHub account)\n\n` +
-                `Suggested names:\n` +
-                `• twilio-voice-ai-workshop-2\n` +
-                `• my-voice-ai-app\n` +
-                `• conversationrelay-demo`,
-                'twilio-voice-ai-workshop-2'
-              );
-
-              if (!customName || customName.trim() === '') {
-                showStatus('githubCloneStatus', 'info', 'Repository creation cancelled.');
-                return;
-              }
-
-              // Try creating with the custom name
-              const cleanName = customName.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
-              showStatus('githubCloneStatus', 'info', `📦 Creating repository: ${cleanName}...`);
-
-              const createResponse = await fetch('/api/github-create-repo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  accessToken: githubToken,
-                  githubUsername: githubUsername,
-                  repoName: cleanName,
-                  sessionToken: sessionToken
-                })
-              });
-
-              const createData = await createResponse.json();
-
-              if (createData.success) {
-                showStatus('githubCloneStatus', 'success',
-                  `✅ Repository created! <a href="${createData.repoUrl}" target="_blank" style="color: #4caf50; text-decoration: underline;">View on GitHub →</a>`
-                );
-
-                studentRepoName = createData.repoName || cleanName;
-                saveProgressToStorage();
-
-                celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
-                createSuccess = true;
-              } else {
-                // Check if it's a name conflict error
-                if (createData.error && createData.error.includes('already exists')) {
-                  const retry = confirm(
-                    `⚠️ Repository name "${cleanName}" already exists in your account.\n\n` +
-                    `Would you like to try a different name?\n\n` +
-                    `• Click OK to enter a new name\n` +
-                    `• Click Cancel to stop`
-                  );
-
-                  if (!retry) {
-                    showStatus('githubCloneStatus', 'info', 'Repository creation cancelled.');
-                    return;
-                  }
-                  // Loop continues to prompt again
-                } else {
-                  // Other error - show and exit
-                  showStatus('githubCloneStatus', 'error', '❌ ' + createData.error);
-                  return;
-                }
-              }
-            }
-            return;
-          }
-        }
-
-        // Repository doesn't exist - create it
-        showStatus('githubCloneStatus', 'info', '📦 Creating repository from template...');
+        // No existing repos found - create one with session-based unique name
+        // The API will use sessionToken to generate: ws-{timestamp}-{random}-voice-ai
+        showStatus('githubCloneStatus', 'info', '📦 Creating your workshop repository...');
 
         const response = await fetch('/api/github-create-repo', {
           method: 'POST',
@@ -12351,7 +12236,7 @@ twilio serverless:deploy
           body: JSON.stringify({
             accessToken: githubToken,
             githubUsername: githubUsername,
-            repoName: repoName,
+            // Don't send repoName - let API generate from sessionToken
             sessionToken: sessionToken
           })
         });
@@ -12364,20 +12249,20 @@ twilio serverless:deploy
           );
 
           // Store repo name and URL for later commits
-          studentRepoName = data.repoName || repoName;
+          studentRepoName = data.repoName;
           saveProgressToStorage();
 
           celebrate('🎉 Repository created successfully! You can now deploy your code.', 'normal');
         } else {
-          // Check if it's a name conflict error
+          // Check if it's a name conflict error (unlikely with session-based names, but handle it)
           if (data.error && data.error.includes('already exists')) {
-            // Repository exists (race condition or check failed) - prompt for custom name with retry logic
+            // Repository exists (race condition) - prompt for custom name with retry logic
             let customName = '';
             let createSuccess = false;
 
             while (!createSuccess) {
               customName = prompt(
-                `⚠️ Repository "${repoName}" already exists in your account.\n\n` +
+                `⚠️ Repository name conflict (rare!).\n\n` +
                 `Enter a different name for your repository:\n\n` +
                 `Suggested names:\n` +
                 `• twilio-voice-ai-workshop-2\n` +
