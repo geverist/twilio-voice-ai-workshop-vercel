@@ -1977,6 +1977,12 @@
           break;
         case 4:
           container.innerHTML = renderStep5_WebSocket();
+          // Auto-connect to WebSocket test when entering Step 5
+          setTimeout(() => {
+            if ((codespaceUrl || websocketUrl) && !isConnected) {
+              connectWebSocketTest();
+            }
+          }, 500);
           break;
         case 5:
           container.innerHTML = renderStep6_ConversationRelay();
