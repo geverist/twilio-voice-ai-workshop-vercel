@@ -2366,7 +2366,7 @@
             `}
 
             ${!twilioConnected ? `
-              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
+              <div id="whyApiKeys" style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
                 <strong>💡 Why API Keys?</strong>
                 <ul style="margin: 10px 0 0 20px; font-size: 14px;">
                   <li>Can be deleted after the workshop</li>
@@ -2563,6 +2563,12 @@
         apiKeyBtn.style.background = 'white';
         apiKeyBtn.style.color = '#666';
         apiKeyBtn.style.borderColor = '#ddd';
+      }
+
+      // Show/hide "Why API Keys?" info box
+      const whyApiKeys = document.getElementById('whyApiKeys');
+      if (whyApiKeys) {
+        whyApiKeys.style.display = method === 'apikey' ? 'block' : 'none';
       }
 
       // Show/hide auth sections
