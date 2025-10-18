@@ -2080,10 +2080,10 @@
                 <strong>💡 What you get:</strong>
               </p>
               <ul style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                <li>Cloud-hosted WebSocket server (auto-starts on port 3000)</li>
-                <li>Public WSS URL for receiving media streams</li>
+                <li>Full workshop project running in the cloud (VS Code in browser)</li>
+                <li>WebSocket server auto-starts on port 3000 with public URL</li>
+                <li>Edit code, test, and deploy all from your browser</li>
                 <li>60 hours/month free with your GitHub account</li>
-                <li>Stays running while you work through the workshop</li>
               </ul>
             </div>
 
@@ -2151,7 +2151,7 @@
                 🚀 Launch Development Environment
               </button>
               <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
-                Takes about 60 seconds to start • Uses your GitHub free tier
+                Takes about 60 seconds to provision • Free with GitHub (60 hours/month)
               </p>
             `}
 
@@ -8869,17 +8869,17 @@ app.get('/health', (req, res) => {
               </div>
             ` : `
               <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
-                Launch your WebSocket server in GitHub Codespaces - a cloud development environment with your code and a public URL.
+                Launch your workshop project in GitHub Codespaces - a cloud development environment with VS Code, your code, and a live WebSocket server.
               </p>
               <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                 <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
                   <strong>💡 What happens:</strong>
                 </p>
                 <ol style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                  <li>Creates a cloud development environment from your GitHub repository</li>
-                  <li>Automatically starts your WebSocket server on port 3000</li>
+                  <li>Creates a full cloud IDE from your GitHub repository</li>
+                  <li>Automatically installs dependencies and starts your WebSocket server</li>
                   <li>Provides a public WSS URL: <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">wss://your-codespace-3000.app.github.dev</code></li>
-                  <li>Ready to handle media streams from ConversationRelay in Step 6!</li>
+                  <li>You can edit code, test, and debug all in your browser!</li>
                 </ol>
               </div>
               <button
@@ -8887,7 +8887,7 @@ app.get('/health', (req, res) => {
                 id="deployCodespaceBtn"
                 onclick="deployToCodespaces()"
                 style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                🚀 Launch Codespace with WebSocket Server
+                🚀 Launch Development Environment
               </button>
               <div id="codespaceDeployStatus" style="margin-top: 15px; color: white;"></div>
             `}
