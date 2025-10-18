@@ -10020,48 +10020,58 @@ app.get('/health', (req, res) => {
         return;
       }
 
-      // First, check if the server is responding via HTTP health check
-      const httpUrl = urlToUse.replace('wss://', 'https://').replace(':3000', '-3000');
-      logWebSocketMessage('info', `Checking server health...`);
+      // Skip HTTP health check for Codespaces (they require auth even on public ports)
+      // The WebSocket connection will work because Twilio connects from their servers
+      logWebSocketMessage('info', `Preparing to connect to WebSocket server...`);
 
-      try {
-        const healthCheck = await fetch(`${httpUrl}/health`, { method: 'GET' });
-        if (!healthCheck.ok) {
-          logWebSocketMessage('error', `Server not responding (HTTP ${healthCheck.status}). The Codespace may be asleep or the server isn't running.`);
+      // Check if it's a Codespace URL
+      const isCodespace = urlToUse.includes('github.dev') || urlToUse.includes('githubpreview.dev');
+
+      if (isCodespace) {
+        logWebSocketMessage('info', `🔧 Codespace detected - skipping browser health check (Twilio will connect directly)`);
+      } else {
+        // Only do health check for non-Codespace URLs
+        const httpUrl = urlToUse.replace('wss://', 'https://').replace(':3000', '-3000');
+        logWebSocketMessage('info', `Checking server health...`);
+
+        try {
+          const healthCheck = await fetch(`${httpUrl}/health`, { method: 'GET' });
+          if (!healthCheck.ok) {
+            logWebSocketMessage('error', `Server not responding (HTTP ${healthCheck.status}). The server may not be running.`);
+            return;
+          }
+          logWebSocketMessage('success', `✓ Server is running!`);
+        } catch (healthError) {
+          const isCorsError = healthError.message.includes('CORS') ||
+                             healthError.message.includes('NetworkError') ||
+                             healthError.message.includes('Failed to fetch');
+
+          if (isCorsError) {
+            logWebSocketMessage('error', `
+              <strong>⚠️ Server Not Running!</strong><br><br>
+              Your Codespace is created but the server isn't running yet.<br><br>
+              <strong>Quick Fix (30 seconds):</strong><br>
+              1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7; font-weight: bold;">Click here to open your Codespace →</a><br>
+              2. In the terminal at the bottom, type: <code style="background: #333; padding: 4px 8px; border-radius: 3px; font-weight: bold;">npm start</code><br>
+              3. Wait for "Server running on port 3000" message<br>
+              4. Come back here and refresh<br><br>
+              <strong>Still not working?</strong><br>
+              <button onclick="deleteAndRecreateCodespace()" style="background: #f22f46; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px;">
+                🔄 Delete & Recreate Codespace
+              </button>
+            `);
+          } else {
+            logWebSocketMessage('error', `
+              <strong>Cannot reach server!</strong><br><br>
+              Possible causes:<br>
+              1. Codespace is stopped/sleeping - <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7;">Open it here to wake it up</a><br>
+              2. Server crashed on startup - Check terminal for errors<br>
+              3. Port 3000 not forwarded correctly<br><br>
+              Error: ${healthError.message}
+            `);
+          }
           return;
         }
-        logWebSocketMessage('success', `✓ Server is running!`);
-      } catch (healthError) {
-        // Check if it's a CORS error (indicates old code without CORS headers)
-        const isCorsError = healthError.message.includes('CORS') ||
-                           healthError.message.includes('NetworkError') ||
-                           healthError.message.includes('Failed to fetch');
-
-        if (isCorsError) {
-          logWebSocketMessage('error', `
-            <strong>⚠️ Server Not Running!</strong><br><br>
-            Your Codespace is created but the server isn't running yet.<br><br>
-            <strong>Quick Fix (30 seconds):</strong><br>
-            1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7; font-weight: bold;">Click here to open your Codespace →</a><br>
-            2. In the terminal at the bottom, type: <code style="background: #333; padding: 4px 8px; border-radius: 3px; font-weight: bold;">npm start</code><br>
-            3. Wait for "Server running on port 3000" message<br>
-            4. Come back here and refresh<br><br>
-            <strong>Still not working?</strong><br>
-            <button onclick="deleteAndRecreateCodespace()" style="background: #f22f46; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px;">
-              🔄 Delete & Recreate Codespace
-            </button>
-          `);
-        } else {
-          logWebSocketMessage('error', `
-            <strong>Cannot reach server!</strong><br><br>
-            Possible causes:<br>
-            1. Codespace is stopped/sleeping - <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7;">Open it here to wake it up</a><br>
-            2. Server crashed on startup - Check terminal for errors<br>
-            3. Port 3000 not forwarded correctly<br><br>
-            Error: ${healthError.message}
-          `);
-        }
-        return;
       }
 
       logWebSocketMessage('info', `Connecting to ${urlToUse}...`);
