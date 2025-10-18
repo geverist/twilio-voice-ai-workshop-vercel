@@ -99,6 +99,55 @@
       color: white;
     }
 
+    /* Attention-grabbing animations */
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(242, 47, 70, 0.7);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 0 15px rgba(242, 47, 70, 0);
+        transform: scale(1.05);
+      }
+    }
+
+    @keyframes glow {
+      0%, 100% {
+        box-shadow: 0 0 10px rgba(242, 47, 70, 0.5), 0 0 20px rgba(242, 47, 70, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 20px rgba(242, 47, 70, 0.8), 0 0 40px rgba(242, 47, 70, 0.5);
+      }
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-10px);
+      }
+      60% {
+        transform: translateY(-5px);
+      }
+    }
+
+    /* Next action indicator class */
+    .next-action {
+      animation: pulse 2s infinite, glow 2s infinite;
+      position: relative;
+    }
+
+    .next-action::before {
+      content: '👉';
+      position: absolute;
+      left: -35px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.5rem;
+      animation: bounce 1s infinite;
+    }
+
     .step-item.completed .step-number::before {
       content: '✓';
     }
@@ -1183,6 +1232,11 @@
       };
       localStorage.setItem('workshop_progress', JSON.stringify(progress));
       console.log('Progress auto-saved:', progress);
+
+      // Update UI highlights after state change
+      if (typeof highlightNextAction === 'function') {
+        setTimeout(() => highlightNextAction(), 100);
+      }
     }
 
     function loadProgressFromStorage() {
@@ -1952,6 +2006,86 @@
       console.log('📍 renderStepContent() finished, about to call revealTestSections()');
       revealTestSections();
       console.log('📍 revealTestSections() call completed');
+
+      // Highlight the next action the student should take
+      highlightNextAction();
+    }
+
+    /**
+     * Highlights the next button/action the student should click
+     * Adds pulsing animation to guide their workflow
+     */
+    function highlightNextAction() {
+      // Remove all existing next-action highlights
+      document.querySelectorAll('.next-action').forEach(el => {
+        el.classList.remove('next-action');
+      });
+
+      // Determine which button to highlight based on current state
+      let nextButton = null;
+
+      if (currentStep === 0) {
+        // Step 1: Setup
+        if (!githubToken) {
+          // Need to login with GitHub
+          nextButton = document.querySelector('[onclick*="initiateGitHubOAuth"]');
+        } else if (!studentRepoName) {
+          // Need to clone repository
+          nextButton = document.querySelector('[onclick*="cloneWorkshopRepo"]');
+        } else if (!codespaceUrl) {
+          // Need to deploy Codespace
+          nextButton = document.querySelector('[onclick*="deployToCodespaces"]');
+        } else if (!twilioConnected) {
+          // Need to connect Twilio
+          const connectBtn = document.querySelector('[onclick*="connectTwilio"]') ||
+                           document.querySelector('[onclick*="connectTwilioWithApiKey"]') ||
+                           document.querySelector('[onclick*="connectDemoMode"]');
+          nextButton = connectBtn;
+        } else {
+          // All done - highlight Next button
+          nextButton = document.getElementById('nextBtn1');
+        }
+      } else if (currentStep === 1) {
+        // Step 2: Direction - highlight selection
+        const selectedDirection = document.querySelector('input[name="direction"]:checked');
+        if (!selectedDirection) {
+          // Highlight first option to get them started
+          const firstOption = document.querySelector('.direction-option');
+          if (firstOption) firstOption.classList.add('next-action');
+        } else {
+          nextButton = document.getElementById('nextBtn2');
+        }
+      } else if (currentStep === 2) {
+        // Step 3: Services - highlight phone number selection
+        if (!selectedPhoneNumberSid) {
+          const selectBtn = document.querySelector('.phone-option');
+          if (selectBtn) selectBtn.classList.add('next-action');
+        } else {
+          nextButton = document.getElementById('nextBtn3');
+        }
+      } else if (currentStep >= 3 && currentStep <= 7) {
+        // Code editing steps - highlight based on validation state
+        const stepNum = currentStep + 1;
+        const testBtn = document.querySelector(`[onclick*="testCode${stepNum}"]`);
+        const nextBtn = document.getElementById(`nextBtn${stepNum}`);
+
+        if (testBtn && testBtn.style.display !== 'none' && !nextBtn?.disabled) {
+          // Code validated but not tested - highlight test button
+          nextButton = testBtn;
+        } else if (nextBtn && !nextBtn.disabled) {
+          // Ready to proceed - highlight next button
+          nextButton = nextBtn;
+        } else {
+          // Need to validate code first - highlight validate button
+          const validateBtn = document.querySelector(`[onclick*="validateCode${stepNum}"]`);
+          if (validateBtn) nextButton = validateBtn;
+        }
+      }
+
+      // Apply the highlight
+      if (nextButton) {
+        nextButton.classList.add('next-action');
+      }
     }
 
     // =========================================================================
