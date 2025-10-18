@@ -10074,6 +10074,53 @@ app.get('/health', (req, res) => {
         }
       }
 
+      // For Codespaces, use server-side proxy to bypass browser auth
+      if (isCodespace) {
+        logWebSocketMessage('info', `🧪 Testing WebSocket via server proxy (bypassing browser auth)...`);
+
+        try {
+          const proxyResponse = await fetch('/api/test-websocket-proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ websocketUrl: urlToUse })
+          });
+
+          const testData = await proxyResponse.json();
+
+          if (testData.success) {
+            logWebSocketMessage('success', `✅ WebSocket server is working!`);
+            logWebSocketMessage('info', `<strong>Test Results:</strong>`);
+
+            testData.results.forEach(result => {
+              logWebSocketMessage(result.type, `[${result.timestamp}ms] ${result.message}`);
+              if (result.data) {
+                logWebSocketMessage('info', `<pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 11px; overflow-x: auto;">${JSON.stringify(result.data, null, 2)}</pre>`);
+              }
+            });
+
+            if (testData.receivedMessages && testData.receivedMessages.length > 0) {
+              logWebSocketMessage('success', `<strong>✅ Server responded with ${testData.receivedMessages.length} message(s)</strong>`);
+              logWebSocketMessage('info', `Your WebSocket handler is correctly processing Twilio media stream events!`);
+            } else {
+              logWebSocketMessage('warning', `⚠️ Server connected but didn't send any responses. This may be normal depending on your handler implementation.`);
+            }
+
+            logWebSocketMessage('success', `<strong>🎉 Your WebSocket server is ready for phone calls!</strong><br>When you make a real call, Twilio will connect and send audio data.`);
+          } else {
+            logWebSocketMessage('error', `❌ WebSocket test failed: ${testData.error || 'Unknown error'}`);
+            if (testData.results) {
+              testData.results.forEach(result => {
+                logWebSocketMessage(result.type, `[${result.timestamp}ms] ${result.message}`);
+              });
+            }
+          }
+        } catch (proxyError) {
+          logWebSocketMessage('error', `Proxy test failed: ${proxyError.message}`);
+        }
+        return;
+      }
+
+      // For non-Codespace URLs, use direct WebSocket connection
       logWebSocketMessage('info', `Connecting to ${urlToUse}...`);
 
       try {
