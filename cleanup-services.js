@@ -15,18 +15,50 @@
 import 'dotenv/config';
 import twilio from 'twilio';
 
+// Parse command line arguments first (before checking credentials)
+const args = process.argv.slice(2);
+
+// Show help
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+Twilio Workshop Service Cleanup Tool
+
+Usage:
+  node cleanup-services.js              Delete all workshop services
+  node cleanup-services.js --dry-run    Preview what would be deleted
+  node cleanup-services.js --keep 5     Keep newest 5 services, delete rest
+
+  TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxx node cleanup-services.js --dry-run
+
+Options:
+  --dry-run        Show what would be deleted without actually deleting
+  --keep N         Keep the N newest services
+  --help, -h       Show this help message
+
+Environment Variables:
+  TWILIO_ACCOUNT_SID    Your Twilio Account SID (required)
+  TWILIO_AUTH_TOKEN     Your Twilio Auth Token (required)
+
+  Can be set in .env file or passed directly in command line
+`);
+  process.exit(0);
+}
+
 const ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 
 if (!ACCOUNT_SID || !AUTH_TOKEN) {
-  console.error('❌ Missing TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN in .env');
+  console.error('❌ Missing TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN');
+  console.error('');
+  console.error('Set them in .env file or pass directly:');
+  console.error('  TWILIO_ACCOUNT_SID=ACxxx TWILIO_AUTH_TOKEN=xxx node cleanup-services.js --dry-run');
+  console.error('');
+  console.error('Run "node cleanup-services.js --help" for more info');
   process.exit(1);
 }
 
 const client = twilio(ACCOUNT_SID, AUTH_TOKEN);
 
-// Parse command line arguments
-const args = process.argv.slice(2);
 const isDryRun = args.includes('--dry-run');
 const keepCount = args.includes('--keep')
   ? parseInt(args[args.indexOf('--keep') + 1]) || 0
@@ -108,28 +140,6 @@ async function cleanupServices() {
     console.error('❌ Error:', error.message);
     process.exit(1);
   }
-}
-
-// Show help
-if (args.includes('--help') || args.includes('-h')) {
-  console.log(`
-Twilio Workshop Service Cleanup Tool
-
-Usage:
-  node cleanup-services.js              Delete all workshop services
-  node cleanup-services.js --dry-run    Preview what would be deleted
-  node cleanup-services.js --keep 5     Keep newest 5 services, delete rest
-
-Options:
-  --dry-run        Show what would be deleted without actually deleting
-  --keep N         Keep the N newest services
-  --help, -h       Show this help message
-
-Environment Variables (in .env):
-  TWILIO_ACCOUNT_SID    Your Twilio Account SID
-  TWILIO_AUTH_TOKEN     Your Twilio Auth Token
-`);
-  process.exit(0);
 }
 
 console.log('🧹 Twilio Workshop Service Cleanup\n');
