@@ -3,9 +3,9 @@
  * Tests student Codespace WebSocket from server-side (bypasses browser auth issues)
  */
 
-const WebSocket = require('ws');
+import WebSocket from 'ws';
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
