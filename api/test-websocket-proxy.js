@@ -35,10 +35,15 @@ export default async (req, res) => {
   try {
     testResults.push({ type: 'info', message: `Connecting to ${websocketUrl}...`, timestamp: Date.now() - startTime });
 
-    // Add GitHub authentication header for Codespace access
-    const ws = new WebSocket(websocketUrl, {
+    // Add GitHub authentication for Codespace access
+    // GitHub Codespaces may require token as query param or Authorization header
+    const urlWithAuth = websocketUrl.includes('?')
+      ? `${websocketUrl}&gh_token=${githubToken}`
+      : `${websocketUrl}?gh_token=${githubToken}`;
+
+    const ws = new WebSocket(urlWithAuth, {
       headers: {
-        'Cookie': `_gh_sess=${githubToken}`,
+        'Authorization': `Bearer ${githubToken}`,
         'User-Agent': 'Twilio-Workshop-Test/1.0'
       }
     });
