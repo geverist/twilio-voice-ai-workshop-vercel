@@ -10244,9 +10244,12 @@ app.get('/health', (req, res) => {
               saveProgressToStorage();
               updateProgressBar();
 
-              // Enable next button
-              const nextBtn = document.getElementById('nextBtn5');
-              if (nextBtn) nextBtn.disabled = false;
+              // Enable next button (Step 5 WebSocket uses nextBtn7)
+              const nextBtn = document.getElementById('nextBtn7');
+              if (nextBtn) {
+                nextBtn.disabled = false;
+                console.log('✅ Next button enabled - students can proceed');
+              }
 
               logWebSocketMessage('info', `
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white; margin: 10px 0;">
