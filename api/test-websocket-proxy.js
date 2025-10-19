@@ -19,10 +19,14 @@ export default async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { websocketUrl } = req.body;
+  const { websocketUrl, githubToken } = req.body;
 
   if (!websocketUrl) {
     return res.status(400).json({ error: 'websocketUrl is required' });
+  }
+
+  if (!githubToken) {
+    return res.status(400).json({ error: 'githubToken is required for Codespace authentication' });
   }
 
   const testResults = [];
@@ -31,7 +35,13 @@ export default async (req, res) => {
   try {
     testResults.push({ type: 'info', message: `Connecting to ${websocketUrl}...`, timestamp: Date.now() - startTime });
 
-    const ws = new WebSocket(websocketUrl);
+    // Add GitHub authentication header for Codespace access
+    const ws = new WebSocket(websocketUrl, {
+      headers: {
+        'Cookie': `_gh_sess=${githubToken}`,
+        'User-Agent': 'Twilio-Workshop-Test/1.0'
+      }
+    });
     let connectionSuccessful = false;
     let receivedMessages = [];
 

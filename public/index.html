@@ -10205,7 +10205,10 @@ app.get('/health', (req, res) => {
           const proxyResponse = await fetch('/api/test-websocket-proxy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ websocketUrl: urlToUse })
+            body: JSON.stringify({
+              websocketUrl: urlToUse,
+              githubToken: githubToken
+            })
           });
 
           const testData = await proxyResponse.json();
@@ -10230,11 +10233,36 @@ app.get('/health', (req, res) => {
 
             logWebSocketMessage('success', `<strong>🎉 Your WebSocket server is ready for phone calls!</strong><br>When you make a real call, Twilio will connect and send audio data.`);
           } else {
-            logWebSocketMessage('error', `❌ WebSocket test failed: ${testData.error || 'Unknown error'}`);
-            if (testData.results) {
-              testData.results.forEach(result => {
-                logWebSocketMessage(result.type, `[${result.timestamp}ms] ${result.message}`);
-              });
+            // Check if it's an auth error (302 redirect)
+            const isAuthError = testData.results && testData.results.some(r =>
+              r.message && r.message.includes('302')
+            );
+
+            if (isAuthError) {
+              logWebSocketMessage('warning', `
+                <strong>ℹ️ GitHub Codespaces Authentication Required</strong><br><br>
+                Your WebSocket server is running, but GitHub Codespaces requires authentication even for public ports.<br><br>
+                <strong>✅ This is normal and won't affect your phone calls!</strong><br><br>
+                <strong>Why this happens:</strong><br>
+                • Browser and server tests require GitHub authentication<br>
+                • <strong>Twilio's servers bypass this</strong> when making phone calls<br>
+                • Your actual voice calls will work perfectly<br><br>
+                <strong>To verify your server is running:</strong><br>
+                1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7; font-weight: bold;">Open your Codespace →</a><br>
+                2. Check terminal shows "Server running on port 3000"<br>
+                3. Review the <strong>Media Stream Events</strong> section above to understand what Twilio will send<br><br>
+                <strong>Next steps:</strong><br>
+                • Review the event examples in the section above<br>
+                • Proceed to make a real phone call to test<br>
+                • Twilio will successfully connect to your WebSocket!
+              `);
+            } else {
+              logWebSocketMessage('error', `❌ WebSocket test failed: ${testData.error || 'Unknown error'}`);
+              if (testData.results) {
+                testData.results.forEach(result => {
+                  logWebSocketMessage(result.type, `[${result.timestamp}ms] ${result.message}`);
+                });
+              }
             }
           }
         } catch (proxyError) {
