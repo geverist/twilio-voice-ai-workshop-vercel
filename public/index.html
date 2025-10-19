@@ -10239,6 +10239,15 @@ app.get('/health', (req, res) => {
             );
 
             if (isAuthError) {
+              // For Codespaces, mark as complete even with auth errors since the server is running
+              websocketBuilt = true;
+              saveProgressToStorage();
+              updateProgressBar();
+
+              // Enable next button
+              const nextBtn = document.getElementById('nextBtn5');
+              if (nextBtn) nextBtn.disabled = false;
+
               logWebSocketMessage('info', `
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white; margin: 10px 0;">
                   <h4 style="color: white; margin-top: 0;">✅ Ready for Phone Calls!</h4>
@@ -10266,7 +10275,7 @@ app.get('/health', (req, res) => {
                   </div>
 
                   <p style="margin: 15px 0 0 0; font-size: 16px; font-weight: 600;">
-                    🎉 You're ready to test with a real phone call!
+                    🎉 You're ready to proceed to the next step!
                   </p>
                 </div>
               `);
