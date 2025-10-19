@@ -10239,22 +10239,36 @@ app.get('/health', (req, res) => {
             );
 
             if (isAuthError) {
-              logWebSocketMessage('warning', `
-                <strong>ℹ️ GitHub Codespaces Authentication Required</strong><br><br>
-                Your WebSocket server is running, but GitHub Codespaces requires authentication even for public ports.<br><br>
-                <strong>✅ This is normal and won't affect your phone calls!</strong><br><br>
-                <strong>Why this happens:</strong><br>
-                • Browser and server tests require GitHub authentication<br>
-                • <strong>Twilio's servers bypass this</strong> when making phone calls<br>
-                • Your actual voice calls will work perfectly<br><br>
-                <strong>To verify your server is running:</strong><br>
-                1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7; font-weight: bold;">Open your Codespace →</a><br>
-                2. Check terminal shows "Server running on port 3000"<br>
-                3. Review the <strong>Media Stream Events</strong> section above to understand what Twilio will send<br><br>
-                <strong>Next steps:</strong><br>
-                • Review the event examples in the section above<br>
-                • Proceed to make a real phone call to test<br>
-                • Twilio will successfully connect to your WebSocket!
+              logWebSocketMessage('info', `
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; color: white; margin: 10px 0;">
+                  <h4 style="color: white; margin-top: 0;">✅ Ready for Phone Calls!</h4>
+                  <p style="margin: 10px 0; line-height: 1.6;">
+                    Browser testing is not available for GitHub Codespaces due to authentication requirements,
+                    but <strong>this won't affect your phone calls</strong> - Twilio's servers connect directly.
+                  </p>
+
+                  <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; margin: 15px 0;">
+                    <strong style="display: block; margin-bottom: 10px;">📋 What You've Learned:</strong>
+                    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                      <li>Reviewed the <strong>5 Media Stream event types</strong> Twilio sends</li>
+                      <li>Understood the <strong>JSON format</strong> of each event</li>
+                      <li>Deployed your <strong>WebSocket server</strong> to Codespaces</li>
+                    </ul>
+                  </div>
+
+                  <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; margin: 15px 0;">
+                    <strong style="display: block; margin-bottom: 10px;">✅ Verify Your Server:</strong>
+                    <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                      <li><a href="${codespaceWebUrl}" target="_blank" style="color: white; font-weight: bold; text-decoration: underline;">Open your Codespace →</a></li>
+                      <li>Check terminal shows: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">✓ Server running on port 3000</code></li>
+                      <li>If not running, type: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">npm start</code></li>
+                    </ol>
+                  </div>
+
+                  <p style="margin: 15px 0 0 0; font-size: 16px; font-weight: 600;">
+                    🎉 You're ready to test with a real phone call!
+                  </p>
+                </div>
               `);
             } else {
               logWebSocketMessage('error', `❌ WebSocket test failed: ${testData.error || 'Unknown error'}`);
