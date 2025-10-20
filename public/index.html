@@ -2310,16 +2310,29 @@
                 </div>
               </div>
             ` : `
-              <button
-                class="btn btn-primary"
-                id="deployCodespaceBtn"
-                onclick="deployToCodespaces()"
-                style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #1a7f37; border: none; font-weight: bold;">
-                🚀 Launch Development Environment
-              </button>
-              <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
-                Takes about 60 seconds to provision • Free with GitHub (60 hours/month)
-              </p>
+              <div style="margin-bottom: 15px;">
+                <button
+                  class="btn btn-primary"
+                  id="deployCodespaceBtn"
+                  onclick="deployToCodespaces()"
+                  style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #1a7f37; border: none; font-weight: bold;">
+                  🚀 Launch Development Environment
+                </button>
+                <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
+                  Takes about 60 seconds to provision • Free with GitHub (60 hours/month)
+                </p>
+              </div>
+              <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px; margin-top: 15px;">
+                <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin-bottom: 10px; text-align: center;">
+                  Already have a Codespace running?
+                </p>
+                <button
+                  class="btn"
+                  onclick="refreshCodespaceStatus()"
+                  style="width: 100%; padding: 10px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 14px;">
+                  🔄 Check for Existing Codespace
+                </button>
+              </div>
             `}
 
             <div id="codespaceDeployStatus" style="margin-top: 15px;"></div>
@@ -12937,6 +12950,11 @@ twilio serverless:deploy
           if (data.codespace.state === 'Available' && data.codespace.websocketUrl) {
             codespaceUrl = data.codespace.websocketUrl;
             websocketUrl = codespaceUrl;
+
+            // Mark Step 5 as deployed since Codespace is running with WebSocket server
+            step5Deployed = true;
+            websocketBuilt = true;
+
             console.log(`✅ Codespace is running with WebSocket URL: ${codespaceUrl}`);
           } else {
             console.log(`ℹ️ Codespace exists but is ${data.codespace.state}`);
@@ -12944,6 +12962,7 @@ twilio serverless:deploy
 
           // Save to storage and re-render
           saveProgressToStorage();
+          updateProgressBar();
           renderStepContent();
         } else {
           console.log('ℹ️ No existing Codespace found');
@@ -13159,10 +13178,17 @@ twilio serverless:deploy
         if (data.codespace.state === 'Available') {
           codespaceUrl = data.codespace.websocketUrl;
           codespaceWebUrl = data.codespace.webUrl;
+          codespaceName = data.codespace.name;
           websocketUrl = codespaceUrl;
-          saveProgressToStorage();
 
-          showStatus('codespaceDeployStatus', 'success', '✅ Codespace is running!');
+          // Mark Step 5 as deployed since Codespace is running with WebSocket server
+          step5Deployed = true;
+          websocketBuilt = true;
+
+          saveProgressToStorage();
+          updateProgressBar();
+
+          showStatus('codespaceDeployStatus', 'success', '✅ Codespace is running! WebSocket server detected.');
           renderStepContent();
         } else if (data.codespace.state === 'Shutdown') {
           showStatus('codespaceDeployStatus', 'info',
