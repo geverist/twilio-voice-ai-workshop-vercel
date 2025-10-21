@@ -13113,16 +13113,6 @@ twilio serverless:deploy
     }
 
     // Update progress bar whenever state changes
-    function checkStep1Complete() {
-      if (twilioConnected) {
-        const nextBtn = document.getElementById('nextBtn1');
-        if (nextBtn) {
-          nextBtn.disabled = false;
-        }
-        showStatus('step1Status', 'success', '🎉 Twilio connected! Click Next to continue.');
-        updateProgressBar();
-      }
-    }
 
     // =========================================================================
     // CONSOLE INTEGRATION
