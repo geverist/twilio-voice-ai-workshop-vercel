@@ -2282,8 +2282,7 @@
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                   <span style="font-size: 1.5rem;">✅</span>
                   <div>
-                    <strong style="color: white; font-size: 1.05rem;">Codespace Running!</strong><br>
-                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Your WebSocket server is live</span>
+                    <strong style="color: white; font-size: 1.05rem;">Codespace Running!</strong>
                   </div>
                 </div>
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
@@ -2540,7 +2539,7 @@
           `}
 
           <!-- OpenAI API Key Configuration -->
-          ${twilioConnected && (codespaceUrl || studentDemoMode) ? `
+          ${twilioConnected ? `
           <div class="service-card" style="margin-top: 30px;">
             <h3 style="color: #0d122b; margin-bottom: 15px;">🤖 OpenAI API Key</h3>
             <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
