@@ -10917,6 +10917,13 @@ app.get('/health', (req, res) => {
 
         const deploySection = document.getElementById('step5DeploySection');
         if (deploySection) deploySection.style.display = 'block';
+
+        // Move next-action effect from Validate button to Deploy button
+        const validateBtn = document.querySelector('[onclick="validateCode7()"]');
+        if (validateBtn) validateBtn.classList.remove('next-action');
+
+        const deployBtn = document.getElementById('deployCodespaceBtn5');
+        if (deployBtn) deployBtn.classList.add('next-action');
       } else {
         let message = '⚠️ Validation issues found:\n';
         if (!checks.hasWebSocket) message += '- Missing WebSocket import (require(\'ws\') or WebSocketServer)\n';
