@@ -14522,28 +14522,65 @@ twilio serverless:deploy
 
         const checkData = await checkResponse.json();
 
-        // If Codespace exists and is available, use it
-        if (checkData.success && checkData.codespace && checkData.codespace.state === 'Available') {
-          codespaceUrl = checkData.codespace.websocketUrl;
-          codespaceWebUrl = checkData.codespace.webUrl;
+        // If Codespace exists
+        if (checkData.success && checkData.codespace) {
           codespaceName = checkData.codespace.name;
-          websocketUrl = codespaceUrl;
-          step5Deployed = true;
-          websocketBuilt = true;
+          codespaceWebUrl = checkData.codespace.webUrl;
 
-          saveProgressToStorage();
-          updateProgressBar();
+          // If it's already available, use it
+          if (checkData.codespace.state === 'Available') {
+            codespaceUrl = checkData.codespace.websocketUrl;
+            websocketUrl = codespaceUrl;
+            step5Deployed = true;
+            websocketBuilt = true;
 
-          showStatus('codespaceDeployStatus', 'success',
-            `✅ Found existing Codespace (already running)!<br>` +
-            `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>` +
-            `<a href="${codespaceWebUrl}" target="_blank" style="color: #4fc1ff; margin-top: 10px; display: inline-block;">Open in Browser →</a>`
-          );
+            saveProgressToStorage();
+            updateProgressBar();
 
-          btn.disabled = false;
-          btn.textContent = '✅ Codespace Running';
-          renderStepContent();
-          return;
+            showStatus('codespaceDeployStatus', 'success',
+              `✅ Found existing Codespace (already running)!<br>` +
+              `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>` +
+              `<a href="${codespaceWebUrl}" target="_blank" style="color: #4fc1ff; margin-top: 10px; display: inline-block;">Open in Browser →</a>`
+            );
+
+            btn.disabled = false;
+            btn.textContent = '✅ Codespace Running';
+            renderStepContent();
+            return;
+          }
+
+          // Codespace exists but is not running - start it!
+          if (checkData.codespace.state === 'Shutdown' || checkData.codespace.state === 'Unavailable') {
+            showStatus('codespaceDeployStatus', 'info', `🔄 Starting existing Codespace (was ${checkData.codespace.state})...`);
+
+            const startResponse = await fetch('/api/github-start-codespace', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                accessToken: githubToken,
+                codespaceName: codespaceName
+              })
+            });
+
+            const startData = await startResponse.json();
+
+            if (!startData.success) {
+              throw new Error(startData.error || 'Failed to start Codespace');
+            }
+
+            showStatus('codespaceDeployStatus', 'info', '⏳ Waiting for Codespace to start and server to be ready...');
+
+            // Poll for it to become available
+            await pollCodespaceStatus();
+            return;
+          }
+
+          // Codespace is starting - just poll for it
+          if (checkData.codespace.state === 'Starting') {
+            showStatus('codespaceDeployStatus', 'info', '⏳ Codespace is starting... waiting for server to be ready...');
+            await pollCodespaceStatus();
+            return;
+          }
         }
 
         // No existing Codespace found, create new one
@@ -14633,30 +14670,74 @@ twilio serverless:deploy
           console.log(`Codespace state: ${state} (attempt ${attempts}/${maxAttempts})`);
 
           if (state === 'Available') {
-            // Codespace is ready!
+            // Codespace is ready - but verify server is responding
             codespaceUrl = data.codespace.websocketUrl;
             codespaceWebUrl = data.codespace.webUrl;
-            websocketUrl = codespaceUrl; // Set as the WebSocket URL for the workshop
+            const httpUrl = data.codespace.httpUrl;
 
-            // Save to localStorage
-            saveProgressToStorage();
+            // Test if server is actually running by checking /health endpoint
+            showStatus('codespaceDeployStatus', 'info', '⏳ Verifying WebSocket server is ready...');
 
-            showStatus('codespaceDeployStatus', 'success',
-              `🎉 Codespace is live!<br>` +
-              `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>` +
-              `<a href="${codespaceWebUrl}" target="_blank" style="color: white; text-decoration: underline; margin-top: 10px; display: inline-block;">🌐 Open Codespace →</a>`
-            );
+            try {
+              const healthResponse = await fetch(httpUrl + '/health', {
+                method: 'GET',
+                mode: 'cors',
+                cache: 'no-cache'
+              });
 
-            celebrate('🎉 Your development environment is ready!', 'normal');
-            renderStepContent(); // Refresh to show the Codespace URL
+              if (healthResponse.ok) {
+                // Server is responding!
+                websocketUrl = codespaceUrl;
+                step5Deployed = true;
+                websocketBuilt = true;
 
-            // Add next-action effect to Connect Twilio button after codespace deploys
-            setTimeout(() => {
-              const connectTwilioBtn = document.querySelector('[onclick*="connectTwilio"]');
-              if (connectTwilioBtn && !twilioConnected) {
-                connectTwilioBtn.classList.add('next-action');
+                // Save to localStorage
+                saveProgressToStorage();
+
+                showStatus('codespaceDeployStatus', 'success',
+                  `🎉 Codespace is live and server is responding!<br>` +
+                  `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>` +
+                  `<a href="${codespaceWebUrl}" target="_blank" style="color: white; text-decoration: underline; margin-top: 10px; display: inline-block;">🌐 Open Codespace →</a>`
+                );
+
+                celebrate('🎉 Your development environment is ready!', 'normal');
+                renderStepContent(); // Refresh to show the Codespace URL
+
+                // Add next-action effect to Connect Twilio button after codespace deploys
+                setTimeout(() => {
+                  const connectTwilioBtn = document.querySelector('[onclick*="connectTwilio"]');
+                  if (connectTwilioBtn && !twilioConnected) {
+                    connectTwilioBtn.classList.add('next-action');
+                  }
+                }, 500);
+                return; // Exit polling
               }
-            }, 500);
+            } catch (healthError) {
+              console.log('Health check failed, server may still be starting:', healthError.message);
+            }
+
+            // Health check failed - server may still be starting
+            // Continue polling for a bit longer
+            if (attempts < maxAttempts) {
+              showStatus('codespaceDeployStatus', 'info',
+                `⏳ Codespace is running, waiting for server to start... (${Math.round(attempts * 5)} seconds)`
+              );
+              setTimeout(poll, 5000);
+            } else {
+              // Timeout - show warning but still save the URL
+              websocketUrl = codespaceUrl;
+              step5Deployed = true;
+              websocketBuilt = true;
+              saveProgressToStorage();
+
+              showStatus('codespaceDeployStatus', 'warning',
+                `⚠️ Codespace is running but server may still be starting.<br>` +
+                `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>` +
+                `<a href="${codespaceWebUrl}" target="_blank" style="color: #4fc1ff; margin-top: 10px; display: inline-block;">🌐 Open Codespace to check logs →</a><br>` +
+                `<span style="font-size: 12px; margin-top: 10px; display: block;">The server should auto-start within 60 seconds. Try testing the WebSocket connection below.</span>`
+              );
+              renderStepContent();
+            }
 
           } else if (state === 'Starting' || state === 'Created' || state === 'Provisioning') {
             // Still starting, continue polling
