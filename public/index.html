@@ -150,6 +150,12 @@
       z-index: 2;
     }
 
+    /* For buttons in button-group (next to Back button), move pointer to RIGHT to avoid overlap */
+    .button-group .next-action::before {
+      left: auto;
+      right: -45px;
+    }
+
     .step-item.completed .step-number::before {
       content: '✓';
     }
