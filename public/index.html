@@ -1181,6 +1181,7 @@
     let codespaceUrl = ''; // WebSocket URL (wss://...)
     let codespaceWebUrl = ''; // Browser URL to open Codespace
     let codespaceName = ''; // Codespace identifier
+    let isConnected = false; // WebSocket test connection status
 
     // Session token for identifying student across requests (works for both live and demo mode)
     let sessionToken = localStorage.getItem('sessionToken') || null;
