@@ -8135,7 +8135,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             step4Committed = true;
             step4Deployed = true;
             deployedServiceSid = 'ZS' + Math.random().toString(36).substring(7);
-            websocketUrl = 'demo-workshop-' + Math.random().toString(36).substring(7) + '.twil.io';
+            twilioServerlessDomain = 'demo-workshop-' + Math.random().toString(36).substring(7) + '.twil.io';
 
             // Show the test section after deployment (demo mode)
             const testSection = document.getElementById('step4TestSection');
@@ -9538,7 +9538,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           <div class="console-line">▶️ Testing ConversationRelay TwiML generation...</div>
           <div class="console-line info">WebSocket Handler URL: ${wsHandlerUrl}</div>
           <div class="console-line info">Voice: ${voice}</div>
-          <div class="console-line info">TTS Provider: ${ttsProvider}</div>
+          <div class="console-line info">TTS Provider: ${getConversationRelayTTSProvider(ttsProvider)}</div>
           <div class="console-line">Output:</div>
           <div class="console-line">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</div>
           <div class="console-line">&lt;Response&gt;</div>
@@ -9546,7 +9546,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           <div class="console-line">    &lt;ConversationRelay</div>
           <div class="console-line">      url="${wsHandlerUrl}"</div>
           <div class="console-line">      voice="${voice}"</div>
-          <div class="console-line">      ttsProvider="${ttsProvider}"</div>
+          <div class="console-line">      ttsProvider="${getConversationRelayTTSProvider(ttsProvider)}"</div>
           <div class="console-line">      welcomeGreeting="Hello! I am your AI assistant. How can I help you today?"</div>
           <div class="console-line">    /&gt;</div>
           <div class="console-line">  &lt;/Connect&gt;</div>
@@ -9645,12 +9645,16 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   // NEW: Upgrade to ConversationRelay with AI
   const connect = response.connect();
   console.log('conversationRelay method exists?', typeof connect.conversationRelay);
-  const wsHandlerUrl = \`wss://\${context.DOMAIN_NAME}/websocket-handler\`;
+
+  // IMPORTANT: WebSocket handler is hosted on your Codespace/Railway/Render
+  // NOT on Twilio Serverless! Use the environment variable you configured.
+  const wsHandlerUrl = context.WEBSOCKET_URL || 'wss://your-codespace-url.app.github.dev';
+  console.log('WebSocket handler URL:', wsHandlerUrl);
 
   connect.conversationRelay({
     url: wsHandlerUrl,
     voice: '${getDefaultVoice()}',
-    ttsProvider: '${ttsProvider}',
+    ttsProvider: '${getConversationRelayTTSProvider(ttsProvider)}',
     welcomeGreeting: 'Hello! I am your AI assistant. How can I help you today?',
     dtmfDetection: true
   });
@@ -9720,6 +9724,16 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       }
     }
 
+    // Map internal TTS provider names to ConversationRelay enum values
+    function getConversationRelayTTSProvider(provider) {
+      const mapping = {
+        'amazon-polly': 'amazon',
+        'google': 'google',
+        'elevenlabs': 'elevenlabs'
+      };
+      return mapping[provider] || 'amazon';
+    }
+
     // Update ConversationRelay code based on settings
     function updateConversationRelayCode() {
       const welcomeGreeting = document.getElementById('crWelcomeGreeting')?.value || 'Hello! I am your AI assistant. How can I help you today?';
@@ -9729,7 +9743,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       const dtmfDetection = document.getElementById('crDtmfDetection')?.value || 'true';
       const hints = document.getElementById('crHints')?.value || '';
       const voice = document.getElementById('conversationRelayVoice')?.value || getDefaultVoice();
-      const ttsProviderValue = document.getElementById('ttsProvider')?.value || 'elevenlabs';
+      const ttsProviderValue = getConversationRelayTTSProvider(document.getElementById('ttsProvider')?.value || 'amazon-polly');
 
       // Build hints line if provided
       const hintsLine = hints ? `    hints: '${hints}',` : `    // hints: 'Twilio,ConversationRelay,WebSocket,API'`;
@@ -9746,9 +9760,10 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   console.log('conversationRelay method exists?', typeof connect.conversationRelay);
 
   // Build WebSocket handler URL
-  const wsHandlerUrl = \`wss://\${context.DOMAIN_NAME}/websocket-handler\`;
+  // IMPORTANT: WebSocket handler is hosted on your Codespace/Railway/Render
+  // NOT on Twilio Serverless! Use the environment variable you configured.
+  const wsHandlerUrl = context.WEBSOCKET_URL || 'wss://your-codespace-url.app.github.dev';
   console.log('WebSocket handler URL:', wsHandlerUrl);
-  console.log('Domain from context:', context.DOMAIN_NAME);
 
   connect.conversationRelay({
     // Required: WebSocket endpoint URL
@@ -13026,7 +13041,7 @@ twilio serverless:deploy
     voice: 'Polly.Brian',
     language: 'en-US',
     transcriptionProvider: 'twilio',
-    ttsProvider: 'amazon-polly'
+    ttsProvider: 'amazon'
   });
 
   return twiml.toString();
@@ -13216,7 +13231,11 @@ twilio serverless:deploy
   const response = new VoiceResponse();
 
   const connect = response.connect();
-  const wsHandlerUrl = 'wss://' + context.DOMAIN_NAME + '/websocket-handler';
+
+  // IMPORTANT: WebSocket handler is hosted on your Codespace/Railway/Render
+  // NOT on Twilio Serverless! Use the environment variable you configured.
+  const wsHandlerUrl = context.WEBSOCKET_URL || 'wss://your-codespace-url.app.github.dev';
+  console.log('WebSocket handler URL:', wsHandlerUrl);
 
   connect.conversationRelay({
     // Required: WebSocket endpoint URL
