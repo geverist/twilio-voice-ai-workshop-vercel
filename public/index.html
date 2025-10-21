@@ -10121,21 +10121,23 @@ app.get('/health', (req, res) => {
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                   <span style="font-size: 1.5rem;">✅</span>
                   <div>
-                    <strong style="color: white; font-size: 1.05rem;">Codespace Server Ready</strong><br>
-                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Deploy your WebSocket handler code below</span>
+                    <strong style="color: white; font-size: 1.05rem;">${step5Committed ? 'WebSocket Handler Deployed!' : 'Codespace Server Ready'}</strong><br>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">${step5Committed ? 'Your code is live on the Codespace' : 'Deploy your WebSocket handler code below'}</span>
                   </div>
                 </div>
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
                   <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 5px;">WebSocket URL:</div>
                   <code style="color: white; font-size: 14px; word-break: break-all;">${codespaceUrl}</code>
                 </div>
-                <button
-                  class="btn btn-success next-action"
-                  id="deployCodespaceBtn5"
-                  onclick="commitStep(5)"
-                  style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); width: 100%;">
-                  💾 Deploy WebSocket Handler to Codespace
-                </button>
+                ${!step5Committed ? `
+                  <button
+                    class="btn btn-success next-action"
+                    id="deployCodespaceBtn5"
+                    onclick="commitStep(5)"
+                    style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); width: 100%;">
+                    💾 Deploy WebSocket Handler to Codespace
+                  </button>
+                ` : ''}
                 <div id="codespaceDeployStatus5" style="margin-top: 15px; color: white;"></div>
                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                   <button class="btn" onclick="window.open('${codespaceWebUrl}', '_blank')" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);">
