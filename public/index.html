@@ -9646,10 +9646,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   const connect = response.connect();
   console.log('conversationRelay method exists?', typeof connect.conversationRelay);
 
-  // IMPORTANT: WebSocket handler is hosted on your Codespace/Railway/Render
-  // NOT on Twilio Serverless! Use the environment variable you configured.
-  const wsHandlerUrl = context.WEBSOCKET_URL || 'wss://your-codespace-url.app.github.dev';
-  console.log('WebSocket handler URL:', wsHandlerUrl);
+  // WebSocket handler URL (hosted on Codespace/Railway)
+  const wsHandlerUrl = '${codespaceUrl || websocketUrl}';
 
   connect.conversationRelay({
     url: wsHandlerUrl,
@@ -9759,11 +9757,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   const connect = response.connect();
   console.log('conversationRelay method exists?', typeof connect.conversationRelay);
 
-  // Build WebSocket handler URL
-  // IMPORTANT: WebSocket handler is hosted on your Codespace/Railway/Render
-  // NOT on Twilio Serverless! Use the environment variable you configured.
-  const wsHandlerUrl = context.WEBSOCKET_URL || 'wss://your-codespace-url.app.github.dev';
-  console.log('WebSocket handler URL:', wsHandlerUrl);
+  // WebSocket handler URL (hosted on Codespace/Railway)
+  const wsHandlerUrl = '${codespaceUrl || websocketUrl}';
 
   connect.conversationRelay({
     // Required: WebSocket endpoint URL
@@ -13232,10 +13227,8 @@ twilio serverless:deploy
 
   const connect = response.connect();
 
-  // IMPORTANT: WebSocket handler is hosted on your Codespace/Railway/Render
-  // NOT on Twilio Serverless! Use the environment variable you configured.
-  const wsHandlerUrl = context.WEBSOCKET_URL || 'wss://your-codespace-url.app.github.dev';
-  console.log('WebSocket handler URL:', wsHandlerUrl);
+  // WebSocket handler URL (hosted on Codespace/Railway)
+  const wsHandlerUrl = '${codespaceUrl || websocketUrl}';
 
   connect.conversationRelay({
     // Required: WebSocket endpoint URL
