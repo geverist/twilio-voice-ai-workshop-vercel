@@ -19,7 +19,7 @@ export default function handler(req, res) {
 
   try {
     // GitHub OAuth configuration
-    const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+    const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID?.trim();
 
     // Use actual current domain (works for both production and preview deployments)
     const protocol = req.headers['x-forwarded-proto'] || 'https';

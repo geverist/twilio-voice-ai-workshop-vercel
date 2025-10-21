@@ -15,8 +15,8 @@ export default async function handler(req, res) {
     }
 
     // GitHub OAuth configuration
-    const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-    const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+    const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID?.trim();
+    const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET?.trim();
 
     if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
       return res.redirect(302, `/index.html?error=config`);
