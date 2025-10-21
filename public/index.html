@@ -2549,7 +2549,7 @@
           `}
 
           <!-- OpenAI API Key Configuration -->
-          ${twilioConnected && (codespaceUrl || studentDemoMode) ? `
+          ${twilioConnected ? `
           <div class="service-card" style="margin-top: 30px;">
             <h3 style="color: #0d122b; margin-bottom: 15px;">🤖 OpenAI API Key</h3>
             <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
@@ -2957,21 +2957,14 @@
 
     function checkStep1Complete() {
       if (twilioConnected && !openaiConnected) {
-        // Twilio is connected but OpenAI is not
-        // Check if codespace is deployed (needed for OpenAI field to show)
-        if (codespaceUrl || studentDemoMode) {
-          // Codespace is ready - can connect OpenAI now
-          setTimeout(() => {
-            const connectOpenAIBtn = document.querySelector('[onclick*="connectOpenAI"]');
-            if (connectOpenAIBtn) {
-              connectOpenAIBtn.classList.add('next-action');
-            }
-          }, 500);
-          showStatus('step1Status', 'success', '✅ Twilio connected! Now connect your OpenAI account below.');
-        } else {
-          // Codespace not deployed yet - need to deploy first
-          showStatus('step1Status', 'success', '✅ Twilio connected! Now deploy your GitHub Codespace in Step 1b below.');
-        }
+        // Twilio is connected but OpenAI is not - highlight OpenAI button
+        setTimeout(() => {
+          const connectOpenAIBtn = document.querySelector('[onclick*="connectOpenAI"]');
+          if (connectOpenAIBtn) {
+            connectOpenAIBtn.classList.add('next-action');
+          }
+        }, 500);
+        showStatus('step1Status', 'success', '✅ Twilio connected! Now connect your OpenAI account below.');
       } else if (twilioConnected && openaiConnected) {
         // Both connected - enable Next button
         const nextBtn = document.getElementById('nextBtn1');
