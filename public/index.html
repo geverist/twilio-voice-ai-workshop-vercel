@@ -11212,6 +11212,20 @@ app.get('/health', (req, res) => {
             }
 
             logWebSocketMessage('success', `<strong>🎉 Your WebSocket server is ready for phone calls!</strong><br>When you make a real call, Twilio will connect and send audio data.`);
+
+            // Mark as complete and enable next button
+            isConnected = true;
+            websocketBuilt = true;
+            step5Deployed = true;
+            saveProgressToStorage();
+            updateProgressBar();
+
+            const nextBtn = document.getElementById('nextBtn7');
+            if (nextBtn) {
+              nextBtn.disabled = false;
+              nextBtn.classList.add('next-action');
+              console.log('✅ WebSocket test passed - Next button enabled');
+            }
           } else {
             // Check if it's an auth error (302 redirect)
             const isAuthError = testData.results && testData.results.some(r =>
