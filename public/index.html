@@ -9011,7 +9011,7 @@ ${hintsLine}
             <div class="code-header">
               <span>📝 WebSocket Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode7()">✓ Validate</button>
+                <button class="btn btn-success next-action" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode7()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code7')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode7()">Reset</button>
               </div>
@@ -9942,6 +9942,7 @@ app.get('/health', (req, res) => {
     }
 
     function validateCode7() {
+      clearHighlights(); // Remove next-action effect when clicked
       const code = document.getElementById('code7').value;
 
       // Count TODO comments vs actual implementation
