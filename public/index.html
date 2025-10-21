@@ -9263,18 +9263,19 @@ app.get('/health', (req, res) => {
 
           <div id="step5DeploySection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8; display: ${step5CodeValidated ? 'block' : 'none'};">
             <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">📡 Your WebSocket Server</h3>
-            ${codespaceUrl ? `
+            ${codespaceUrl || studentDemoMode ? `
               <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px; line-height: 1.6;">
-                Great news! You already deployed your WebSocket server in Step 1. It's running and ready to handle phone calls.
+                ${studentDemoMode ? 'In demo mode, your WebSocket server is simulated and ready.' : 'Great news! You already deployed your WebSocket server in Step 1. It\'s running and ready to handle phone calls.'}
               </p>
               <div style="background: rgba(40, 167, 69, 0.3); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid rgba(40, 167, 69, 0.5);">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                   <span style="font-size: 1.5rem;">✅</span>
                   <div>
-                    <strong style="color: white; font-size: 1.05rem;">Codespace Running from Step 1</strong><br>
+                    <strong style="color: white; font-size: 1.05rem;">${studentDemoMode ? 'Demo WebSocket Server' : 'Codespace Running from Step 1'}</strong><br>
                     <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Your WebSocket server is live and ready</span>
                   </div>
                 </div>
+                ${codespaceUrl ? `
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
                   <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 5px;">WebSocket URL:</div>
                   <code style="color: white; font-size: 14px; word-break: break-all;">${codespaceUrl}</code>
@@ -9290,30 +9291,33 @@ app.get('/health', (req, res) => {
                     🔄 Refresh Status
                   </button>
                 </div>
+                ` : `
+                <p style="color: rgba(255,255,255,0.85); margin-bottom: 0; font-size: 13px;">
+                  💡 Your demo WebSocket server is ready for Step 6
+                </p>
+                `}
               </div>
             ` : `
-              <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
-                Launch your workshop project in GitHub Codespaces - a cloud development environment with VS Code, your code, and a live WebSocket server.
-              </p>
-              <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
-                  <strong>💡 What happens:</strong>
+              <div style="background: rgba(255, 193, 7, 0.3); padding: 20px; border-radius: 8px; border: 2px solid rgba(255, 193, 7, 0.6);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                  <span style="font-size: 1.5rem;">⚠️</span>
+                  <div>
+                    <strong style="color: white; font-size: 1.05rem;">WebSocket Server Not Found</strong><br>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">You should have deployed this in Step 1</span>
+                  </div>
+                </div>
+                <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
+                  It looks like you haven't deployed your WebSocket server yet. Please go back to <strong>Step 1</strong> and deploy your GitHub Codespace, or refresh the page if you've already done it.
                 </p>
-                <ol style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                  <li>Creates a full cloud IDE from your GitHub repository</li>
-                  <li>Automatically installs dependencies and starts your WebSocket server</li>
-                  <li>Provides a public WSS URL: <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;">wss://your-codespace-3000.app.github.dev</code></li>
-                  <li>You can edit code, test, and debug all in your browser!</li>
-                </ol>
+                <div style="display: flex; gap: 10px;">
+                  <button class="btn" onclick="currentStep = 0; renderStepContent(); renderProgressSteps();" style="padding: 10px 20px; background: white; color: #667eea; border: none; font-weight: 600;">
+                    ← Go Back to Step 1
+                  </button>
+                  <button class="btn" onclick="checkForExistingCodespace(); renderStepContent();" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);">
+                    🔄 Check Again
+                  </button>
+                </div>
               </div>
-              <button
-                class="btn btn-success"
-                id="deployCodespaceBtn"
-                onclick="deployToCodespaces()"
-                style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                🚀 Launch Development Environment
-              </button>
-              <div id="codespaceDeployStatus" style="margin-top: 15px; color: white;"></div>
             `}
           </div>
 
