@@ -142,24 +142,12 @@
     .next-action::before {
       content: '👉';
       position: absolute;
-      right: -45px;  /* Changed from left to right to avoid overlap with Back buttons */
+      left: -45px;
       top: 50%;
       transform: translateY(-50%);
       font-size: 1.5rem;
       animation: bounce 1s infinite;
       z-index: 2;
-    }
-
-    /* For buttons in a button-group that are on the right side, keep pointer on left */
-    .button-group .next-action:last-child::before {
-      right: auto;
-      left: -45px;
-    }
-
-    /* Specific styling for primary/next buttons - pointer on right side */
-    .btn-primary.next-action::before {
-      right: -45px;
-      left: auto;
     }
 
     .step-item.completed .step-number::before {
