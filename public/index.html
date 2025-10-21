@@ -150,10 +150,9 @@
       z-index: 2;
     }
 
-    /* For buttons in button-group (next to Back button), move pointer to RIGHT to avoid overlap */
-    .button-group .next-action::before {
-      left: auto;
-      right: -45px;
+    /* Add extra left margin to next-action buttons in button-group to make room for finger */
+    .button-group .next-action {
+      margin-left: 60px;
     }
 
     .step-item.completed .step-number::before {
