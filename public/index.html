@@ -3901,12 +3901,12 @@
             <div style="background: #1e1e1e; padding: 20px; border-radius: 6px;">
               <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #4fc1ff;">
-                  👋 Greeting Message
+                  👋 Greeting Message${generatedContent ? ' <span style="color: #98c379; font-size: 12px;">✨ AI-generated</span>' : ''}
                 </label>
-                <input type="text" id="ivrGreeting" placeholder="Hello world" value="Hello world"
+                <input type="text" id="ivrGreeting" placeholder="Hello world" value="${generatedContent?.ivrGreeting || 'Hello world'}"
                        style="width: 100%; padding: 12px; background: #2c313c; color: #abb2bf; border: 1px solid #3e4451; border-radius: 4px; font-size: 14px;"
                        oninput="updateIVRCode()">
-                <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">What the caller hears first</p>
+                <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">What the caller hears first${generatedContent ? ' (customized for your use case)' : ''}</p>
               </div>
 
               <div style="margin-bottom: 20px;">
@@ -8595,11 +8595,17 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
               </div>
 
               <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.7;">
-                <strong>Test your AI voice bot now!</strong> This uses a basic prompt to demonstrate the technology. You'll customize the AI's personality in Step 7.
+                <strong>Test your AI voice bot now!</strong> ${generatedContent ? 'Using your custom AI prompt based on your use case.' : 'This uses a basic prompt to demonstrate the technology. You\'ll customize the AI\'s personality in Step 7.'}
               </p>
+              ${generatedContent ? `
+              <p style="color: rgba(255,255,255,0.85); margin-bottom: 20px; font-size: 13px; line-height: 1.6; font-style: italic;">
+                ✨ AI-generated prompt: "${generatedContent.systemPrompt.substring(0, 150)}${generatedContent.systemPrompt.length > 150 ? '...' : ''}"
+              </p>
+              ` : `
               <p style="color: rgba(255,255,255,0.85); margin-bottom: 20px; font-size: 13px; line-height: 1.6; font-style: italic;">
                 💡 Current prompt: "You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud."
               </p>
+              `}
             <div style="text-align: center;">
               <h3 style="color: white; margin: 0 0 10px 0; font-size: 1.5rem;">📞 Ready to Test Your AI Voice Bot?</h3>
               <p style="color: rgba(255,255,255,0.95); margin-bottom: 20px; font-size: 1.1rem; line-height: 1.6;">
@@ -9234,7 +9240,7 @@ wss.on('connection', (ws) => {
               messages: [
                 {
                   role: 'system',
-                  content: 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.'
+                  content: ${generatedContent?.systemPrompt ? `'${generatedContent.systemPrompt.replace(/'/g, "\\'").replace(/\n/g, ' ')}'` : `'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.'`}
                 },
                 {
                   role: 'user',
