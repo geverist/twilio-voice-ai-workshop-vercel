@@ -1964,6 +1964,11 @@
         setTimeout(() => showSetupRequiredModal(), 100);
       }
 
+      // Check Step 1 completion status and add next-action if both accounts connected
+      if (currentStep === 0) {
+        setTimeout(() => checkStep1Complete(), 200);
+      }
+
       // Check for existing Codespace if we have GitHub credentials and a repo
       if (githubToken && githubUsername && studentRepoName && !codespaceUrl) {
         console.log('🔍 Checking for existing Codespace...');
