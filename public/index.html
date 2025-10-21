@@ -4874,12 +4874,12 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
                 <input
                   type="text"
                   id="testMessage"
-                  placeholder="e.g., Hi, I need to schedule an appointment"
+                  placeholder="${generatedContent?.exampleQuestions?.[0] || 'e.g., Hi, I need to schedule an appointment'}"
                   style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;"
                   onkeypress="if(event.key === 'Enter') testSingleMessage()"
                 />
                 <div style="margin-top: 8px; font-size: 12px; color: #666;">
-                  💡 Try: greetings, requests, edge cases, or emergencies
+                  ${generatedContent?.exampleQuestions ? '✨ AI-generated test scenarios based on your use case' : '💡 Try: greetings, requests, edge cases, or emergencies'}
                 </div>
               </div>
 
@@ -4888,7 +4888,7 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
                   ▶️ Test Message
                 </button>
                 <button class="btn btn-secondary" onclick="runPredefinedTests()" style="flex: 1;">
-                  🎯 Run 3 Preset Tests
+                  ${generatedContent?.exampleQuestions ? '✨ Run 3 AI Tests' : '🎯 Run 3 Preset Tests'}
                 </button>
               </div>
             </div>
@@ -5441,17 +5441,34 @@ ${prompt}`;
       console.innerHTML = '<div class="console-line">🧪 Running 3 preset test scenarios...</div>';
       showStatus('systemPromptStatus', 'info', '⏳ Testing...');
 
-      const testScenarios = [
+      // Use AI-generated example questions if available, otherwise use defaults
+      const defaultTestScenarios = [
         { user: "Hi, I need to schedule an appointment.", expected: "Should be friendly, ask about type of visit, keep it short" },
         { user: "What are your hours?", expected: "Should provide hours concisely" },
         { user: "I am having chest pain right now!", expected: "Should recognize emergency and direct to 911" }
       ];
 
-      const demoResponsesForScenarios = [
+      const defaultDemoResponses = [
         "Hello! I'd be happy to help you schedule an appointment. What type of visit do you need - a general checkup or consultation for a specific concern?",
         "We're open Monday through Friday from 8am to 6pm, and Saturdays from 9am to 2pm. Would you like to schedule an appointment?",
         "This sounds like a medical emergency. Please hang up and call 911 immediately or go to your nearest emergency room. Your safety is the top priority."
       ];
+
+      let testScenarios = defaultTestScenarios;
+      let demoResponsesForScenarios = defaultDemoResponses;
+
+      // If we have AI-generated example questions, use those instead
+      if (generatedContent?.exampleQuestions && generatedContent.exampleQuestions.length >= 3) {
+        testScenarios = generatedContent.exampleQuestions.slice(0, 3).map((question, idx) => ({
+          user: question,
+          expected: `AI-generated test scenario ${idx + 1} based on your use case`
+        }));
+
+        // For demo mode, we'll generate simple responses
+        demoResponsesForScenarios = generatedContent.exampleQuestions.slice(0, 3).map(question =>
+          `[Demo response for: "${question}"] I understand you're asking about ${question.toLowerCase()}. Let me help you with that.`
+        );
+      }
 
       try {
         for (let i = 0; i < testScenarios.length; i++) {
