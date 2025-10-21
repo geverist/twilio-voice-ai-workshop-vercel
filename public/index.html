@@ -5654,6 +5654,148 @@ Expected: ${scenario.expected}</div>`;
             </p>
           </div>
 
+          <!-- How Function Calling Works Section -->
+          <div class="service-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 30px;">
+            <h3 style="color: white; margin-bottom: 20px;">🔄 How Function Calling Works in Voice AI</h3>
+            <p style="color: rgba(255,255,255,0.95); line-height: 1.6; margin-bottom: 20px;">
+              Understanding the complete flow from caller speech to function execution:
+            </p>
+
+            <div style="background: rgba(0,0,0,0.2); padding: 25px; border-radius: 12px; font-family: monospace; font-size: 13px; line-height: 2;">
+              <pre style="margin: 0; color: rgba(255,255,255,0.95); white-space: pre-wrap;">
+<strong style="color: #ffd43b;">1. 📞 Caller speaks:</strong> "I'd like to book an appointment for tomorrow at 2pm"
+
+<strong style="color: #ffd43b;">2. 🎤 ConversationRelay (Speech-to-Text):</strong>
+   Twilio's STT converts audio → text transcript
+   → Sends to your WebSocket handler
+
+<strong style="color: #ffd43b;">3. 🧠 Your WebSocket receives transcript:</strong>
+   {
+     event: "media",
+     transcript: "I'd like to book an appointment for tomorrow at 2pm"
+   }
+
+<strong style="color: #ffd43b;">4. 💬 Send to OpenAI with tools defined:</strong>
+   POST https://api.openai.com/v1/chat/completions
+   {
+     model: "gpt-4",
+     messages: [
+       { role: "system", content: "You are a helpful receptionist..." },
+       { role: "user", content: "I'd like to book..." }
+     ],
+     tools: [
+       { name: "check_availability", ... },
+       { name: "book_appointment", ... },
+       { name: "send_sms", ... }
+     ]
+   }
+
+<strong style="color: #ffd43b;">5. 🤖 OpenAI decides:</strong>
+   AI analyzes the conversation and determines:
+   - Does this require a function call?
+   - Which function(s) to call?
+   - What parameters to pass?
+
+   <strong style="color: #98c379;">Response A (Text Only):</strong> If no function needed
+   {
+     choices: [{
+       message: {
+         role: "assistant",
+         content: "Sure! What date works best for you?"
+       }
+     }]
+   }
+   → Skip to step 7
+
+   <strong style="color: #e5c07b;">Response B (Function Call):</strong> If function needed
+   {
+     choices: [{
+       message: {
+         role: "assistant",
+         content: null,
+         tool_calls: [{
+           id: "call_abc123",
+           type: "function",
+           function: {
+             name: "check_availability",
+             arguments: '{"date": "2025-10-22"}'
+           }
+         }]
+       }
+     }]
+   }
+   → Continue to step 6
+
+<strong style="color: #ffd43b;">6. ⚙️ Your code executes the function:</strong>
+   const functionName = toolCall.function.name;
+   const args = JSON.parse(toolCall.function.arguments);
+
+   switch(functionName) {
+     case 'check_availability':
+       result = await checkAvailability(args);  // Your implementation
+       break;
+     case 'book_appointment':
+       result = await bookAppointment(args);
+       break;
+     case 'send_sms':
+       result = await sendSMS(args, twilioClient);
+       break;
+   }
+
+   // Result example:
+   {
+     success: true,
+     slots: ["9:00 AM", "11:00 AM", "2:00 PM"],
+     message: "Found 3 available slots"
+   }
+
+<strong style="color: #ffd43b;">7. 🔁 Send function result back to OpenAI:</strong>
+   POST https://api.openai.com/v1/chat/completions
+   {
+     messages: [
+       ...previous messages...,
+       { role: "assistant", tool_calls: [...] },
+       {
+         role: "tool",
+         tool_call_id: "call_abc123",
+         content: '{"success":true,"slots":["9:00 AM","11:00 AM","2:00 PM"]}'
+       }
+     ]
+   }
+
+<strong style="color: #ffd43b;">8. 🤖 OpenAI generates natural response:</strong>
+   AI converts function result into conversational response:
+   {
+     choices: [{
+       message: {
+         content: "Great! I have availability tomorrow at 9am, 11am,
+                   and 2pm. Which time works best for you?"
+       }
+     }]
+   }
+
+<strong style="color: #ffd43b;">9. 🔊 Text-to-Speech (TTS):</strong>
+   ConversationRelay converts text → audio
+   → Plays to caller
+
+<strong style="color: #ffd43b;">10. 🔄 Repeat:</strong>
+   Caller responds → Back to step 1
+   (Loop continues until call ends)
+              </pre>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.15); padding: 20px; border-radius: 8px; margin-top: 20px;">
+              <h4 style="color: white; margin-bottom: 15px;">💡 Key Insights</h4>
+              <ul style="color: rgba(255,255,255,0.95); line-height: 1.8;">
+                <li><strong>AI decides when to call functions</strong> - You don't write if/else logic; the AI determines based on conversation context</li>
+                <li><strong>Multiple function calls possible</strong> - AI can chain calls: check_availability → book_appointment → send_sms</li>
+                <li><strong>Functions return structured data</strong> - Always return JSON that the AI can understand</li>
+                <li><strong>AI translates results to speech</strong> - Function returns data, AI makes it conversational</li>
+                <li><strong>Conversation history is maintained</strong> - Each exchange is added to the message array</li>
+              </ul>
+            </div>
+          </div>
+
           <div class="service-card" style="background: linear-gradient(135deg, #61afef 0%, #2c313c 100%);">
             <h3 style="color: white; margin-bottom: 15px;">🔧 Production-Ready WebSocket Handler with Tools</h3>
             <p style="color: #e5e5e5;">Complete implementation with appointment booking, knowledge base, and SMS notifications:</p>
