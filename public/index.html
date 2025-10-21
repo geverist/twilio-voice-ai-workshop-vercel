@@ -13488,42 +13488,184 @@ twilio serverless:deploy
     }
 
     /**
-     * Delete the current repository with confirmation
+     * Show modal to manage (use/delete) workshop repositories
      */
     async function deleteRepository() {
+      try {
+        showStatus('step1Status', 'info', '🔍 Fetching your workshop repositories...');
+
+        // Get all user repositories
+        const response = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
+          headers: {
+            'Authorization': `Bearer ${githubToken}`,
+            'Accept': 'application/vnd.github+json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch repositories');
+        }
+
+        const allRepos = await response.json();
+
+        // Filter for workshop repos
+        const workshopRepos = allRepos.filter(repo =>
+          repo.name.includes('conversationrelay') ||
+          repo.name.includes('voice-ai') ||
+          repo.description?.includes('Twilio Voice AI')
+        );
+
+        if (workshopRepos.length === 0) {
+          showStatus('step1Status', 'info', 'ℹ️ No workshop repositories found.');
+          return;
+        }
+
+        showStatus('step1Status', '', '');
+        showManageRepositoriesModal(workshopRepos);
+
+      } catch (error) {
+        console.error('Error fetching repositories:', error);
+        showStatus('step1Status', 'error', `❌ Failed to fetch repositories: ${error.message}`);
+      }
+    }
+
+    /**
+     * Show modal with list of repositories to use or delete
+     */
+    function showManageRepositoriesModal(repos) {
+      const modal = document.createElement('div');
+      modal.id = 'manageRepoModal';
+      modal.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8); display: flex; align-items: center;
+        justify-content: center; z-index: 10000; padding: 20px;
+      `;
+
+      modal.innerHTML = `
+        <div style="background: white; border-radius: 12px; max-width: 700px; width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+          <div style="padding: 24px; border-bottom: 1px solid #e0e0e0;">
+            <h2 style="margin: 0 0 8px 0; color: #0d122b;">📦 Manage Workshop Repositories</h2>
+            <p style="margin: 0; color: #666; font-size: 14px;">
+              Activate a repository to use it in this workshop, or delete unused ones.
+            </p>
+          </div>
+          <div style="padding: 20px;">
+            ${repos.map(repo => `
+              <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: ${repo.name === studentRepoName ? '#e8f5e9' : '#f9f9f9'};">
+                <div style="display: flex; justify-content: space-between; align-items: start; gap: 12px;">
+                  <div style="flex: 1; min-width: 0;">
+                    <h4 style="margin: 0 0 4px 0; color: #0d122b; font-size: 16px; word-break: break-word;">
+                      ${repo.name}
+                      ${repo.name === studentRepoName ? '<span style="color: #4caf50; font-weight: 600; font-size: 13px; margin-left: 8px;">✓ Active</span>' : ''}
+                    </h4>
+                    <p style="margin: 0 0 8px 0; color: #666; font-size: 13px;">
+                      ${repo.description || 'No description'}
+                    </p>
+                    <div style="font-size: 12px; color: #999;">
+                      Updated: ${new Date(repo.updated_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div style="display: flex; gap: 8px; flex-shrink: 0;">
+                    ${repo.name !== studentRepoName ? `
+                      <button
+                        class="use-repo-btn"
+                        data-repo-name="${repo.name}"
+                        data-repo-full="${repo.full_name}"
+                        style="padding: 8px 16px; background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap;">
+                        ✓ Use
+                      </button>
+                    ` : ''}
+                    <button
+                      class="delete-repo-btn"
+                      data-repo-name="${repo.full_name}"
+                      style="padding: 8px 16px; background: #d32f2f; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; white-space: nowrap;">
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          <div style="padding: 16px 24px; border-top: 1px solid #e0e0e0; display: flex; justify-content: flex-end;">
+            <button
+              onclick="document.getElementById('manageRepoModal').remove()"
+              style="padding: 10px 24px; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+              Close
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Add click handlers for "Use" buttons
+      modal.querySelectorAll('.use-repo-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const repoName = e.target.getAttribute('data-repo-name');
+          activateRepository(repoName, modal);
+        });
+      });
+
+      // Add click handlers for "Delete" buttons
+      modal.querySelectorAll('.delete-repo-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const repoFullName = e.target.getAttribute('data-repo-name');
+          await confirmAndDeleteRepo(repoFullName, modal);
+        });
+      });
+
+      // Close modal when clicking outside
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+    }
+
+    /**
+     * Activate a repository to use in the workshop
+     */
+    function activateRepository(repoName, modal) {
+      studentRepoName = repoName;
+      saveProgressToStorage();
+
+      showStatus('step1Status', 'success', `✅ Now using repository: ${repoName}`);
+
+      modal.remove();
+      renderStepContent();
+
+      // Check for existing Codespace for this repo
+      checkForExistingCodespace();
+    }
+
+    /**
+     * Confirm and delete a specific repository
+     */
+    async function confirmAndDeleteRepo(repoFullName, modal) {
       const confirmDelete = confirm(
         '🗑️ DELETE REPOSITORY?\n\n' +
-        `This will PERMANENTLY DELETE:\n${githubUsername}/${studentRepoName}\n\n` +
+        `This will PERMANENTLY DELETE:\n${repoFullName}\n\n` +
         '⚠️ WARNING: This action CANNOT be undone!\n\n' +
         'All code, commits, and history will be lost.\n' +
         'Any Codespaces for this repository will also be deleted.\n\n' +
-        'Are you absolutely sure you want to delete this repository?'
+        'Are you absolutely sure?'
       );
 
       if (!confirmDelete) {
         return;
       }
 
-      // Double confirmation for safety
-      const doubleConfirm = confirm(
-        '⚠️ FINAL CONFIRMATION\n\n' +
-        `Type the repository name to confirm deletion:\n${studentRepoName}\n\n` +
-        'Click OK to DELETE, or Cancel to abort.'
-      );
-
-      if (!doubleConfirm) {
-        return;
-      }
-
       try {
-        showStatus('step1Status', 'info', '🗑️ Deleting repository...');
+        const btn = modal.querySelector(`[data-repo-name="${repoFullName}"]`);
+        btn.disabled = true;
+        btn.textContent = 'Deleting...';
 
         const response = await fetch('/api/github-delete-repo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             accessToken: githubToken,
-            repoFullName: `${githubUsername}/${studentRepoName}`
+            repoFullName: repoFullName
           })
         });
 
@@ -13533,24 +13675,37 @@ twilio serverless:deploy
           throw new Error(data.error || 'Failed to delete repository');
         }
 
-        // Clear all related data
-        studentRepoName = null;
-        codespaceUrl = '';
-        codespaceWebUrl = '';
-        codespaceName = '';
-        websocketUrl = '';
-        saveProgressToStorage();
+        // If this was the current repo, clear it
+        if (repoFullName === `${githubUsername}/${studentRepoName}`) {
+          studentRepoName = null;
+          codespaceUrl = '';
+          codespaceWebUrl = '';
+          codespaceName = '';
+          websocketUrl = '';
+          saveProgressToStorage();
+        }
 
-        showStatus('step1Status', 'success',
-          '✅ Repository deleted successfully.<br>' +
-          'You can now clone a new repository to continue.'
-        );
+        // Remove the deleted repo from the list
+        btn.closest('div[style*="border: 1px solid"]').remove();
 
-        renderStepContent();
+        showStatus('step1Status', 'success', `✅ Repository ${repoFullName} deleted successfully.`);
+
+        // If no repos left in modal, close it
+        const remainingRepos = modal.querySelectorAll('.delete-repo-btn');
+        if (remainingRepos.length === 0) {
+          modal.remove();
+          renderStepContent();
+        }
 
       } catch (error) {
         console.error('Error deleting repository:', error);
         showStatus('step1Status', 'error', `❌ Failed to delete repository: ${error.message}`);
+
+        const btn = modal.querySelector(`[data-repo-name="${repoFullName}"]`);
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '🗑️ Delete';
+        }
       }
     }
 
