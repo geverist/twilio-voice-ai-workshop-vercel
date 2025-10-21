@@ -1067,8 +1067,8 @@
       },
       {
         id: 2,
-        title: 'Direction',
-        description: 'Choose call direction',
+        title: 'Use Case',
+        description: 'Define your use case',
         validate: () => callDirectionChosen
       },
       {
@@ -1121,6 +1121,8 @@
     let openaiConnected = false;
     let callDirectionChosen = false;
     let callDirection = ''; // 'outbound' or 'inbound'
+    let useCaseDescription = ''; // User's custom use case description
+    let generatedContent = null; // AI-generated content based on use case
     let servicesReady = false;
     let basicTwimlCreated = false;
     let functionsDeployed = false;
@@ -1198,6 +1200,8 @@
         openaiConnected,
         callDirectionChosen,
         callDirection,
+        useCaseDescription,
+        generatedContent,
         servicesReady,
         basicTwimlCreated,
         functionsDeployed,
@@ -1445,6 +1449,8 @@
       openaiConnected = progress.openaiConnected || false;
       callDirectionChosen = progress.callDirectionChosen || false;
       callDirection = progress.callDirection || '';
+      useCaseDescription = progress.useCaseDescription || '';
+      generatedContent = progress.generatedContent || null;
       servicesReady = progress.servicesReady || false;
       basicTwimlCreated = progress.basicTwimlCreated || false;
       functionsDeployed = progress.functionsDeployed || false;
@@ -2933,12 +2939,33 @@
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>Step 2: Choose Your Call Direction</h2>
-            <p>Will you be making outbound calls or receiving inbound calls?</p>
+            <h2>Step 2: Define Your Use Case</h2>
+            <p>Describe what you want to build and choose your call direction</p>
           </div>
 
           <div class="instructions">
-            <h3>📋 Choose Your Path</h3>
+            <h3>📋 Describe Your Use Case</h3>
+            <p>Tell us what you want to build. We'll use AI to customize the workshop content for your specific needs.</p>
+          </div>
+
+          <!-- Use Case Description Input -->
+          <div class="service-card" style="margin-bottom: 30px;">
+            <div class="form-group">
+              <label style="font-weight: 600; margin-bottom: 10px; display: block;">What do you want to build?</label>
+              <textarea
+                id="useCaseDescription"
+                placeholder="Example: An AI receptionist that answers common questions about business hours, services, and can schedule appointments..."
+                style="width: 100%; min-height: 120px; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical;"
+                oninput="handleUseCaseInput()"
+              >${window.useCaseDescription || ''}</textarea>
+              <p style="font-size: 12px; color: #666; margin-top: 8px;">
+                💡 Be specific! The more detail you provide, the better we can customize prompt suggestions and examples throughout the workshop.
+              </p>
+            </div>
+          </div>
+
+          <div class="instructions">
+            <h3>📞 Choose Your Call Direction</h3>
             <p>Select how you want to use your Voice AI bot. We'll start simple, then add AI capabilities!</p>
           </div>
 
@@ -2998,6 +3025,67 @@
       `;
     }
 
+    function handleUseCaseInput() {
+      const textarea = document.getElementById('useCaseDescription');
+      if (textarea) {
+        useCaseDescription = textarea.value.trim();
+        saveProgressToStorage();
+        console.log('📝 Use case updated:', useCaseDescription);
+      }
+    }
+
+    async function generateUseCaseContent() {
+      if (!useCaseDescription || !useCaseDescription.trim()) {
+        console.log('⚠️ No use case description provided, skipping content generation');
+        return;
+      }
+
+      if (!openaiApiKey) {
+        console.log('⚠️ No OpenAI API key configured, skipping content generation');
+        return;
+      }
+
+      if (!callDirection) {
+        console.log('⚠️ No call direction selected, skipping content generation');
+        return;
+      }
+
+      try {
+        console.log('🤖 Generating custom content for use case...');
+
+        const response = await fetch('/api/generate-use-case-content', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            useCaseDescription,
+            callDirection,
+            openaiApiKey
+          })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error('❌ Failed to generate content:', error);
+          return;
+        }
+
+        const data = await response.json();
+        generatedContent = data.content;
+        saveProgressToStorage();
+
+        console.log('✅ Generated content:', generatedContent);
+        console.log(`📊 Used ${data.usageTokens} tokens`);
+
+        // Show success message to user
+        showStatus('step2Status', 'success', '✨ AI customized the workshop content based on your use case!');
+
+      } catch (error) {
+        console.error('❌ Error generating content:', error);
+      }
+    }
+
     function selectCallDirection(direction) {
       console.log('🎯 selectCallDirection called with:', direction);
 
@@ -3028,11 +3116,14 @@
         }
 
         const directionText = direction === 'outbound' ? 'outbound calls (you call them)' : 'inbound calls (they call you)';
-        showStatus('step2Status', 'success', `✅ Great! You'll build a bot for ${directionText}. Click Next to continue.`);
+        showStatus('step2Status', 'success', `✅ Great! You'll build a bot for ${directionText}. Customizing workshop content...`);
         updateProgressBar();
 
         // Save progress last so errors don't block the UI updates
         saveProgressToStorage();
+
+        // Generate custom content based on use case (async, non-blocking)
+        generateUseCaseContent();
       } catch (error) {
         console.error('❌ Error in selectCallDirection:', error);
         alert('Error selecting call direction: ' + error.message);
@@ -8989,43 +9080,30 @@ ${hintsLine}
             </div>
           </div>
 
-          <!-- OpenAI Configuration -->
+          <!-- OpenAI Configuration - Now configured in Step 1 -->
+          ${openaiConnected ? `
           <div class="service-card">
             <h4>🤖 OpenAI Configuration</h4>
-            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">
-              Your WebSocket handler will send conversation transcripts to OpenAI and return AI-generated responses.
-            </p>
-
-            ${openaiConnected ? `
-              <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c3e6cb;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                  <span style="font-size: 1.5rem;">✅</span>
-                  <div>
-                    <strong style="color: #155724; font-size: 1.05rem;">OpenAI API Key Connected${studentDemoMode ? ' (Demo)' : ''}</strong><br>
-                    <span style="color: #155724; font-size: 13px;">${studentDemoMode ? 'sk-demo-****...****' : (openaiApiKey ? 'sk-****...****' : 'Connected')}</span>
-                  </div>
+            <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c3e6cb;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.5rem;">✅</span>
+                <div>
+                  <strong style="color: #155724; font-size: 1.05rem;">OpenAI API Key Connected${studentDemoMode ? ' (Demo)' : ''}</strong><br>
+                  <span style="color: #155724; font-size: 13px;">Configured in Step 1</span>
                 </div>
-                ${studentDemoMode ? `
-                  <p style="color: #155724; margin: 0 0 10px 0; font-size: 13px;">
-                    📝 Using demo API key - AI responses are simulated.
-                  </p>
-                ` : ''}
-                <button class="btn" style="padding: 8px 16px; font-size: 13px; background: white; color: #666; border: 1px solid #ddd;" onclick="openaiConnected = false; openaiApiKey = null; renderStepContent();">
-                  🔄 Change API Key
-                </button>
               </div>
-            ` : `
-              <div class="form-group">
-                <label>OpenAI API Key</label>
-                <input type="password" id="openaiKey" placeholder="sk-proj-********************************" value="${openaiApiKey || ''}" />
-                <p style="font-size: 12px; color: #666; margin-top: 5px;">
-                  Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>
-                </p>
-              </div>
-              <button class="btn btn-primary" onclick="connectOpenAI()">Connect OpenAI</button>
-              <div id="openaiStatus" class="connection-status" style="display: none; margin-top: 10px;"></div>
-            `}
+            </div>
           </div>
+          ` : `
+          <div class="service-card">
+            <h4>🤖 OpenAI Configuration</h4>
+            <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border: 2px solid #ffc107;">
+              <p style="color: #856404; margin: 0;">
+                ⚠️ OpenAI API key not configured. Please go back to Step 1 to connect your OpenAI account.
+              </p>
+            </div>
+          </div>
+          `}
 
           <div class="instructions">
             <h3>📋 Your Task</h3>

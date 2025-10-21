@@ -46,10 +46,16 @@ export default async function handler(req, res) {
       );
 
       if (!getResponse.ok) {
-        const errorData = await getResponse.json();
-        return res.status(getResponse.status).json({
+        let errorMessage = 'Failed to get Codespace';
+        try {
+          const errorData = await getResponse.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = `GitHub API error: ${getResponse.status} ${getResponse.statusText}`;
+        }
+        return res.status(200).json({
           success: false,
-          error: errorData.message || 'Failed to get Codespace'
+          error: errorMessage
         });
       }
 
@@ -69,10 +75,16 @@ export default async function handler(req, res) {
       );
 
       if (!listResponse.ok) {
-        const errorData = await listResponse.json();
-        return res.status(listResponse.status).json({
+        let errorMessage = 'Failed to list Codespaces';
+        try {
+          const errorData = await listResponse.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = `GitHub API error: ${listResponse.status} ${listResponse.statusText}`;
+        }
+        return res.status(200).json({
           success: false,
-          error: errorData.message || 'Failed to list Codespaces'
+          error: errorMessage
         });
       }
 
