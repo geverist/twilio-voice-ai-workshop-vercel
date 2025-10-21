@@ -8578,6 +8578,13 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
               }, 500);
             }
           }
+
+          // Move next-action effect from Commit button to Make Live Test Call button
+          const commitBtn = document.getElementById('commitStep4Btn');
+          if (commitBtn) commitBtn.classList.remove('next-action');
+
+          const testCallBtn = document.getElementById('makeLiveTestCallBtn');
+          if (testCallBtn) testCallBtn.classList.add('next-action');
         }
         if (stepNumber === 5) {
           step5Committed = true;
