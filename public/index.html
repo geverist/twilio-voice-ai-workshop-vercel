@@ -1399,6 +1399,11 @@
       // Update progress bar to reflect Step 1 completion in demo mode
       updateProgressBar();
 
+      // In demo mode, check Step 1 completion to add next-action to button
+      if (isDemoMode) {
+        setTimeout(() => checkStep1Complete(), 100);
+      }
+
       // Show personalized welcome message
       const welcomeMsg = studentName
         ? `👋 Welcome, ${studentName}! ${isDemoMode ? 'Running in demo mode.' : "Let's build an AI voice agent together."}`
