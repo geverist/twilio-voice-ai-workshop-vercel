@@ -9035,7 +9035,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           <div class="instructions">
             <h3>📋 Your Task</h3>
             <p>Create TwiML with ConversationRelay that connects to your WebSocket handler:</p>
-            <code style="background: #1e1e1e; color: #4fc1ff; padding: 4px 8px; border-radius: 4px;">wss://${websocketUrl}/websocket-handler</code>
+            <code style="background: #1e1e1e; color: #4fc1ff; padding: 4px 8px; border-radius: 4px;">${websocketUrl}/websocket-handler</code>
             <p style="margin-top: 15px;">
               📚 <strong>Documentation:</strong>
               <a href="https://www.twilio.com/docs/voice/twiml" target="_blank">TwiML Overview</a> |
@@ -9474,7 +9474,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
       try {
         // Get dynamic values
-        const wsHandlerUrl = `wss://${websocketUrl}/websocket-handler`;
+        const wsHandlerUrl = `${websocketUrl}/websocket-handler`;
         const voice = getDefaultVoice();
 
         // Simulate execution
@@ -10292,7 +10292,7 @@ app.get('/health', (req, res) => {
 
         return;  // Skip the old WebSocket connection code below
 
-        const wsUrl = `wss://${websocketUrl}/websocket-handler`;
+        const wsUrl = `${websocketUrl}/websocket-handler`;
         console7.innerHTML += `<div class="console-line info">🔌 Connecting to: ${wsUrl}</div>`;
 
         const ws = new WebSocket(wsUrl);
@@ -11646,7 +11646,7 @@ app.get('/health', (req, res) => {
                     ${step8Committed ? '✅ With AI Tools (Step 7)' : step6Committed ? '✅ OpenAI Integration (Step 5)' : '❌ Not deployed'}
                   </div>
                   <div style="font-family: monospace; font-size: 0.85rem; color: #0066cc; margin-top: 5px;">
-                    wss://${websocketUrl}/websocket-handler
+                    ${websocketUrl}/websocket-handler
                   </div>
                 </div>
               </div>
