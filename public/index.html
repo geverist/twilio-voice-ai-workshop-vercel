@@ -2958,6 +2958,11 @@
         conversationRelayVoice = null;
       }
 
+      // Update the code with new TTS provider
+      if (typeof updateConversationRelayCode === 'function') {
+        updateConversationRelayCode();
+      }
+
       saveProgressToStorage();
     }
 
