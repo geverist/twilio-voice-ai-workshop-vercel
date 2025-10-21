@@ -2036,6 +2036,11 @@
         setTimeout(() => checkCodespacesUsage(), 500);
       }
 
+      // Check if Step 1 is complete and add next-action to button if needed
+      if (currentStep === 0) {
+        setTimeout(() => checkStep1Complete(), 100);
+      }
+
       // Highlight the next action the student should take
       highlightNextAction();
     }
