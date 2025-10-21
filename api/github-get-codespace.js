@@ -104,10 +104,50 @@ export default async function handler(req, res) {
     }
 
     // Extract the public port URL (port 3000 for our WebSocket server)
+    // GitHub Codespaces now provides port forwarding URLs in the API response
     let websocketUrl = null;
+    let httpUrl = null;
+
     if (codespaceData.state === 'Available' && codespaceData.name) {
-      // Codespaces URL format: https://{codespace-name}-3000.app.github.dev
-      websocketUrl = `wss://${codespaceData.name}-3000.app.github.dev`;
+      // Modern Codespaces provide forwarded_ports in the API response
+      // But we need to query the ports separately or construct from environment
+
+      // Try to fetch ports information
+      try {
+        const portsResponse = await fetch(
+          `https://api.github.com/user/codespaces/${codespaceData.name}/ports`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Accept': 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28'
+            }
+          }
+        );
+
+        if (portsResponse.ok) {
+          const portsData = await portsResponse.json();
+          // Find port 3000
+          const port3000 = portsData.forwarded_ports?.find(p => p.port === 3000);
+
+          if (port3000 && port3000.forwarded_url) {
+            httpUrl = port3000.forwarded_url;
+            // Convert https:// to wss:// for WebSocket
+            websocketUrl = port3000.forwarded_url.replace(/^https:\/\//, 'wss://');
+          }
+        }
+      } catch (portError) {
+        console.warn('Could not fetch Codespace ports:', portError.message);
+      }
+
+      // Fallback: construct URL using the environment variable pattern
+      // GitHub sets GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN in the Codespace
+      // Format is typically: {codespace-name}-{port}.preview.app.github.dev
+      if (!websocketUrl) {
+        // Try the new preview domain format
+        websocketUrl = `wss://${codespaceData.name}-3000.preview.app.github.dev`;
+        httpUrl = `https://${codespaceData.name}-3000.preview.app.github.dev`;
+      }
     }
 
     return res.status(200).json({
@@ -118,6 +158,7 @@ export default async function handler(req, res) {
         state: codespaceData.state, // 'Starting', 'Available', 'Shutdown', etc.
         webUrl: codespaceData.web_url,
         websocketUrl: websocketUrl,
+        httpUrl: httpUrl, // Also return HTTP URL for testing
         machine: codespaceData.machine.name,
         createdAt: codespaceData.created_at,
         lastUsedAt: codespaceData.last_used_at
