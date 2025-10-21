@@ -6224,124 +6224,6 @@ Remember: You're having a natural conversation, not reading a script!\`;
 };</textarea>
           </div>
 
-          <div class="service-card" style="background: linear-gradient(135deg, #61afef 0%, #2c313c 100%); margin-top: 20px;">
-            <h3 style="color: white; margin-bottom: 15px;">📝 Prompt Engineering for Voice AI</h3>
-            <p style="color: #e5e5e5; margin-bottom: 15px;">The system prompt is THE MOST IMPORTANT part of your voice AI. Here's what makes it effective:</p>
-            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-              <h4 style="color: #98c379; margin-top: 0;">✅ What We Did Right:</h4>
-              <ul style="color: #e5e5e5; line-height: 1.8; margin: 10px 0;">
-                <li><strong>Named Persona:</strong> "You are Sarah" - gives the AI a consistent identity</li>
-                <li><strong>Clear Role & Boundaries:</strong> Defines what the AI can and cannot do</li>
-                <li><strong>Personality Traits:</strong> "Friendly but professional, patient, empathetic"</li>
-                <li><strong>Response Length:</strong> "Under 3 sentences" - prevents rambling</li>
-                <li><strong>Workflow Steps:</strong> Numbered process ensures consistency</li>
-                <li><strong>Example Responses:</strong> Shows good vs. bad responses</li>
-                <li><strong>Safety Guidelines:</strong> HIPAA awareness, when to transfer</li>
-              </ul>
-            </div>
-            <div style="background: rgba(255,0,0,0.2); padding: 20px; border-radius: 8px; border: 1px solid rgba(255,0,0,0.4); margin-bottom: 15px;">
-              <h4 style="color: #e06c75; margin-top: 0;">❌ Common Prompt Engineering Mistakes:</h4>
-              <ul style="color: #e5e5e5; line-height: 1.8; margin: 10px 0;">
-                <li><strong>Too Vague:</strong> "You're a helpful assistant" → Be specific about the role!</li>
-                <li><strong>No Personality:</strong> AI sounds robotic → Define tone and speaking style</li>
-                <li><strong>No Length Limits:</strong> AI rambles → Set response length expectations</li>
-                <li><strong>Missing Edge Cases:</strong> Doesn't handle "I don't know" → Add fallback instructions</li>
-                <li><strong>No Examples:</strong> AI interprets incorrectly → Show good/bad examples</li>
-                <li><strong>Ignoring Medium:</strong> Text prompts on voice → Optimize for spoken conversation!</li>
-              </ul>
-            </div>
-            <div style="background: rgba(100,200,255,0.2); padding: 20px; border-radius: 8px; border: 1px solid rgba(100,200,255,0.4);">
-              <h4 style="color: #61afef; margin-top: 0;">💬 Using Interstitials for Better UX</h4>
-              <p style="color: #e5e5e5; margin-bottom: 10px;"><strong>Interstitials</strong> are short filler phrases spoken while the AI processes tool calls or API requests. They prevent awkward silence and keep callers engaged.</p>
-              <div style="color: #e5e5e5; line-height: 1.8;">
-                <strong style="color: #98c379;">Examples of good interstitials:</strong>
-                <ul style="margin: 10px 0;">
-                  <li>"Let me check that for you..."</li>
-                  <li>"One moment while I look that up..."</li>
-                  <li>"I'm booking that appointment now..."</li>
-                  <li>"Give me just a second to confirm availability..."</li>
-                </ul>
-                <p style="margin-top: 10px; font-size: 13px; opacity: 0.9;">
-                  <strong>Tip:</strong> Include interstitials in your system prompt instructions for tool usage. For example: "Before checking availability, say 'Let me check that for you' to keep the caller engaged."
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div class="service-card" style="background: linear-gradient(135deg, #c678dd 0%, #2c313c 100%); margin-top: 20px;">
-            <h3 style="color: white; margin-bottom: 15px;">🔄 State-Based Prompt Engineering (Advanced)</h3>
-            <p style="color: #e5e5e5; margin-bottom: 15px;">This code implements <strong>state-based prompt engineering</strong> - a technique that makes AI conversations more reliable and natural.</p>
-
-            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-              <h4 style="color: #98c379; margin-top: 0;">🎯 Why State Management Matters:</h4>
-              <ul style="color: #e5e5e5; line-height: 1.8; margin: 10px 0;">
-                <li><strong>Prevents AI from wandering:</strong> Without state, AI might jump topics randomly</li>
-                <li><strong>Ensures data collection:</strong> Tracks what info we still need</li>
-                <li><strong>Handles errors gracefully:</strong> Knows when to give up and escalate</li>
-                <li><strong>Creates natural flow:</strong> Greeting → Collecting → Confirming → Booking → Complete</li>
-              </ul>
-            </div>
-
-            <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-              <h4 style="color: #61afef; margin-top: 0;">📊 Our State Machine:</h4>
-              <div style="font-family: monospace; color: #e5e5e5; font-size: 13px; line-height: 1.8;">
-                <div style="margin: 5px 0;">1️⃣ <strong style="color: #98c379;">greeting</strong> → Ask how to help</div>
-                <div style="margin: 5px 0 5px 20px;">⬇️ User mentions "appointment"</div>
-                <div style="margin: 5px 0;">2️⃣ <strong style="color: #61afef;">collecting_info</strong> → Gather date, time, name, phone</div>
-                <div style="margin: 5px 0 5px 20px;">⬇️ All required fields collected</div>
-                <div style="margin: 5px 0;">3️⃣ <strong style="color: #e5c07b;">confirming</strong> → Read back details, ask for confirmation</div>
-                <div style="margin: 5px 0 5px 20px;">⬇️ User confirms "yes"</div>
-                <div style="margin: 5px 0;">4️⃣ <strong style="color: #c678dd;">booking</strong> → Execute book_appointment tool</div>
-                <div style="margin: 5px 0 5px 20px;">⬇️ Booking successful</div>
-                <div style="margin: 5px 0;">5️⃣ <strong style="color: #56b6c2;">complete</strong> → Confirm details, ask if anything else needed</div>
-              </div>
-            </div>
-
-            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 8px;">
-              <h4 style="color: #e5c07b; margin-top: 0;">💡 Key Techniques Used:</h4>
-              <ul style="color: #e5e5e5; line-height: 1.8; margin: 10px 0;">
-                <li><strong>Dynamic Context Injection:</strong> <code>getStateContext()</code> injects state-specific instructions on every turn</li>
-                <li><strong>State Tracking Object:</strong> <code>conversationState</code> stores stage, collected data, attempt count</li>
-                <li><strong>Entity Extraction:</strong> <code>updateState()</code> extracts dates, times, phone numbers from user speech</li>
-                <li><strong>Missing Field Detection:</strong> <code>getMissingFields()</code> tells AI what to ask for next</li>
-                <li><strong>Progress Tracking:</strong> Attempt counter prevents infinite loops ("if > 2 attempts, escalate")</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="service-card" style="background: linear-gradient(135deg, #e5c07b 0%, #2c313c 100%); margin-top: 20px;">
-            <h4 style="color: white;">📋 What's Included in This Code</h4>
-            <ul style="color: #e5e5e5; line-height: 1.8;">
-              <li><strong>3 Production Tools:</strong> Check availability, book appointments, send SMS confirmations</li>
-              <li><strong>Knowledge Base:</strong> Company info, hours, services, insurance - customize for your business</li>
-              <li><strong>Conversation History:</strong> Maintains context across the call</li>
-              <li><strong>Error Handling:</strong> Graceful fallbacks if tools fail</li>
-              <li><strong>Real SMS Integration:</strong> Sends actual confirmation texts via Twilio</li>
-            </ul>
-          </div>
-
-          <div class="service-card" style="background: linear-gradient(135deg, #98c379 0%, #2c313c 100%); margin-top: 20px;">
-            <h4 style="color: white;">🔧 Customize for Your Business</h4>
-            <ol style="color: #e5e5e5; line-height: 1.8;">
-              <li>Update the <strong>knowledgeBase</strong> with your company details</li>
-              <li>Replace <strong>checkAvailability()</strong> with your scheduling API</li>
-              <li>Replace <strong>bookAppointment()</strong> with your booking system</li>
-              <li>Add more tools as needed (payment, lookup orders, etc.)</li>
-              <li>Test by calling and saying "I'd like to book an appointment"</li>
-            </ol>
-          </div>
-
-          <div class="service-card" style="background: linear-gradient(135deg, #c678dd 0%, #2c313c 100%); margin-top: 20px;">
-            <h4 style="color: white;">💡 Real-World Integration Ideas</h4>
-            <ul style="color: #e5e5e5; line-height: 1.8;">
-              <li><strong>Healthcare:</strong> Connect to Epic/Cerner for real availability</li>
-              <li><strong>Restaurants:</strong> Integrate OpenTable or Resy API</li>
-              <li><strong>E-commerce:</strong> Check inventory, track orders, process returns</li>
-              <li><strong>Support:</strong> Look up tickets, check account status, escalate issues</li>
-              <li><strong>Financial:</strong> Check balances, make payments (with proper auth!)</li>
-            </ul>
-          </div>
-
           <!-- Multi-Channel Functions Section -->
           <div class="service-card" style="margin-top: 30px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
             <h3 style="color: white; margin-bottom: 15px;">📧 Multi-Channel Communication Functions</h3>
@@ -7034,6 +6916,42 @@ case 'send_whatsapp':
                 📞 Your phone number <strong>${selectedPhoneNumber || '[Your Number]'}</strong> is live and ready to handle AI-powered voice calls!
               </p>
             </div>
+          </div>
+
+          <!-- What's Included Summary -->
+          <div class="service-card" style="background: linear-gradient(135deg, #e5c07b 0%, #2c313c 100%); margin-top: 20px;">
+            <h3 style="color: white; margin-bottom: 15px;">📋 What's Included in Your Voice AI System</h3>
+            <ul style="color: #e5e5e5; line-height: 1.8;">
+              <li><strong>3 Production Tools:</strong> Check availability, book appointments, send SMS confirmations</li>
+              <li><strong>Knowledge Base:</strong> Company info, hours, services, insurance - customize for your business</li>
+              <li><strong>Conversation History:</strong> Maintains context across the call</li>
+              <li><strong>Error Handling:</strong> Graceful fallbacks if tools fail</li>
+              <li><strong>Real SMS Integration:</strong> Sends actual confirmation texts via Twilio</li>
+            </ul>
+          </div>
+
+          <!-- Customize for Your Business -->
+          <div class="service-card" style="background: linear-gradient(135deg, #98c379 0%, #2c313c 100%); margin-top: 20px;">
+            <h3 style="color: white; margin-bottom: 15px;">🔧 Customize for Your Business</h3>
+            <ol style="color: #e5e5e5; line-height: 1.8;">
+              <li>Update the <strong>knowledgeBase</strong> with your company details</li>
+              <li>Replace <strong>checkAvailability()</strong> with your scheduling API</li>
+              <li>Replace <strong>bookAppointment()</strong> with your booking system</li>
+              <li>Add more tools as needed (payment, lookup orders, etc.)</li>
+              <li>Test by calling and saying "I'd like to book an appointment"</li>
+            </ol>
+          </div>
+
+          <!-- Real-World Integration Ideas -->
+          <div class="service-card" style="background: linear-gradient(135deg, #c678dd 0%, #2c313c 100%); margin-top: 20px;">
+            <h3 style="color: white; margin-bottom: 15px;">💡 Real-World Integration Ideas</h3>
+            <ul style="color: #e5e5e5; line-height: 1.8;">
+              <li><strong>Healthcare:</strong> Connect to Epic/Cerner for real availability</li>
+              <li><strong>Restaurants:</strong> Integrate OpenTable or Resy API</li>
+              <li><strong>E-commerce:</strong> Check inventory, track orders, process returns</li>
+              <li><strong>Support:</strong> Look up tickets, check account status, escalate issues</li>
+              <li><strong>Financial:</strong> Check balances, make payments (with proper auth!)</li>
+            </ul>
           </div>
 
           <!-- Workshop Call History -->
