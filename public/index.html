@@ -14238,8 +14238,37 @@ twilio serverless:deploy
 
       } catch (error) {
         console.error('Error refreshing Codespace:', error);
-        showStatus('codespaceDeployStatus', 'error', '❌ ' + error.message);
+
+        // If Codespace not found, offer to create a new one
+        if (error.message.includes('Not Found') || error.message.includes('No Codespaces found')) {
+          showStatus('codespaceDeployStatus', 'warning',
+            '⚠️ Codespace no longer exists (may have been deleted).<br>' +
+            '<button class="btn btn-primary" onclick="recreateCodespace()" style="margin-top: 10px; padding: 10px 20px;">🔄 Create New Codespace</button>'
+          );
+        } else {
+          showStatus('codespaceDeployStatus', 'error', '❌ ' + error.message);
+        }
       }
+    }
+
+    /**
+     * Recreate Codespace after it was deleted
+     */
+    async function recreateCodespace() {
+      // Clear old Codespace data
+      codespaceUrl = '';
+      codespaceWebUrl = '';
+      codespaceName = '';
+      websocketUrl = '';
+      saveProgressToStorage();
+
+      showStatus('codespaceDeployStatus', 'info', '🗑️ Preparing to recreate Codespace...');
+      renderStepContent();
+
+      // Trigger new deployment
+      setTimeout(() => {
+        deployToCodespaces();
+      }, 500);
     }
 
     // Initialize on load
