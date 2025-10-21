@@ -2571,7 +2571,7 @@
           <div id="step1Status" class="status-box"></div>
 
           <div class="button-group">
-            <button class="btn btn-primary next-action" id="nextBtn1" onclick="nextStep()" ${twilioConnected && openaiConnected && (codespaceUrl || studentDemoMode) ? '' : 'disabled'}>
+            <button class="btn btn-primary ${twilioConnected && openaiConnected && (codespaceUrl || studentDemoMode) ? 'next-action' : ''}" id="nextBtn1" onclick="nextStep()" ${twilioConnected && openaiConnected && (codespaceUrl || studentDemoMode) ? '' : 'disabled'}>
               Next: Select Use Case →
             </button>
           </div>
