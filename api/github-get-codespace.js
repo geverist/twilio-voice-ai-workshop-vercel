@@ -140,13 +140,11 @@ export default async function handler(req, res) {
         console.warn('Could not fetch Codespace ports:', portError.message);
       }
 
-      // Fallback: construct URL using the environment variable pattern
-      // GitHub sets GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN in the Codespace
-      // Format is typically: {codespace-name}-{port}.preview.app.github.dev
+      // Fallback: construct URL using the standard GitHub Codespaces domain
+      // Format: {codespace-name}-{port}.github.dev
       if (!websocketUrl) {
-        // Try the new preview domain format
-        websocketUrl = `wss://${codespaceData.name}-3000.preview.app.github.dev`;
-        httpUrl = `https://${codespaceData.name}-3000.preview.app.github.dev`;
+        websocketUrl = `wss://${codespaceData.name}-3000.github.dev`;
+        httpUrl = `https://${codespaceData.name}-3000.github.dev`;
       }
     }
 
