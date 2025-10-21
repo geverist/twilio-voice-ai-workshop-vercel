@@ -8639,7 +8639,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           }
 
           // Enable Next button - voice testing happens in Step 7 after prompt
-          document.getElementById('nextBtn6').disabled = false;
+          const nextBtn6 = document.getElementById('nextBtn6');
+          if (nextBtn6) nextBtn6.disabled = false;
 
           // Show SDK version notice
           showSDKVersionNotice();

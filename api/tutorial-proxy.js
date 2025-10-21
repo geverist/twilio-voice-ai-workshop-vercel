@@ -500,6 +500,25 @@ export default async function handler(req, res) {
         }
         break;
 
+      case 'updatePhoneNumber':
+        // Update phone number webhook configuration
+        const updatedNumber = await client.incomingPhoneNumbers(params.phoneNumberSid)
+          .update({
+            voiceUrl: params.voiceUrl,
+            voiceMethod: params.voiceMethod || 'POST'
+          });
+
+        result = {
+          success: true,
+          phoneNumber: {
+            sid: updatedNumber.sid,
+            phoneNumber: updatedNumber.phoneNumber,
+            voiceUrl: updatedNumber.voiceUrl,
+            voiceMethod: updatedNumber.voiceMethod
+          }
+        };
+        break;
+
       case 'getWorkshopCallHistory':
         // Get all calls made during workshop session with CI data if available
         try {
