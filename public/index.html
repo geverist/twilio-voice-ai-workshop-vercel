@@ -4795,8 +4795,8 @@
           </div>
 
           <div class="service-card">
-            <h3>✍️ Craft Your System Prompt</h3>
-            <p>Edit the sample prompt below or write your own. This prompt will guide your AI's behavior.</p>
+            <h3>✍️ Craft Your System Prompt${generatedContent ? ' <span style="color: #98c379; font-size: 14px;">✨ AI-Generated for Your Use Case</span>' : ''}</h3>
+            <p>${generatedContent ? 'Below is a custom system prompt generated based on your use case description. You can edit it or use it as-is.' : 'Edit the sample prompt below or write your own. This prompt will guide your AI\'s behavior.'}</p>
 
             <div class="code-editor" style="margin-top: 20px;">
               <div class="code-header">
@@ -4806,7 +4806,7 @@
                   <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetSystemPrompt()">Reset to Sample</button>
                 </div>
               </div>
-              <textarea class="code-textarea" id="systemPrompt" rows="20" style="font-family: system-ui, -apple-system, sans-serif; font-size: 14px;">You are Alex, a friendly and professional AI assistant for Acme Healthcare.
+              <textarea class="code-textarea" id="systemPrompt" rows="20" style="font-family: system-ui, -apple-system, sans-serif; font-size: 14px;">${generatedContent?.systemPrompt ? generatedContent.systemPrompt : `You are Alex, a friendly and professional AI assistant for Acme Healthcare.
 
 ## Your Role
 You help patients schedule appointments, answer questions about services, and provide information about the medical practice.
@@ -4851,7 +4851,7 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
 - If the user has an emergency, immediately say: "This sounds like an emergency. Please hang up and call 911."
 - If you're unsure, ask for clarification rather than guessing
 - Always confirm appointment details before booking
-- End calls politely: "Is there anything else I can help you with today?"</textarea>
+- End calls politely: "Is there anything else I can help you with today?"`}</textarea>
             </div>
 
             <div class="button-group" style="margin-top: 15px;">
