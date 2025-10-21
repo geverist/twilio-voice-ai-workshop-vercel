@@ -9319,7 +9319,7 @@ app.get('/health', (req, res) => {
                 id="deployCodespaceBtn5"
                 onclick="simulateCodespaceDeployment()"
                 style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                🚀 Simulate WebSocket Server Deployment
+                💾 Deploy WebSocket Handler
               </button>
               <div id="codespaceDeployStatus5" style="margin-top: 15px; color: white;"></div>
             ` : `
@@ -13014,8 +13014,14 @@ twilio serverless:deploy
       }
 
       if (btn) {
-        btn.disabled = false;
-        btn.textContent = '🚀 Simulate WebSocket Server Deployment';
+        btn.style.display = 'none';
+      }
+
+      // Enable Next button and add next-action effect
+      const nextBtn = document.getElementById('nextBtn5');
+      if (nextBtn) {
+        nextBtn.disabled = false;
+        nextBtn.classList.add('next-action');
       }
 
       renderStepContent();
