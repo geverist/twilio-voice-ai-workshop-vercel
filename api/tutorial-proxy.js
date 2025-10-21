@@ -6,6 +6,7 @@
  */
 
 import twilio from 'twilio';
+import { applyRateLimit } from './_lib/ratelimit.js';
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -23,6 +24,12 @@ export default async function handler(req, res) {
   // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Apply rate limiting (10 requests per 10 seconds per IP)
+  const allowed = await applyRateLimit(req, res);
+  if (!allowed) {
+    return; // Response already sent by rate limiter
   }
 
   try {

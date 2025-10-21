@@ -21,6 +21,8 @@
   "dependencies": {
     "@deepgram/sdk": "^4.11.2",
     "@sendgrid/mail": "^8.1.0",
+    "@upstash/ratelimit": "^2.0.6",
+    "@upstash/redis": "^1.35.6",
     "@vercel/postgres": "^0.10.0",
     "dotenv": "^17.2.3",
     "elevenlabs": "^1.59.0",
