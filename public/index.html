@@ -2318,7 +2318,7 @@
             ` : `
               <div style="margin-bottom: 15px;">
                 <button
-                  class="btn btn-primary"
+                  class="btn btn-primary next-action"
                   id="deployCodespaceBtn"
                   onclick="deployToCodespaces()"
                   style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #1a7f37; border: none; font-weight: bold;">
@@ -2922,12 +2922,23 @@
     }
 
     function checkStep1Complete() {
-      if (twilioConnected) {
+      if (twilioConnected && !openaiConnected) {
+        // Twilio is connected but OpenAI is not - highlight OpenAI button
+        setTimeout(() => {
+          const connectOpenAIBtn = document.querySelector('[onclick*="connectOpenAI"]');
+          if (connectOpenAIBtn) {
+            connectOpenAIBtn.classList.add('next-action');
+          }
+        }, 500);
+        showStatus('step1Status', 'success', '✅ Twilio connected! Now connect your OpenAI account below.');
+      } else if (twilioConnected && openaiConnected) {
+        // Both connected - enable Next button
         const nextBtn = document.getElementById('nextBtn1');
         if (nextBtn) {
           nextBtn.disabled = false;
+          nextBtn.classList.add('next-action');
         }
-        showStatus('step1Status', 'success', '🎉 Twilio connected! Click Next to continue.');
+        showStatus('step1Status', 'success', '🎉 All accounts connected! Click Next to continue.');
       }
     }
 
@@ -2961,6 +2972,16 @@
               <p style="font-size: 12px; color: #666; margin-top: 8px;">
                 💡 Be specific! The more detail you provide, the better we can customize prompt suggestions and examples throughout the workshop.
               </p>
+              ${generatedContent ? `
+              <button
+                id="regenerateContentBtn"
+                onclick="regenerateUseCaseContent()"
+                style="margin-top: 12px; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: transform 0.2s;"
+                onmouseover="this.style.transform='scale(1.05)'"
+                onmouseout="this.style.transform='scale(1)'">
+                ✨ Regenerate AI Content
+              </button>
+              ` : ''}
             </div>
           </div>
 
@@ -3034,23 +3055,47 @@
       }
     }
 
-    async function generateUseCaseContent() {
+    async function regenerateUseCaseContent() {
+      // Update use case description from textarea first
+      handleUseCaseInput();
+
+      // Re-generate content with the updated description
+      const success = await generateUseCaseContent(true);
+
+      // Re-render the step to show updated button state and content
+      if (success) {
+        renderStepContent();
+      }
+    }
+
+    async function generateUseCaseContent(isRegenerate = false) {
       if (!useCaseDescription || !useCaseDescription.trim()) {
         console.log('⚠️ No use case description provided, skipping content generation');
-        return;
+        if (isRegenerate) {
+          showStatus('step2Status', 'error', '❌ Please enter a use case description first');
+        }
+        return false;
       }
 
       if (!openaiApiKey) {
         console.log('⚠️ No OpenAI API key configured, skipping content generation');
-        return;
+        if (isRegenerate) {
+          showStatus('step2Status', 'error', '❌ OpenAI API key required for content generation');
+        }
+        return false;
       }
 
       if (!callDirection) {
         console.log('⚠️ No call direction selected, skipping content generation');
-        return;
+        if (isRegenerate) {
+          showStatus('step2Status', 'error', '❌ Please select a call direction first');
+        }
+        return false;
       }
 
       try {
+        // Show loading state
+        showStatus('step2Status', 'info', '🤖 Generating custom content with AI... This may take a few seconds.');
         console.log('🤖 Generating custom content for use case...');
 
         const response = await fetch('/api/generate-use-case-content', {
@@ -3068,7 +3113,13 @@
         if (!response.ok) {
           const error = await response.json();
           console.error('❌ Failed to generate content:', error);
-          return;
+
+          // Show user-friendly error message
+          showStatus('step2Status', 'warning',
+            '⚠️ AI content generation failed. Using default workshop content instead. ' +
+            (error.error ? `(${error.error})` : '')
+          );
+          return false;
         }
 
         const data = await response.json();
@@ -3078,11 +3129,28 @@
         console.log('✅ Generated content:', generatedContent);
         console.log(`📊 Used ${data.usageTokens} tokens`);
 
-        // Show success message to user
-        showStatus('step2Status', 'success', '✨ AI customized the workshop content based on your use case!');
+        // Show success message with token usage
+        const tokenInfo = data.usageTokens ? ` (${data.usageTokens} tokens used)` : '';
+        showStatus('step2Status', 'success',
+          `✨ AI customized the workshop content based on your use case!${tokenInfo}`
+        );
+
+        // Show regenerate button if not already visible
+        const regenerateBtn = document.getElementById('regenerateContentBtn');
+        if (regenerateBtn) {
+          regenerateBtn.style.display = 'inline-flex';
+        }
+
+        return true;
 
       } catch (error) {
         console.error('❌ Error generating content:', error);
+
+        // Show user-friendly error message
+        showStatus('step2Status', 'warning',
+          '⚠️ AI content generation failed. Using default workshop content instead. Check your internet connection and OpenAI API key.'
+        );
+        return false;
       }
     }
 
@@ -4855,7 +4923,7 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
             </div>
 
             <div class="button-group" style="margin-top: 15px;">
-              <button class="btn btn-success" onclick="saveSystemPrompt()">💾 Save Prompt</button>
+              <button class="btn btn-success next-action" onclick="saveSystemPrompt()">💾 Save Prompt</button>
               <button class="btn btn-primary" onclick="scoreSystemPrompt()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">📊 Score This Prompt</button>
             </div>
 
@@ -4955,7 +5023,7 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
             </div>
 
             <button
-              class="btn btn-success"
+              class="btn btn-success next-action"
               id="commitStep7Btn"
               onclick="commitStep(7)"
               style="width: 100%; font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border: none;">
@@ -6104,7 +6172,7 @@ Remember: You're having a natural conversation, not reading a script!\`;
               This will update your WebSocket handler with custom functions and knowledge base.
             </p>
             <button
-              class="btn btn-success"
+              class="btn btn-success next-action"
               id="commitStep8Btn"
               onclick="commitStep(8)"
               style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
@@ -8587,7 +8655,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
               This will update your voice handler with AI-powered conversation capabilities and configure your phone number.
             </p>
             <button
-              class="btn btn-success"
+              class="btn btn-success next-action"
               id="commitStep6Btn"
               onclick="commitStep(6)"
               style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
@@ -13315,6 +13383,14 @@ twilio serverless:deploy
 
             celebrate('🎉 Your development environment is ready!', 'normal');
             renderStepContent(); // Refresh to show the Codespace URL
+
+            // Add next-action effect to Connect Twilio button after codespace deploys
+            setTimeout(() => {
+              const connectTwilioBtn = document.querySelector('[onclick*="connectTwilio"]');
+              if (connectTwilioBtn && !twilioConnected) {
+                connectTwilioBtn.classList.add('next-action');
+              }
+            }, 500);
 
           } else if (state === 'Starting' || state === 'Created' || state === 'Provisioning') {
             // Still starting, continue polling
