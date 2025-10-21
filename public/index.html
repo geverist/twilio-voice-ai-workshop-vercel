@@ -13691,12 +13691,14 @@ twilio serverless:deploy
 
         const allRepos = await response.json();
 
-        // Filter for workshop repos
-        const workshopRepos = allRepos.filter(repo =>
-          repo.name.includes('conversationrelay') ||
-          repo.name.includes('voice-ai') ||
-          repo.description?.includes('Twilio Voice AI')
-        );
+        // Filter for workshop repos - only show repos with workshop naming convention
+        const workshopRepos = allRepos.filter(repo => {
+          const name = repo.name.toLowerCase();
+          // Match repos with workshop naming pattern or conversationrelay starter pack
+          return name.includes('workshop') ||
+                 name.includes('conversationrelay-starter-pack') ||
+                 name.includes('conversationrelay');
+        });
 
         if (workshopRepos.length === 0) {
           showStatus('step1Status', 'info', 'ℹ️ No workshop repositories found.');
