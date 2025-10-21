@@ -3208,9 +3208,12 @@
         }
 
         if (nextBtn) {
-          nextBtn.disabled = false;
-          nextBtn.classList.add('next-action'); // Add glow effect
-          console.log('✅ Next button enabled for call direction:', direction);
+          // Only enable if use case description is also provided
+          if (useCaseDescription && useCaseDescription.trim()) {
+            nextBtn.disabled = false;
+            nextBtn.classList.add('next-action'); // Add glow effect
+            console.log('✅ Next button enabled for call direction:', direction);
+          }
         } else {
           console.error('❌ Could not find nextBtn2 element');
         }
