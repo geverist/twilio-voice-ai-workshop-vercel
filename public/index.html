@@ -9651,7 +9651,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
   connect.conversationRelay({
     url: wsHandlerUrl,
-    voice: '${getDefaultVoice()}',
+    voice: '${getConversationRelayVoice(getDefaultVoice())}',
     ttsProvider: '${getConversationRelayTTSProvider(ttsProvider)}',
     welcomeGreeting: 'Hello! I am your AI assistant. How can I help you today?',
     dtmfDetection: true
@@ -9732,6 +9732,16 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       return mapping[provider] || 'amazon';
     }
 
+    // Strip 'Polly.' prefix from Amazon voice names for ConversationRelay
+    function getConversationRelayVoice(voice) {
+      if (!voice) return voice;
+      // Amazon Polly voices come as 'Polly.Joanna' but ConversationRelay expects 'Joanna'
+      if (voice.startsWith('Polly.')) {
+        return voice.replace('Polly.', '');
+      }
+      return voice;
+    }
+
     // Update ConversationRelay code based on settings
     function updateConversationRelayCode() {
       const welcomeGreeting = document.getElementById('crWelcomeGreeting')?.value || 'Hello! I am your AI assistant. How can I help you today?';
@@ -9740,7 +9750,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       const interruptible = document.getElementById('crInterruptible')?.value || 'speech';
       const dtmfDetection = document.getElementById('crDtmfDetection')?.value || 'true';
       const hints = document.getElementById('crHints')?.value || '';
-      const voice = document.getElementById('conversationRelayVoice')?.value || getDefaultVoice();
+      const voice = getConversationRelayVoice(document.getElementById('conversationRelayVoice')?.value || getDefaultVoice());
       const ttsProviderValue = getConversationRelayTTSProvider(document.getElementById('ttsProvider')?.value || 'amazon-polly');
 
       // Build hints line if provided
