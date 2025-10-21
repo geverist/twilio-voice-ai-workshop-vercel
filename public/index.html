@@ -6232,19 +6232,34 @@ Remember: You're having a natural conversation, not reading a script!\`;
             </p>
           </div>
 
-          <div class="instructions" style="margin-top: 20px;">
-            <h4>📲 SMS Confirmation Function</h4>
-            <p>Send SMS confirmations using Twilio Messaging API (already included in the code above):</p>
-          </div>
-
-          <div class="code-editor" style="margin-bottom: 20px;">
-            <div class="code-header">
-              <span>💬 SMS Function Implementation</span>
-              <div style="display: flex; gap: 10px;">
-                <button class="btn-copy" onclick="copyCode('smsFunction')">📋 Copy Code</button>
-              </div>
+          <!-- Tabbed Channel Selector -->
+          <div style="margin: 20px 0;">
+            <div style="display: flex; gap: 10px; border-bottom: 2px solid #e0e0e0; padding-bottom: 0;">
+              <button id="tabSMS" class="channel-tab active" onclick="showChannelTab('sms')" style="padding: 12px 24px; background: #10b981; color: white; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; font-size: 14px;">
+                📲 SMS
+              </button>
+              <button id="tabEmail" class="channel-tab" onclick="showChannelTab('email')" style="padding: 12px 24px; background: #e0e0e0; color: #666; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; font-size: 14px;">
+                📧 Email
+              </button>
+              <button id="tabWhatsApp" class="channel-tab" onclick="showChannelTab('whatsapp')" style="padding: 12px 24px; background: #e0e0e0; color: #666; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-weight: 600; font-size: 14px;">
+                💬 WhatsApp
+              </button>
             </div>
-            <textarea class="code-textarea" id="smsFunction" rows="18" readonly>// Tool Definition - Add to your tools array
+
+            <!-- SMS Tab Content -->
+            <div id="channelContentSMS" class="channel-content" style="display: block;">
+              <div class="instructions" style="margin-top: 20px;">
+                <h4>📲 SMS Confirmation Function</h4>
+                <p>Send SMS confirmations using Twilio Messaging API (already included in the code above):</p>
+              </div>
+              <div class="code-editor" style="margin-bottom: 20px;">
+                <div class="code-header">
+                  <span>💬 SMS Function Implementation</span>
+                  <div style="display: flex; gap: 10px;">
+                    <button class="btn-copy" onclick="copyCode('smsFunction')">📋 Copy Code</button>
+                  </div>
+                </div>
+                <textarea class="code-textarea" id="smsFunction" rows="18" readonly>// Tool Definition - Add to your tools array
 {
   type: "function",
   name: "send_sms",
@@ -6284,21 +6299,23 @@ async function sendSMS(args, twilioClient, context) {
     };
   }
 }</textarea>
-          </div>
-
-          <div class="instructions">
-            <h4>📧 Email Confirmation Function</h4>
-            <p>Send email confirmations using Twilio SendGrid API:</p>
-          </div>
-
-          <div class="code-editor" style="margin-bottom: 20px;">
-            <div class="code-header">
-              <span>✉️ Email Function Implementation</span>
-              <div style="display: flex; gap: 10px;">
-                <button class="btn-copy" onclick="copyCode('emailFunction')">📋 Copy Code</button>
               </div>
             </div>
-            <textarea class="code-textarea" id="emailFunction" rows="25" readonly>// First, add SendGrid to your Twilio Functions:
+
+            <!-- Email Tab Content -->
+            <div id="channelContentEmail" class="channel-content" style="display: none;">
+              <div class="instructions" style="margin-top: 20px;">
+                <h4>📧 Email Confirmation Function</h4>
+                <p>Send email confirmations using Twilio SendGrid API:</p>
+              </div>
+              <div class="code-editor" style="margin-bottom: 20px;">
+                <div class="code-header">
+                  <span>✉️ Email Function Implementation</span>
+                  <div style="display: flex; gap: 10px;">
+                    <button class="btn-copy" onclick="copyCode('emailFunction')">📋 Copy Code</button>
+                  </div>
+                </div>
+                <textarea class="code-textarea" id="emailFunction" rows="25" readonly>// First, add SendGrid to your Twilio Functions:
 // In Twilio Console → Functions → Dependencies → Add: @sendgrid/mail
 
 // Tool Definition - Add to your tools array
@@ -6355,21 +6372,23 @@ async function sendEmail(args, context) {
     };
   }
 }</textarea>
-          </div>
-
-          <div class="instructions">
-            <h4>💬 WhatsApp Function</h4>
-            <p>Send WhatsApp messages using Twilio WhatsApp API:</p>
-          </div>
-
-          <div class="code-editor" style="margin-bottom: 20px;">
-            <div class="code-header">
-              <span>💚 WhatsApp Function Implementation</span>
-              <div style="display: flex; gap: 10px;">
-                <button class="btn-copy" onclick="copyCode('whatsappFunction')">📋 Copy Code</button>
               </div>
             </div>
-            <textarea class="code-textarea" id="whatsappFunction" rows="20" readonly>// Tool Definition - Add to your tools array
+
+            <!-- WhatsApp Tab Content -->
+            <div id="channelContentWhatsApp" class="channel-content" style="display: none;">
+              <div class="instructions" style="margin-top: 20px;">
+                <h4>💬 WhatsApp Function</h4>
+                <p>Send WhatsApp messages using Twilio WhatsApp API:</p>
+              </div>
+              <div class="code-editor" style="margin-bottom: 20px;">
+                <div class="code-header">
+                  <span>💚 WhatsApp Function Implementation</span>
+                  <div style="display: flex; gap: 10px;">
+                    <button class="btn-copy" onclick="copyCode('whatsappFunction')">📋 Copy Code</button>
+                  </div>
+                </div>
+                <textarea class="code-textarea" id="whatsappFunction" rows="20" readonly>// Tool Definition - Add to your tools array
 {
   type: "function",
   name: "send_whatsapp",
@@ -6409,6 +6428,8 @@ async function sendWhatsApp(args, twilioClient, context) {
     };
   }
 }</textarea>
+              </div>
+            </div>
           </div>
 
           <div class="service-card" style="background: #f8f9fa; border-left: 4px solid #10b981; margin-top: 20px;">
@@ -11874,6 +11895,37 @@ app.get('/health', (req, res) => {
       }
       element.className = `status-box show ${type}`;
       element.innerHTML = message;
+    }
+
+    // Switch between multi-channel tabs
+    function showChannelTab(channel) {
+      // Hide all content
+      document.getElementById('channelContentSMS').style.display = 'none';
+      document.getElementById('channelContentEmail').style.display = 'none';
+      document.getElementById('channelContentWhatsApp').style.display = 'none';
+
+      // Reset all tab buttons
+      document.getElementById('tabSMS').style.background = '#e0e0e0';
+      document.getElementById('tabSMS').style.color = '#666';
+      document.getElementById('tabEmail').style.background = '#e0e0e0';
+      document.getElementById('tabEmail').style.color = '#666';
+      document.getElementById('tabWhatsApp').style.background = '#e0e0e0';
+      document.getElementById('tabWhatsApp').style.color = '#666';
+
+      // Show selected content and highlight tab
+      if (channel === 'sms') {
+        document.getElementById('channelContentSMS').style.display = 'block';
+        document.getElementById('tabSMS').style.background = '#10b981';
+        document.getElementById('tabSMS').style.color = 'white';
+      } else if (channel === 'email') {
+        document.getElementById('channelContentEmail').style.display = 'block';
+        document.getElementById('tabEmail').style.background = '#10b981';
+        document.getElementById('tabEmail').style.color = 'white';
+      } else if (channel === 'whatsapp') {
+        document.getElementById('channelContentWhatsApp').style.display = 'block';
+        document.getElementById('tabWhatsApp').style.background = '#10b981';
+        document.getElementById('tabWhatsApp').style.color = 'white';
+      }
     }
 
     // Copy code to clipboard
