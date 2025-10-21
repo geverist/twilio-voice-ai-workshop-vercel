@@ -142,7 +142,7 @@
     .next-action::before {
       content: '👉';
       position: absolute;
-      left: -45px;
+      right: -45px;  /* Changed from left to right to avoid overlap with Back buttons */
       top: 50%;
       transform: translateY(-50%);
       font-size: 1.5rem;
@@ -150,9 +150,16 @@
       z-index: 2;
     }
 
-    /* Add extra left margin to next-action buttons in button-group to make room for finger */
-    .button-group .next-action {
-      margin-left: 60px;
+    /* For buttons in a button-group that are on the right side, keep pointer on left */
+    .button-group .next-action:last-child::before {
+      right: auto;
+      left: -45px;
+    }
+
+    /* Specific styling for primary/next buttons - pointer on right side */
+    .btn-primary.next-action::before {
+      right: -45px;
+      left: auto;
     }
 
     .step-item.completed .step-number::before {
@@ -2038,12 +2045,6 @@
 
       // Highlight the next action the student should take
       highlightNextAction();
-
-      // Check if Step 1 is complete and add next-action to button if needed
-      // Run AFTER modal logic (which uses 100ms timeout)
-      if (currentStep === 0) {
-        setTimeout(() => checkStep1Complete(), 200);
-      }
     }
 
     /**
@@ -4034,7 +4035,7 @@
             <div class="code-header">
               <span>📝 ${isOutbound ? 'IVR' : 'Inbound'} TwiML Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success next-action" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode4()">✓ Validate</button>
+                <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode4()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code4')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode4()">Reset</button>
               </div>
@@ -9263,7 +9264,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             <div class="code-header">
               <span>📝 ConversationRelay TwiML Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success next-action" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode8()">✓ Validate</button>
+                <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode8()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code8')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode8()">Reset</button>
               </div>
@@ -10220,7 +10221,7 @@ app.get('/health', (req, res) => {
 
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary next-action" id="nextBtn7" onclick="nextStep()" ${step5CodeValidated || step5Deployed || codespaceUrl ? '' : 'disabled'}>
+            <button class="btn btn-primary" id="nextBtn7" onclick="nextStep()" ${step5CodeValidated || step5Deployed || codespaceUrl ? '' : 'disabled'}>
               Next: Upgrade to ConversationRelay →
             </button>
           </div>
@@ -13091,6 +13092,17 @@ twilio serverless:deploy
     }
 
     // Update progress bar whenever state changes
+    function checkStep1Complete() {
+      if (twilioConnected) {
+        const nextBtn = document.getElementById('nextBtn1');
+        if (nextBtn) {
+          nextBtn.disabled = false;
+        }
+        showStatus('step1Status', 'success', '🎉 Twilio connected! Click Next to continue.');
+        updateProgressBar();
+      }
+    }
+
     // =========================================================================
     // CONSOLE INTEGRATION
     // =========================================================================
