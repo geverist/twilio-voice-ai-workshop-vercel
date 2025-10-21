@@ -1552,6 +1552,7 @@
         const nextBtn2 = document.getElementById('nextBtn2');
         if (nextBtn2) {
           nextBtn2.disabled = false;
+          nextBtn2.classList.add('next-action');
           const directionText = callDirection === 'outbound' ? 'outbound calls (you call them)' : 'inbound calls (they call you)';
           showStatus('step2Status', 'success', `✅ Great! You'll build a bot for ${directionText}.`);
         }
