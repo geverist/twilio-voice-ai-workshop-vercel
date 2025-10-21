@@ -2215,13 +2215,17 @@
                 <p style="color: rgba(255,255,255,0.85); margin: 0 0 12px 0; font-size: 13px;">
                   You can deploy your code to this repository throughout the workshop.
                 </p>
-                <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                   <a href="https://github.com/${githubUsername}/${studentRepoName}" target="_blank" style="color: white; text-decoration: none; font-size: 13px; opacity: 0.9;">
                     🔗 View Repository →
                   </a>
                   <span style="color: rgba(255,255,255,0.4);">•</span>
                   <a href="javascript:void(0)" onclick="cloneNewRepository()" style="color: white; text-decoration: none; font-size: 13px; opacity: 0.9;">
                     📦 Clone New Repository
+                  </a>
+                  <span style="color: rgba(255,255,255,0.4);">•</span>
+                  <a href="javascript:void(0)" onclick="deleteRepository()" style="color: #ff6b6b; text-decoration: none; font-size: 13px; opacity: 0.9;">
+                    🗑️ Delete Repository
                   </a>
                 </div>
               </div>
@@ -13480,6 +13484,73 @@ twilio serverless:deploy
 
         // Trigger the clone flow
         cloneWorkshopRepo();
+      }
+    }
+
+    /**
+     * Delete the current repository with confirmation
+     */
+    async function deleteRepository() {
+      const confirmDelete = confirm(
+        '🗑️ DELETE REPOSITORY?\n\n' +
+        `This will PERMANENTLY DELETE:\n${githubUsername}/${studentRepoName}\n\n` +
+        '⚠️ WARNING: This action CANNOT be undone!\n\n' +
+        'All code, commits, and history will be lost.\n' +
+        'Any Codespaces for this repository will also be deleted.\n\n' +
+        'Are you absolutely sure you want to delete this repository?'
+      );
+
+      if (!confirmDelete) {
+        return;
+      }
+
+      // Double confirmation for safety
+      const doubleConfirm = confirm(
+        '⚠️ FINAL CONFIRMATION\n\n' +
+        `Type the repository name to confirm deletion:\n${studentRepoName}\n\n` +
+        'Click OK to DELETE, or Cancel to abort.'
+      );
+
+      if (!doubleConfirm) {
+        return;
+      }
+
+      try {
+        showStatus('step1Status', 'info', '🗑️ Deleting repository...');
+
+        const response = await fetch('/api/github-delete-repo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: githubToken,
+            repoFullName: `${githubUsername}/${studentRepoName}`
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to delete repository');
+        }
+
+        // Clear all related data
+        studentRepoName = null;
+        codespaceUrl = '';
+        codespaceWebUrl = '';
+        codespaceName = '';
+        websocketUrl = '';
+        saveProgressToStorage();
+
+        showStatus('step1Status', 'success',
+          '✅ Repository deleted successfully.<br>' +
+          'You can now clone a new repository to continue.'
+        );
+
+        renderStepContent();
+
+      } catch (error) {
+        console.error('Error deleting repository:', error);
+        showStatus('step1Status', 'error', `❌ Failed to delete repository: ${error.message}`);
       }
     }
 
