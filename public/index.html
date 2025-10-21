@@ -6615,6 +6615,250 @@ case 'send_whatsapp':
     // STEP 9: DEPLOY YOUR VOICE AI SYSTEM
     // =========================================================================
 
+    /**
+     * Renders dynamic admin panel cards based on use case and call direction
+     */
+    function renderAdminPanelCards() {
+      // Detect use case type from description
+      const useCaseLower = (useCaseDescription || '').toLowerCase();
+      const isHealthcare = /health|medical|doctor|patient|appointment|clinic|hospital/.test(useCaseLower);
+      const isRestaurant = /restaurant|food|reservation|table|dining|menu/.test(useCaseLower);
+      const isRetail = /shop|store|product|order|purchase|inventory|customer service/.test(useCaseLower);
+      const isSupport = /support|help|ticket|issue|technical|troubleshoot/.test(useCaseLower);
+      const isRecruiting = /recruit|hiring|candidate|interview|job|applicant/.test(useCaseLower);
+      const isOutbound = callDirection === 'outbound';
+
+      let cards = [];
+
+      // Base cards for all use cases
+      cards.push(`
+        <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+          <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">📞 Call Management</h4>
+          <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+            ${isOutbound ? 'Monitor outbound campaigns and success rates' : 'Track incoming call volume and wait times'}
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button onclick="window.open('https://console.twilio.com/us1/monitor/logs/calls', '_blank')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+              View Call Logs
+            </button>
+            <button onclick="alert('Feature coming soon: Real-time call dashboard')" class="btn" style="width: 100%; background: rgba(255,255,255,0.3); color: white; padding: 8px 12px; font-size: 13px;">
+              Live Dashboard
+            </button>
+          </div>
+        </div>
+      `);
+
+      // Healthcare-specific
+      if (isHealthcare) {
+        cards.push(`
+          <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+            <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">🏥 Appointment Management</h4>
+            <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+              View scheduled appointments and patient callbacks
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button onclick="alert('Appointment calendar integration coming soon')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+                📅 View Appointments
+              </button>
+              <button onclick="alert('Patient records integration coming soon')" class="btn" style="width: 100%; background: rgba(255,255,255,0.3); color: white; padding: 8px 12px; font-size: 13px;">
+                Patient Records
+              </button>
+            </div>
+          </div>
+        `);
+
+        cards.push(`
+          <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+            <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">⚕️ HIPAA Compliance</h4>
+            <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+              Ensure call recordings and data meet compliance requirements
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button onclick="window.open('https://www.twilio.com/en-us/trusted-cloud/hipaa', '_blank')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+                HIPAA Settings
+              </button>
+            </div>
+          </div>
+        `);
+      }
+
+      // Restaurant-specific
+      if (isRestaurant) {
+        cards.push(`
+          <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+            <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">🍽️ Reservation System</h4>
+            <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+              Manage table bookings and waitlist
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button onclick="alert('Reservation management dashboard coming soon')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+                📋 Today's Reservations
+              </button>
+              <button onclick="alert('Table availability settings')" class="btn" style="width: 100%; background: rgba(255,255,255,0.3); color: white; padding: 8px 12px; font-size: 13px;">
+                Table Availability
+              </button>
+            </div>
+          </div>
+        `);
+
+        cards.push(`
+          <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+            <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">📱 SMS Confirmations</h4>
+            <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+              Send reservation confirmations and reminders
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button onclick="window.open('https://console.twilio.com/us1/monitor/logs/messages', '_blank')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+                View SMS Logs
+              </button>
+            </div>
+          </div>
+        `);
+      }
+
+      // Retail/E-commerce
+      if (isRetail) {
+        cards.push(`
+          <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+            <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">📦 Order Tracking</h4>
+            <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+              Monitor order inquiries and shipping status requests
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button onclick="alert('Order tracking integration coming soon')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+                Recent Orders
+              </button>
+              <button onclick="alert('Inventory integration coming soon')" class="btn" style="width: 100%; background: rgba(255,255,255,0.3); color: white; padding: 8px 12px; font-size: 13px;">
+                Inventory Status
+              </button>
+            </div>
+          </div>
+        `);
+
+        cards.push(`
+          <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+            <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">💳 Payment Issues</h4>
+            <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+              Track payment-related calls and refund requests
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button onclick="alert('Payment analytics coming soon')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+                Payment Reports
+              </button>
+            </div>
+          </div>
+        `);
+      }
+
+      // Support/Helpdesk
+      if (isSupport) {
+        cards.push(`
+          <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+            <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">🎫 Ticket Management</h4>
+            <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+              View AI-created tickets and escalations
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button onclick="alert('Ticket system integration coming soon')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+                Open Tickets
+              </button>
+              <button onclick="alert('Escalation dashboard coming soon')" class="btn" style="width: 100%; background: rgba(255,255,255,0.3); color: white; padding: 8px 12px; font-size: 13px;">
+                Escalations
+              </button>
+            </div>
+          </div>
+        `);
+
+        cards.push(`
+          <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+            <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">📊 Resolution Metrics</h4>
+            <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+              Track first-call resolution and customer satisfaction
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button onclick="alert('Analytics dashboard coming soon')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+                View Metrics
+              </button>
+            </div>
+          </div>
+        `);
+      }
+
+      // Recruiting-specific
+      if (isRecruiting) {
+        cards.push(`
+          <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+            <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">👥 Candidate Pipeline</h4>
+            <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+              Track candidate responses and interview scheduling
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <button onclick="alert('ATS integration coming soon')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+                Candidate Status
+              </button>
+              <button onclick="alert('Interview calendar coming soon')" class="btn" style="width: 100%; background: rgba(255,255,255,0.3); color: white; padding: 8px 12px; font-size: 13px;">
+                Interview Schedule
+              </button>
+            </div>
+          </div>
+        `);
+
+        if (isOutbound) {
+          cards.push(`
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+              <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">📈 Outreach Campaigns</h4>
+              <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+                Monitor call success rates and follow-ups needed
+              </p>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button onclick="alert('Campaign analytics coming soon')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+                  Campaign Stats
+                </button>
+              </div>
+            </div>
+          `);
+        }
+      }
+
+      // AI Analytics (for all use cases)
+      cards.push(`
+        <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+          <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">🤖 AI Performance</h4>
+          <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+            Analyze AI response quality and conversation flows
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button onclick="window.open('https://console.twilio.com/us1/monitor/voice-insights', '_blank')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+              Voice Insights
+            </button>
+            <button onclick="alert('Conversation transcripts: Check Twilio Console > Voice > Calls')" class="btn" style="width: 100%; background: rgba(255,255,255,0.3); color: white; padding: 8px 12px; font-size: 13px;">
+              View Transcripts
+            </button>
+          </div>
+        </div>
+      `);
+
+      // Cost Monitoring (for all)
+      cards.push(`
+        <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px;">
+          <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">💰 Cost Monitoring</h4>
+          <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin-bottom: 15px;">
+            Track API usage and associated costs
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button onclick="window.open('https://console.twilio.com/us1/billing/usage', '_blank')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+              Twilio Usage
+            </button>
+            <button onclick="window.open('https://platform.openai.com/usage', '_blank')" class="btn" style="width: 100%; background: rgba(255,255,255,0.3); color: white; padding: 8px 12px; font-size: 13px;">
+              OpenAI Usage
+            </button>
+          </div>
+        </div>
+      `);
+
+      return cards.join('');
+    }
+
     function renderStep9_Deploy() {
       return `
         <div class="step-content active">
@@ -6939,6 +7183,20 @@ case 'send_whatsapp':
               </p>
             </div>
             ` : ''}
+          </div>
+
+          <!-- Dynamic Admin Panel Based on Use Case -->
+          <div class="service-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: 30px 0;">
+            <h3 style="color: white; margin: 0 0 15px 0;">📊 Your AI Admin Dashboard</h3>
+            <p style="color: rgba(255,255,255,0.95); margin-bottom: 20px; line-height: 1.6;">
+              ${useCaseDescription ?
+                `Based on your use case: "<em>${useCaseDescription.substring(0, 100)}${useCaseDescription.length > 100 ? '...' : ''}</em>"` :
+                'Manage and monitor your Voice AI system'}
+            </p>
+
+            <div id="adminPanelContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+              ${renderAdminPanelCards()}
+            </div>
           </div>
 
           <!-- Next Steps & Resources -->
