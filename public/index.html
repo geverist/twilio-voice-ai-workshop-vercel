@@ -9203,7 +9203,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             <div class="code-header">
               <span>📝 ConversationRelay TwiML Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode8()">✓ Validate</button>
+                <button class="btn btn-success next-action" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode8()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code8')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode8()">Reset</button>
               </div>
@@ -9531,6 +9531,13 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         step6CodeValidated = true;
         showStatus('step8Status', 'success', '✅ Perfect! ConversationRelay TwiML is valid. Test it below!');
         updateProgressBar();
+
+        // Move next-action effect from Validate button to Deploy button
+        const validateBtn = document.querySelector('[onclick="validateCode8()"]');
+        if (validateBtn) validateBtn.classList.remove('next-action');
+
+        const deployBtn = document.getElementById('commitStep6Btn');
+        if (deployBtn) deployBtn.classList.add('next-action');
 
         // Enable next button (Step 6 uses nextBtn8)
         const nextBtn = document.getElementById('nextBtn8');
