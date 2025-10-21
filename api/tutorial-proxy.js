@@ -6,19 +6,42 @@
  */
 
 import twilio from 'twilio';
+import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
 import { applyRateLimit } from './_lib/ratelimit.js';
+import {
+  validateString,
+  validateEnum,
+  validateTwilioSID,
+  validatePhoneNumber,
+  handleValidationError
+} from './_lib/validation.js';
+
+const ALLOWED_ACTIONS = [
+  'getOAuthConfig',
+  'listPhoneNumbers',
+  'makeCall',
+  'getCall',
+  'validateCredentials',
+  'provisionPhoneNumber',
+  'createMessagingService',
+  'addNumberToMessagingService',
+  'createSyncService',
+  'checkConversationalIntelligence',
+  'listMessagingServices',
+  'listSyncServices',
+  'setupComplete',
+  'testOpenAI',
+  'updatePhoneNumber',
+  'getWorkshopCallHistory'
+];
 
 export default async function handler(req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Content-Type', 'application/json');
+  // Apply CORS
+  applyCORS(req, res);
 
   // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (handlePreflightRequest(req, res)) {
+    return;
   }
 
   // Only allow POST
@@ -34,6 +57,15 @@ export default async function handler(req, res) {
 
   try {
     const { action, accountSid, authToken, apiKey, ...params } = req.body;
+
+    // Validate action
+    try {
+      if (action) {
+        validateEnum(action, 'action', ALLOWED_ACTIONS);
+      }
+    } catch (validationError) {
+      return handleValidationError(validationError, res);
+    }
 
     // Special case: getOAuthConfig doesn't need accountSid/authToken
     if (action === 'getOAuthConfig') {
@@ -67,6 +99,59 @@ export default async function handler(req, res) {
       return res.status(400).json({
         error: 'Missing required parameters: action, accountSid, authToken'
       });
+    }
+
+    // Validate credentials format
+    try {
+      validateTwilioSID(accountSid, 'accountSid', 'AC');
+      validateString(authToken, 'authToken', { minLength: 32, maxLength: 64 });
+
+      if (apiKey) {
+        validateTwilioSID(apiKey, 'apiKey', 'SK');
+      }
+
+      // Validate phone numbers in params
+      if (params.to) {
+        validatePhoneNumber(params.to, 'to');
+      }
+      if (params.from) {
+        validatePhoneNumber(params.from, 'from');
+      }
+      if (params.phoneNumber) {
+        validatePhoneNumber(params.phoneNumber, 'phoneNumber');
+      }
+
+      // Validate SIDs in params
+      if (params.callSid) {
+        validateTwilioSID(params.callSid, 'callSid', 'CA');
+      }
+      if (params.phoneNumberSid) {
+        validateTwilioSID(params.phoneNumberSid, 'phoneNumberSid', 'PN');
+      }
+      if (params.serviceSid) {
+        validateTwilioSID(params.serviceSid, 'serviceSid', 'MG');
+      }
+
+      // Validate URLs in params
+      if (params.url) {
+        validateString(params.url, 'url', { maxLength: 2048 });
+      }
+      if (params.voiceUrl) {
+        validateString(params.voiceUrl, 'voiceUrl', { maxLength: 2048 });
+      }
+      if (params.statusCallback) {
+        validateString(params.statusCallback, 'statusCallback', { maxLength: 2048 });
+      }
+
+      // Validate strings
+      if (params.message) {
+        validateString(params.message, 'message', { maxLength: 5000 });
+      }
+      if (params.friendlyName) {
+        validateString(params.friendlyName, 'friendlyName', { maxLength: 200 });
+      }
+    } catch (validationError) {
+      return handleValidationError(validationError, res);
     }
 
     // Initialize Twilio client with user's credentials

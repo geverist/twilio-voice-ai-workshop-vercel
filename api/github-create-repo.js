@@ -8,30 +8,53 @@
  * In production, you'd want to use a session store like Redis or Vercel KV.
  */
 
+import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
+import { applyRateLimit } from './_lib/ratelimit.js';
+import {
+  validateRequired,
+  validateString,
+  validateGitHubUsername,
+  validateGitHubRepoName,
+  handleValidationError
+} from './_lib/validation.js';
+
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Content-Type', 'application/json');
+  // Apply CORS
+  applyCORS(req, res);
 
   // Handle OPTIONS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (handlePreflightRequest(req, res)) {
+    return;
   }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Apply rate limiting
+  const allowed = await applyRateLimit(req, res);
+  if (!allowed) {
+    return;
+  }
+
   try {
     const { accessToken, githubUsername, repoName, sessionToken } = req.body;
 
-    if (!accessToken || !githubUsername) {
-      return res.status(401).json({
-        success: false,
-        error: 'No GitHub credentials provided. Please authenticate with GitHub first.'
-      });
+    // Input validation
+    try {
+      validateRequired(req.body, ['accessToken', 'githubUsername']);
+      validateString(accessToken, 'accessToken', { minLength: 20, maxLength: 500 });
+      validateGitHubUsername(githubUsername, 'githubUsername');
+
+      if (repoName) {
+        validateGitHubRepoName(repoName, 'repoName');
+      }
+
+      if (sessionToken) {
+        validateString(sessionToken, 'sessionToken', { minLength: 10, maxLength: 100 });
+      }
+    } catch (validationError) {
+      return handleValidationError(validationError, res);
     }
 
     // Template repository info

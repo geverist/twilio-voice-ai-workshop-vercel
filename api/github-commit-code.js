@@ -11,20 +11,34 @@
  * 4. Return deployed URL
  */
 
+import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
+import { applyRateLimit } from './_lib/ratelimit.js';
+import {
+  validateRequired,
+  validateString,
+  validateGitHubUsername,
+  validateGitHubRepoName,
+  validateNumber,
+  handleValidationError
+} from './_lib/validation.js';
+
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Content-Type', 'application/json');
+  // Apply CORS
+  applyCORS(req, res);
 
   // Handle OPTIONS preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (handlePreflightRequest(req, res)) {
+    return;
   }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Apply rate limiting
+  const allowed = await applyRateLimit(req, res);
+  if (!allowed) {
+    return;
   }
 
   try {
@@ -39,11 +53,32 @@ export default async function handler(req, res) {
       sessionToken
     } = req.body;
 
-    if (!accessToken || !githubUsername || !repoName || !filePath || !fileContent) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required parameters: accessToken, githubUsername, repoName, filePath, fileContent'
+    // Input validation
+    try {
+      validateRequired(req.body, ['accessToken', 'githubUsername', 'repoName', 'filePath', 'fileContent']);
+      validateString(accessToken, 'accessToken', { minLength: 20, maxLength: 500 });
+      validateGitHubUsername(githubUsername, 'githubUsername');
+      validateGitHubRepoName(repoName, 'repoName');
+      validateString(filePath, 'filePath', {
+        minLength: 1,
+        maxLength: 500,
+        pattern: /^[a-zA-Z0-9._\/-]+$/
       });
+      validateString(fileContent, 'fileContent', { minLength: 1, maxLength: 100000 });
+
+      if (commitMessage) {
+        validateString(commitMessage, 'commitMessage', { maxLength: 500 });
+      }
+
+      if (stepNumber !== undefined) {
+        validateNumber(stepNumber, 'stepNumber', { min: 1, max: 20, integer: true });
+      }
+
+      if (sessionToken) {
+        validateString(sessionToken, 'sessionToken', { minLength: 10, maxLength: 100 });
+      }
+    } catch (validationError) {
+      return handleValidationError(validationError, res);
     }
 
     const repoFullName = `${githubUsername}/${repoName}`;

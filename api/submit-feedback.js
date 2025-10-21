@@ -4,16 +4,23 @@
  * Handles feedback submissions from workshop participants
  */
 
+import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
+import { applyRateLimit } from './_lib/ratelimit.js';
+import {
+  validateRequired,
+  validateString,
+  validateNumber,
+  handleValidationError,
+  sanitizeString
+} from './_lib/validation.js';
+
 export default async function handler(req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Content-Type', 'application/json');
+  // Apply CORS
+  applyCORS(req, res);
 
   // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (handlePreflightRequest(req, res)) {
+    return;
   }
 
   if (req.method !== 'POST') {
@@ -21,6 +28,12 @@ export default async function handler(req, res) {
       success: false,
       error: 'Method not allowed'
     });
+  }
+
+  // Apply rate limiting
+  const allowed = await applyRateLimit(req, res);
+  if (!allowed) {
+    return;
   }
 
   try {
@@ -33,21 +46,37 @@ export default async function handler(req, res) {
       context
     } = req.body;
 
-    // Validate required fields
-    if (!message) {
-      return res.status(400).json({
-        success: false,
-        error: 'Feedback message is required'
-      });
+    // Input validation
+    try {
+      validateRequired(req.body, ['message']);
+      validateString(message, 'message', { minLength: 1, maxLength: 5000 });
+
+      if (name) {
+        validateString(name, 'name', { maxLength: 200 });
+      }
+
+      if (rating !== undefined) {
+        validateNumber(rating, 'rating', { min: 1, max: 5, integer: true });
+      }
+
+      if (completedSteps !== undefined) {
+        validateNumber(completedSteps, 'completedSteps', { min: 0, max: 20, integer: true });
+      }
+    } catch (validationError) {
+      return handleValidationError(validationError, res);
     }
+
+    // Sanitize user inputs for logging
+    const safeName = name ? sanitizeString(name) : 'Anonymous';
+    const safeMessage = sanitizeString(message);
 
     // Log feedback to console (in production, you'd save to database/send email/etc)
     console.log('==================== WORKSHOP FEEDBACK ====================');
     console.log('Timestamp:', timestamp);
-    console.log('Name:', name || 'Anonymous');
+    console.log('Name:', safeName);
     console.log('Rating:', rating ? `${rating}/5 stars` : 'Not provided');
     console.log('Completed Steps:', completedSteps);
-    console.log('Message:', message);
+    console.log('Message:', safeMessage);
     console.log('Context:', JSON.stringify(context, null, 2));
     console.log('==========================================================');
 

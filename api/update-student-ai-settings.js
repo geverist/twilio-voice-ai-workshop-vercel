@@ -6,17 +6,23 @@
  */
 
 import { sql } from '@vercel/postgres';
+import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
+import { applyRateLimit } from './_lib/ratelimit.js';
+import {
+  validateRequired,
+  validateString,
+  validateArray,
+  handleValidationError,
+  sanitizeString
+} from './_lib/validation.js';
 
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Content-Type', 'application/json');
+  // Apply CORS
+  applyCORS(req, res);
 
   // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (handlePreflightRequest(req, res)) {
+    return;
   }
 
   if (req.method !== 'POST') {
@@ -24,6 +30,12 @@ export default async function handler(req, res) {
       success: false,
       error: 'Method not allowed'
     });
+  }
+
+  // Apply rate limiting
+  const allowed = await applyRateLimit(req, res);
+  if (!allowed) {
+    return;
   }
 
   try {
@@ -43,11 +55,28 @@ export default async function handler(req, res) {
       tools
     } = req.body;
 
-    if (!sessionToken) {
-      return res.status(400).json({
-        success: false,
-        error: 'sessionToken is required'
-      });
+    // Input validation
+    try {
+      validateRequired(req.body, ['sessionToken']);
+      validateString(sessionToken, 'sessionToken', { minLength: 10, maxLength: 100 });
+
+      if (systemPrompt) {
+        validateString(systemPrompt, 'systemPrompt', { maxLength: 5000 });
+      }
+
+      if (greeting) {
+        validateString(greeting, 'greeting', { maxLength: 1000 });
+      }
+
+      if (voice) {
+        validateString(voice, 'voice', { maxLength: 50 });
+      }
+
+      if (tools) {
+        validateArray(tools, 'tools', { maxLength: 50 });
+      }
+    } catch (validationError) {
+      return handleValidationError(validationError, res);
     }
 
     // First check if a record exists for this session token

@@ -4,30 +4,52 @@
  * Creates and launches a GitHub Codespace for the student's workshop repository
  */
 
+import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
+import { applyRateLimit } from './_lib/ratelimit.js';
+import {
+  validateRequired,
+  validateString,
+  validateGitHubUsername,
+  handleValidationError
+} from './_lib/validation.js';
+
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Content-Type', 'application/json');
+  // Apply CORS
+  applyCORS(req, res);
 
   // Handle preflight
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  if (handlePreflightRequest(req, res)) {
+    return;
   }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
+  // Apply rate limiting
+  const allowed = await applyRateLimit(req, res);
+  if (!allowed) {
+    return;
+  }
+
   try {
     const { accessToken, repoFullName, githubUsername } = req.body;
 
-    if (!accessToken || !repoFullName) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing accessToken or repoFullName'
+    // Input validation
+    try {
+      validateRequired(req.body, ['accessToken', 'repoFullName']);
+      validateString(accessToken, 'accessToken', { minLength: 20, maxLength: 500 });
+      validateString(repoFullName, 'repoFullName', {
+        minLength: 3,
+        maxLength: 200,
+        pattern: /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+$/
       });
+
+      if (githubUsername) {
+        validateGitHubUsername(githubUsername, 'githubUsername');
+      }
+    } catch (validationError) {
+      return handleValidationError(validationError, res);
     }
 
     console.log(`Creating Codespace for ${repoFullName}...`);
