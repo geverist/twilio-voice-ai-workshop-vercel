@@ -1169,6 +1169,7 @@
     let selectedPhoneNumber = null;
     let selectedPhoneNumberSid = null;
     let websocketUrl = '';
+    let twilioServerlessDomain = ''; // Domain for Twilio Serverless functions (e.g., 'my-service-1234.twil.io')
     let syncServiceSkipped = false;
     let deployedServiceSid = null;
     let githubToken = null;
@@ -1228,6 +1229,7 @@
         openaiApiKey,
         selectedPhoneNumber,
         websocketUrl,
+        twilioServerlessDomain,
         syncServiceSkipped,
         deployedServiceSid,
         ttsProvider,
@@ -1482,6 +1484,7 @@
       openaiApiKey = progress.openaiApiKey || null;
       selectedPhoneNumber = progress.selectedPhoneNumber || null;
       websocketUrl = progress.websocketUrl || '';
+      twilioServerlessDomain = progress.twilioServerlessDomain || '';
       syncServiceSkipped = progress.syncServiceSkipped || false;
       deployedServiceSid = progress.deployedServiceSid || null;
       ttsProvider = progress.ttsProvider || 'amazon-polly';
@@ -1624,6 +1627,7 @@
       aiCallTested = false;
       selectedPhoneNumber = null;
       websocketUrl = '';
+      twilioServerlessDomain = '';
       syncServiceSkipped = false;
       deployedServiceSid = null;
       ttsProvider = 'amazon-polly';
@@ -4594,9 +4598,7 @@
 
       try {
         // Use the deployed Twilio Serverless function URL
-        // Convert wss:// to https:// for HTTP endpoint
-        const httpDomain = (websocketUrl || '').replace('wss://', '').replace('ws://', '');
-        const voiceHandlerUrl = `https://${httpDomain}/voice-handler`;
+        const voiceHandlerUrl = `https://${twilioServerlessDomain}/voice-handler`;
 
         const response = await fetch('/api/tutorial-proxy', {
           method: 'POST',
@@ -8012,9 +8014,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         return;
       }
 
-      // Convert wss:// to https:// for HTTP endpoint
-      const httpDomain = (websocketUrl || '').replace('wss://', '').replace('ws://', '');
-      const voiceHandlerUrl = `https://${httpDomain}/voice-handler`;
+      // Use Twilio Serverless domain for voice handler URL
+      const voiceHandlerUrl = `https://${twilioServerlessDomain}/voice-handler`;
 
       try {
         console.log('Updating phone number webhook to:', voiceHandlerUrl);
@@ -8407,7 +8408,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
           deployedServiceSid = createData.serviceSid;
           deployedEnvironmentSid = createData.environmentSid;
-          websocketUrl = createData.domain; // Store just the domain, not the full wss:// URL
+          twilioServerlessDomain = createData.domain; // Store Twilio Serverless domain
 
           showStatus(statusId, 'success', `✅ Service created: ${deployedServiceSid}`);
           saveProgressToStorage();
@@ -12234,9 +12235,7 @@ app.get('/health', (req, res) => {
       // LIVE MODE: Make actual call
       try {
         // Use the deployed voice-handler URL which now has ConversationRelay
-        // Convert wss:// to https:// for HTTP endpoint
-        const httpDomain = (websocketUrl || '').replace('wss://', '').replace('ws://', '');
-        const voiceHandlerUrl = `https://${httpDomain}/voice-handler`;
+        const voiceHandlerUrl = `https://${twilioServerlessDomain}/voice-handler`;
 
         const response = await fetch('/api/tutorial-proxy', {
           method: 'POST',
