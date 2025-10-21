@@ -9297,68 +9297,9 @@ app.get('/health', (req, res) => {
 
           <div class="console-output" id="console7" style="display: none;"></div>
 
-          <!-- WebSocket Test Section (always visible) -->
-          <div id="step5TestSection" style="display: block; margin-top: 30px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 12px; border: 2px solid #5a67d8;">
-              <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.3rem;">🧪 Test Your WebSocket Handler</h3>
-              <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px; line-height: 1.6;">
-                See real-time WebSocket communication in action! This interactive test shows you exactly how messages flow between your handler and the AI.
-              </p>
-
-              <!-- Message Log Window -->
-              <div style="background: #1e1e1e; border-radius: 8px; padding: 15px; margin-bottom: 20px; min-height: 300px; max-height: 400px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 13px;" id="websocketMessageLog">
-                <div style="color: #888; text-align: center; padding: 40px 20px;">
-                  <div style="font-size: 48px; margin-bottom: 10px;">📡</div>
-                  <div>WebSocket message log will appear here...</div>
-                  <div style="font-size: 11px; margin-top: 10px;">Connect and send messages to see real-time communication</div>
-                </div>
-              </div>
-
-              <!-- Audio File Upload Test -->
-              <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-                <h4 style="color: white; margin: 0 0 15px 0;">🎤 Send Audio to WebSocket</h4>
-                <p style="color: rgba(255,255,255,0.85); margin-bottom: 15px; font-size: 14px; line-height: 1.6;">
-                  Upload a WAV audio file (or use the sample) to simulate a caller speaking. Watch the message flow in real-time!
-                </p>
-
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px;">
-                  <input type="file" id="audioFileInput" accept="audio/wav,audio/wave" style="flex: 1; min-width: 200px; padding: 10px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white;" />
-                  <button class="btn btn-success" onclick="sendAudioToWebSocket()" style="padding: 10px 20px; white-space: nowrap;">
-                    📤 Send Audio
-                  </button>
-                  <button class="btn btn-secondary" onclick="useSampleAudio()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: none; white-space: nowrap;">
-                    🎵 Use Sample
-                  </button>
-                </div>
-
-                <div id="audioTestStatus" style="color: white; font-size: 13px; min-height: 20px;"></div>
-              </div>
-
-              <!-- Current WebSocket URL Display -->
-              <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-                <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 5px;">Testing URL:</div>
-                <code id="wsTestUrlDisplay" style="color: white; font-size: 12px; word-break: break-all; font-family: monospace;">${codespaceUrl || websocketUrl || 'No WebSocket URL available'}</code>
-              </div>
-
-              <!-- Connection Status -->
-              <div style="display: flex; gap: 15px; align-items: center; margin-top: 20px;">
-                <div id="wsConnectionStatus" style="display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.7); font-size: 13px;">
-                  <div style="width: 10px; height: 10px; border-radius: 50%; background: #666;" id="wsStatusIndicator"></div>
-                  <span id="wsStatusText">Not connected</span>
-                </div>
-                <button class="btn" onclick="connectWebSocketTest()" id="wsConnectBtn" style="padding: 8px 16px; font-size: 13px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);">
-                  🔌 Connect
-                </button>
-                <button class="btn" onclick="clearWebSocketLog()" style="padding: 8px 16px; font-size: 13px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3);">
-                  🗑️ Clear Log
-                </button>
-              </div>
-            </div>
-          </div>
-
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary" id="nextBtn7" onclick="nextStep()" disabled>
+            <button class="btn btn-primary" id="nextBtn7" onclick="nextStep()" ${step5CodeValidated || step5Deployed || codespaceUrl ? '' : 'disabled'}>
               Next: Upgrade to ConversationRelay →
             </button>
           </div>
@@ -10050,11 +9991,10 @@ app.get('/health', (req, res) => {
     }
 
     // =========================================================================
-    // WEBSOCKET TEST FUNCTIONS
+    // WEBSOCKET TEST FUNCTIONS (REMOVED - not feasible with Codespaces auth)
     // =========================================================================
-    let testWebSocket = null;
-    let isConnected = false;
 
+    // Deprecated - WebSocket testing removed due to GitHub Codespaces authentication limitations
     function logWebSocketMessage(type, message, data = null) {
       const log = document.getElementById('websocketMessageLog');
       if (!log) return;
@@ -13010,6 +12950,43 @@ twilio serverless:deploy
       clearHighlights(); // Remove highlight immediately when clicked
       const btn = document.getElementById('deployCodespaceBtn');
       const statusEl = document.getElementById('codespaceDeployStatus');
+
+      // Demo mode simulation
+      if (studentDemoMode || twilioCredentials?.demoMode) {
+        btn.disabled = true;
+        btn.textContent = '🚀 Launching Codespace...';
+
+        showStatus('codespaceDeployStatus', 'info', '📦 Demo: Creating your cloud development environment...');
+
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        showStatus('codespaceDeployStatus', 'info', '⚙️ Demo: Installing dependencies...');
+
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        showStatus('codespaceDeployStatus', 'info', '🚀 Demo: Starting WebSocket server...');
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Set demo Codespace info
+        codespaceUrl = 'wss://demo-codespace-3000.app.github.dev';
+        codespaceWebUrl = 'https://github.com/codespaces/demo-codespace';
+        codespaceName = 'demo-codespace-12345';
+        websocketUrl = codespaceUrl;
+        step5Deployed = true;
+        websocketBuilt = true;
+
+        saveProgressToStorage();
+        updateProgressBar();
+
+        showStatus('codespaceDeployStatus', 'success',
+          `✅ Demo: Codespace is running!<br>` +
+          `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>`
+        );
+
+        btn.disabled = false;
+        btn.textContent = '🚀 Launch Development Environment';
+        renderStepContent();
+        return;
+      }
 
       if (!githubToken || !githubUsername || !studentRepoName) {
         showStatus('codespaceDeployStatus', 'error', '❌ Missing GitHub credentials or repository');
