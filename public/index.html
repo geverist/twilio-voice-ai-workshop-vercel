@@ -4377,6 +4377,13 @@
           // (Test section will show after deployment via step4Deployed flag)
           if (deploySection) deploySection.style.display = 'block';
 
+          // Move next-action effect from Validate button to Commit button
+          const validateBtn = document.querySelector('[onclick="validateCode4()"]');
+          if (validateBtn) validateBtn.classList.remove('next-action');
+
+          const commitBtn = document.getElementById('commitStep4Btn');
+          if (commitBtn) commitBtn.classList.add('next-action');
+
           // Scroll to reveal deploy section
           setTimeout(() => {
             if (deploySection) {
