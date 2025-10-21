@@ -8533,6 +8533,9 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
           showStatus(statusId, 'success', `✅ ${functionName} deployed successfully! Test it below!`);
 
+          // Update phone number webhook to point to deployed voice handler
+          updatePhoneNumberWebhook();
+
           // Show inbound test card for inbound calls
           if (callDirection === 'inbound') {
             const testCard = document.getElementById('inboundTestCard');
