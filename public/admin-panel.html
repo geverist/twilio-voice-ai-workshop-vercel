@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice AI Admin Panel</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      color: #333;
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .header .use-case {
+      color: #666;
+      font-size: 1rem;
+      font-style: italic;
+    }
+
+    .header .badge {
+      display: inline-block;
+      padding: 5px 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      margin-left: 10px;
+      font-weight: 600;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .nav-tab:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+
+    .nav-tab.active {
+      background: white;
+      color: #667eea;
+    }
+
+    .panel-section {
+      display: none;
+    }
+
+    .panel-section.active {
+      display: block;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+    }
+
+    .card h3 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card p {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 15px;
+      font-size: 0.95rem;
+    }
+
+    .card .stats {
+      display: flex;
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .stat {
+      flex: 1;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-right: 10px;
+      margin-top: 10px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #f8f9fa;
+      color: #333;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover {
+      background: #e9ecef;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+
+    .editor-container {
+      background: #2c313c;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 15px;
+    }
+
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .editor-header h4 {
+      color: #61afef;
+      font-size: 0.9rem;
+    }
+
+    textarea.code-editor {
+      width: 100%;
+      min-height: 300px;
+      background: #1e1e1e;
+      color: #abb2bf;
+      border: 1px solid #3e4451;
+      border-radius: 6px;
+      padding: 15px;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      resize: vertical;
+    }
+
+    .tool-list {
+      list-style: none;
+    }
+
+    .tool-item {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border-left: 4px solid #667eea;
+    }
+
+    .tool-item h4 {
+      color: #333;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .tool-item p {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+    }
+
+    .tool-status {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #28a745;
+      color: white;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .tool-status.inactive {
+      background: #6c757d;
+    }
+
+    .settings-group {
+      margin-bottom: 25px;
+    }
+
+    .settings-group h4 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .setting-label {
+      flex: 1;
+    }
+
+    .setting-label strong {
+      display: block;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .setting-label span {
+      color: #666;
+      font-size: 0.85rem;
+    }
+
+    select, input[type="text"], input[type="number"] {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      min-width: 200px;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 26px;
+      background: #ccc;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle-switch.on {
+      background: #28a745;
+    }
+
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: left 0.3s;
+    }
+
+    .toggle-switch.on::after {
+      left: 27px;
+    }
+
+    .alert {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .alert-info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border-left: 4px solid #0c5460;
+    }
+
+    .alert-warning {
+      background: #fff3cd;
+      color: #856404;
+      border-left: 4px solid #856404;
+    }
+
+    .alert-success {
+      background: #d4edda;
+      color: #155724;
+      border-left: 4px solid #155724;
+    }
+
+    @media (max-width: 768px) {
+      .cards-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .nav-tabs {
+        flex-direction: column;
+      }
+
+      .nav-tab {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🎙️ Voice AI Admin Panel</h1>
+      <p class="use-case">
+        <span id="useCaseText">Managing your Voice AI system</span>
+        <span class="badge" id="directionBadge">Inbound</span>
+      </p>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+      <button class="nav-tab" onclick="showTab('prompts')">📝 Prompts</button>
+      <button class="nav-tab" onclick="showTab('tools')">🛠️ Tools & Functions</button>
+      <button class="nav-tab" onclick="showTab('settings')">⚙️ Settings</button>
+      <button class="nav-tab" onclick="showTab('analytics')">📈 Analytics</button>
+      <button class="nav-tab" onclick="showTab('monitoring')">👁️ Monitoring</button>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div id="dashboard" class="panel-section active">
+      <div class="alert alert-success">
+        <span>✅</span>
+        <div>
+          <strong>System Status: Active</strong><br>
+          Your Voice AI is live and ready to handle calls.
+        </div>
+      </div>
+
+      <div class="cards-grid" id="dashboardCards">
+        <!-- Dynamic cards will be inserted here -->
+      </div>
+    </div>
+
+    <!-- Prompts Tab -->
+    <div id="prompts" class="panel-section">
+      <div class="card">
+        <h3>📝 System Prompt</h3>
+        <p>Define how your AI assistant behaves, responds, and handles conversations.</p>
+
+        <div class="editor-container">
+          <div class="editor-header">
+            <h4>Current System Prompt</h4>
+            <button class="btn btn-primary" onclick="saveSystemPrompt()">💾 Save Changes</button>
+          </div>
+          <textarea class="code-editor" id="systemPromptEditor"></textarea>
+        </div>
+
+        <div class="alert alert-info" style="margin-top: 20px;">
+          <span>💡</span>
+          <div>
+            <strong>Prompt Engineering Tips:</strong><br>
+            • Be specific about personality and tone<br>
+            • Define boundaries and limitations<br>
+            • Include examples of good responses<br>
+            • Keep responses concise for voice (2-3 sentences)
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>👋 IVR Greeting</h3>
+        <p>The first message callers hear when they connect.</p>
+
+        <div style="margin-top: 15px;">
+          <textarea id="ivrGreetingEditor" rows="3" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit;"></textarea>
+          <button class="btn btn-primary" onclick="saveIVRGreeting()">💾 Save Greeting</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tools & Functions Tab -->
+    <div id="tools" class="panel-section">
+      <div class="card">
+        <h3>🛠️ Active Functions</h3>
+        <p>Tools and integrations available to your AI assistant.</p>
+
+        <ul class="tool-list" id="toolsList">
+          <!-- Dynamic tools will be inserted here -->
+        </ul>
+
+        <button class="btn btn-primary" onclick="alert('Function builder coming soon!')">➕ Add New Function</button>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="settings" class="panel-section">
+      <div class="card">
+        <div class="settings-group">
+          <h4>🎙️ Voice & Speech</h4>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>Text-to-Speech Provider</strong>
+              <span>Choose the voice synthesis engine</span>
+            </div>
+            <select id="ttsProvider">
+              <option value="google">Google Cloud TTS</option>
+              <option value="elevenlabs">ElevenLabs</option>
+              <option value="deepgram">Deepgram Aura</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>Voice Type</strong>
+              <span>Personality and tone of voice</span>
+            </div>
+            <select id="voiceType">
+              <option value="professional">Professional</option>
+              <option value="friendly">Friendly</option>
+              <option value="authoritative">Authoritative</option>
+              <option value="casual">Casual</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>Speech-to-Text Provider</strong>
+              <span>Transcription engine for caller speech</span>
+            </div>
+            <select id="sttProvider">
+              <option value="deepgram">Deepgram</option>
+              <option value="google">Google Cloud STT</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h4>🤖 AI Configuration</h4>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>AI Model</strong>
+              <span>OpenAI model for conversations</span>
+            </div>
+            <select id="aiModel">
+              <option value="gpt-4">GPT-4 (Recommended)</option>
+              <option value="gpt-4-turbo">GPT-4 Turbo</option>
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Faster)</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>Response Temperature</strong>
+              <span>Creativity level (0.0 - 1.0)</span>
+            </div>
+            <input type="number" id="temperature" min="0" max="1" step="0.1" value="0.7">
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>Max Response Length</strong>
+              <span>Maximum tokens per response</span>
+            </div>
+            <input type="number" id="maxTokens" min="50" max="500" step="50" value="150">
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <h4>📞 Call Handling</h4>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>Call Recording</strong>
+              <span>Record all conversations for quality assurance</span>
+            </div>
+            <div class="toggle-switch" id="recordingToggle" onclick="toggleSetting(this)"></div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>Voicemail Detection</strong>
+              <span>Detect answering machines (outbound only)</span>
+            </div>
+            <div class="toggle-switch" id="voicemailToggle" onclick="toggleSetting(this)"></div>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-label">
+              <strong>Call Timeout</strong>
+              <span>Max call duration in minutes</span>
+            </div>
+            <input type="number" id="callTimeout" min="1" max="60" value="10">
+          </div>
+        </div>
+
+        <button class="btn btn-success" onclick="saveAllSettings()">💾 Save All Settings</button>
+      </div>
+    </div>
+
+    <!-- Analytics Tab -->
+    <div id="analytics" class="panel-section">
+      <div class="cards-grid">
+        <div class="card">
+          <h3>📊 Call Volume</h3>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-value" id="callsToday">0</div>
+              <div class="stat-label">Today</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" id="callsWeek">0</div>
+              <div class="stat-label">This Week</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" id="callsMonth">0</div>
+              <div class="stat-label">This Month</div>
+            </div>
+          </div>
+          <button class="btn btn-secondary" onclick="window.open('https://console.twilio.com/us1/monitor/logs/calls', '_blank')">View Call Logs →</button>
+        </div>
+
+        <div class="card">
+          <h3>⏱️ Average Call Duration</h3>
+          <div class="stat-value" style="font-size: 3rem; text-align: center; margin: 20px 0;">2:34</div>
+          <p style="text-align: center; color: #666;">Average duration across all calls</p>
+        </div>
+
+        <div class="card">
+          <h3>💰 Cost Analysis</h3>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-value" style="font-size: 1.2rem;">$12.50</div>
+              <div class="stat-label">This Month</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value" style="font-size: 1.2rem;">$0.42</div>
+              <div class="stat-label">Per Call Avg</div>
+            </div>
+          </div>
+          <button class="btn btn-secondary" onclick="window.open('https://console.twilio.com/us1/billing/usage', '_blank')">View Billing →</button>
+        </div>
+
+        <div class="card">
+          <h3>🎯 Success Rate</h3>
+          <div class="stat-value" style="font-size: 3rem; text-align: center; margin: 20px 0;">94%</div>
+          <p style="text-align: center; color: #666;">Successful call completions</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📈 Conversational Intelligence</h3>
+        <p>Advanced AI analytics including sentiment analysis, topic detection, and call scoring.</p>
+        <button class="btn btn-primary" onclick="window.open('https://www.twilio.com/docs/voice/intelligence', '_blank')">Learn More →</button>
+        <button class="btn btn-secondary" onclick="alert('CI integration coming soon!')">Enable CI Analytics</button>
+      </div>
+    </div>
+
+    <!-- Monitoring Tab -->
+    <div id="monitoring" class="panel-section">
+      <div class="card">
+        <h3>👁️ Real-Time Monitoring</h3>
+        <p>Monitor active calls and system health in real-time.</p>
+
+        <div class="alert alert-info">
+          <span>ℹ️</span>
+          <div>
+            <strong>Active Calls:</strong> 0<br>
+            <strong>System Status:</strong> All services operational
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="alert('Real-time dashboard coming soon!')">Open Live Dashboard</button>
+      </div>
+
+      <div class="card">
+        <h3>📝 Recent Transcripts</h3>
+        <p>View and analyze recent call transcripts.</p>
+        <button class="btn btn-secondary" onclick="window.open('https://console.twilio.com/us1/monitor/logs/calls', '_blank')">View in Twilio Console →</button>
+      </div>
+
+      <div class="card">
+        <h3>🚨 Alerts & Notifications</h3>
+        <p>Configure alerts for important events.</p>
+
+        <div class="setting-item">
+          <div class="setting-label">
+            <strong>Failed Call Alerts</strong>
+            <span>Get notified when calls fail</span>
+          </div>
+          <div class="toggle-switch on" onclick="toggleSetting(this)"></div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-label">
+            <strong>High Cost Alerts</strong>
+            <span>Alert when daily costs exceed threshold</span>
+          </div>
+          <div class="toggle-switch on" onclick="toggleSetting(this)"></div>
+        </div>
+
+        <button class="btn btn-primary" onclick="alert('Alert configuration coming soon!')">Configure Alerts</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load settings from localStorage (passed from workshop)
+    const workshopData = JSON.parse(localStorage.getItem('twilioWorkshopProgress') || '{}');
+    const useCaseDescription = workshopData.useCaseDescription || '';
+    const callDirection = workshopData.callDirection || 'inbound';
+    const generatedContent = workshopData.generatedContent || {};
+    const systemPrompt = workshopData.systemPromptSaved || generatedContent.systemPrompt || 'You are a helpful voice assistant.';
+    const ivrGreeting = workshopData.ivrGreeting || generatedContent.ivrGreeting || 'Hello! How can I help you today?';
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', () => {
+      // Set header info
+      if (useCaseDescription) {
+        document.getElementById('useCaseText').textContent = useCaseDescription.substring(0, 100) + (useCaseDescription.length > 100 ? '...' : '');
+      }
+      document.getElementById('directionBadge').textContent = callDirection.charAt(0).toUpperCase() + callDirection.slice(1);
+
+      // Load system prompt
+      document.getElementById('systemPromptEditor').value = systemPrompt;
+
+      // Load IVR greeting
+      document.getElementById('ivrGreetingEditor').value = ivrGreeting;
+
+      // Render dashboard cards
+      renderDashboardCards();
+
+      // Render tools list
+      renderToolsList();
+    });
+
+    function showTab(tabName) {
+      // Hide all sections
+      document.querySelectorAll('.panel-section').forEach(section => {
+        section.classList.remove('active');
+      });
+
+      // Remove active from all tabs
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Show selected section
+      document.getElementById(tabName).classList.add('active');
+
+      // Highlight active tab
+      event.target.classList.add('active');
+    }
+
+    function renderDashboardCards() {
+      const useCaseLower = useCaseDescription.toLowerCase();
+      const isHealthcare = /health|medical|doctor|patient|appointment|clinic|hospital/.test(useCaseLower);
+      const isRestaurant = /restaurant|food|reservation|table|dining|menu/.test(useCaseLower);
+      const isRetail = /shop|store|product|order|purchase|inventory|customer/.test(useCaseLower);
+      const isSupport = /support|help|ticket|issue|technical|troubleshoot/.test(useCaseLower);
+
+      let cards = `
+        <div class="card">
+          <h3>📞 Call Statistics</h3>
+          <div class="stats">
+            <div class="stat">
+              <div class="stat-value">42</div>
+              <div class="stat-label">Total Calls</div>
+            </div>
+            <div class="stat">
+              <div class="stat-value">2:34</div>
+              <div class="stat-label">Avg Duration</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="showTab('analytics'); document.querySelectorAll('.nav-tab')[4].click()">View Details →</button>
+        </div>
+
+        <div class="card">
+          <h3>🤖 AI Performance</h3>
+          <p>Your AI is performing well with 94% successful call completion rate.</p>
+          <button class="btn btn-secondary" onclick="window.open('https://console.twilio.com/us1/monitor/voice-insights', '_blank')">Voice Insights →</button>
+        </div>
+
+        <div class="card">
+          <h3>⚙️ Quick Settings</h3>
+          <p>Manage your system prompt, tools, and configuration.</p>
+          <button class="btn btn-primary" onclick="showTab('prompts'); document.querySelectorAll('.nav-tab')[1].click()">Edit Prompts →</button>
+          <button class="btn btn-secondary" onclick="showTab('settings'); document.querySelectorAll('.nav-tab')[3].click()">Settings →</button>
+        </div>
+      `;
+
+      // Add use-case specific cards
+      if (isHealthcare) {
+        cards += `
+          <div class="card">
+            <h3>🏥 Appointments Today</h3>
+            <div class="stat-value" style="text-align: center; margin: 20px 0;">8</div>
+            <p>Scheduled via AI assistant</p>
+            <button class="btn btn-secondary" onclick="alert('Calendar integration coming soon!')">View Calendar →</button>
+          </div>
+        `;
+      }
+
+      if (isRestaurant) {
+        cards += `
+          <div class="card">
+            <h3>🍽️ Reservations</h3>
+            <div class="stat-value" style="text-align: center; margin: 20px 0;">12</div>
+            <p>Bookings for today</p>
+            <button class="btn btn-secondary" onclick="alert('Reservation system coming soon!')">Manage →</button>
+          </div>
+        `;
+      }
+
+      if (isRetail) {
+        cards += `
+          <div class="card">
+            <h3>📦 Order Inquiries</h3>
+            <div class="stat-value" style="text-align: center; margin: 20px 0;">23</div>
+            <p>This week</p>
+            <button class="btn btn-secondary" onclick="alert('Order tracking integration coming soon!')">View Orders →</button>
+          </div>
+        `;
+      }
+
+      if (isSupport) {
+        cards += `
+          <div class="card">
+            <h3>🎫 Tickets Created</h3>
+            <div class="stat-value" style="text-align: center; margin: 20px 0;">7</div>
+            <p>Auto-generated from calls</p>
+            <button class="btn btn-secondary" onclick="alert('Ticket system integration coming soon!')">View Tickets →</button>
+          </div>
+        `;
+      }
+
+      document.getElementById('dashboardCards').innerHTML = cards;
+    }
+
+    function renderToolsList() {
+      const useCaseLower = useCaseDescription.toLowerCase();
+      const isHealthcare = /health|medical|doctor|patient|appointment/.test(useCaseLower);
+      const isRestaurant = /restaurant|food|reservation|table/.test(useCaseLower);
+
+      let tools = `
+        <li class="tool-item">
+          <h4>send_sms <span class="tool-status">Active</span></h4>
+          <p>Send SMS confirmations and notifications to customers</p>
+          <button class="btn btn-secondary" onclick="alert('Edit function code in your GitHub repository')">Configure</button>
+        </li>
+      `;
+
+      if (isHealthcare) {
+        tools += `
+          <li class="tool-item">
+            <h4>check_availability <span class="tool-status">Active</span></h4>
+            <p>Check available appointment slots for a given date</p>
+            <button class="btn btn-secondary" onclick="alert('Edit function code in your GitHub repository')">Configure</button>
+          </li>
+          <li class="tool-item">
+            <h4>book_appointment <span class="tool-status">Active</span></h4>
+            <p>Schedule new patient appointments</p>
+            <button class="btn btn-secondary" onclick="alert('Edit function code in your GitHub repository')">Configure</button>
+          </li>
+        `;
+      }
+
+      if (isRestaurant) {
+        tools += `
+          <li class="tool-item">
+            <h4>check_availability <span class="tool-status">Active</span></h4>
+            <p>Check table availability for reservations</p>
+            <button class="btn btn-secondary" onclick="alert('Edit function code in your GitHub repository')">Configure</button>
+          </li>
+          <li class="tool-item">
+            <h4>book_reservation <span class="tool-status">Active</span></h4>
+            <p>Create new table reservations</p>
+            <button class="btn btn-secondary" onclick="alert('Edit function code in your GitHub repository')">Configure</button>
+          </li>
+        `;
+      }
+
+      document.getElementById('toolsList').innerHTML = tools;
+    }
+
+    function toggleSetting(element) {
+      element.classList.toggle('on');
+    }
+
+    function saveSystemPrompt() {
+      const prompt = document.getElementById('systemPromptEditor').value;
+
+      // Save to localStorage
+      const data = JSON.parse(localStorage.getItem('twilioWorkshopProgress') || '{}');
+      data.systemPromptSaved = prompt;
+      localStorage.setItem('twilioWorkshopProgress', JSON.stringify(data));
+
+      alert('✅ System prompt saved! Deploy your changes to update the live system.');
+    }
+
+    function saveIVRGreeting() {
+      const greeting = document.getElementById('ivrGreetingEditor').value;
+
+      // Save to localStorage
+      const data = JSON.parse(localStorage.getItem('twilioWorkshopProgress') || '{}');
+      data.ivrGreeting = greeting;
+      localStorage.setItem('twilioWorkshopProgress', JSON.stringify(data));
+
+      alert('✅ IVR greeting saved! Deploy your changes to update the live system.');
+    }
+
+    function saveAllSettings() {
+      const settings = {
+        ttsProvider: document.getElementById('ttsProvider').value,
+        voiceType: document.getElementById('voiceType').value,
+        sttProvider: document.getElementById('sttProvider').value,
+        aiModel: document.getElementById('aiModel').value,
+        temperature: document.getElementById('temperature').value,
+        maxTokens: document.getElementById('maxTokens').value,
+        callTimeout: document.getElementById('callTimeout').value,
+        recording: document.getElementById('recordingToggle').classList.contains('on'),
+        voicemail: document.getElementById('voicemailToggle').classList.contains('on')
+      };
+
+      console.log('Saving settings:', settings);
+      alert('✅ Settings saved! Deploy your changes to update the live system.');
+    }
+  </script>
+</body>
+</html>

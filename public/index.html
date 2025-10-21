@@ -7277,17 +7277,23 @@ case 'send_whatsapp':
                 style="font-size: 1.1rem; padding: 15px 40px; background: white; color: #667eea; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
                 💬 Share Your Feedback
               </button>
+              <button
+                class="btn"
+                onclick="window.open('/admin-panel.html', '_blank')"
+                style="font-size: 1.1rem; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin-right: 15px;">
+                📊 Open Admin Dashboard
+              </button>
               ${codespaceWebUrl ? `
               <button
                 class="btn"
                 onclick="window.open('${codespaceWebUrl}', '_blank')"
                 style="font-size: 1.1rem; padding: 15px 40px; background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-                🚀 Go To Your Admin Panel
+                💻 View Code (Codespace)
               </button>
               ` : ''}
             </div>
             <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin: 0;">
-              ${codespaceWebUrl ? 'Your admin panel contains your deployed code and running server!' : 'Your feedback helps us improve this workshop for future developers!'}
+              ${codespaceWebUrl ? 'Manage your Voice AI system or view your deployed code!' : 'Manage your Voice AI system settings, prompts, and tools!'}
             </p>
           </div>
 
