@@ -2721,6 +2721,9 @@
           status.style.color = '#155724';
 
           showStatus('step1Status', 'success', '✅ Twilio account connected successfully!');
+
+          // Re-render to show OpenAI section
+          renderStepContent();
           checkStep1Complete();
         } else {
           throw new Error(data.error);
@@ -2791,6 +2794,9 @@
           status.style.color = '#155724';
 
           showStatus('step1Status', 'success', '✅ Twilio account connected with API Key (more secure)!');
+
+          // Re-render to show OpenAI section
+          renderStepContent();
           checkStep1Complete();
         } else {
           throw new Error(data.error);
@@ -2824,6 +2830,9 @@
       updateDemoModeBanner();
 
       showStatus('step1Status', 'success', '✅ Demo Mode activated! You can explore the workshop with simulated data.');
+
+      // Re-render to show OpenAI section
+      renderStepContent();
       checkStep1Complete();
     }
 
