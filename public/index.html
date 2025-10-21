@@ -6165,6 +6165,230 @@ Remember: You're having a natural conversation, not reading a script!\`;
             </ul>
           </div>
 
+          <!-- Multi-Channel Functions Section -->
+          <div class="service-card" style="margin-top: 30px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+            <h3 style="color: white; margin-bottom: 15px;">📧 Multi-Channel Communication Functions</h3>
+            <p style="color: rgba(255,255,255,0.95); line-height: 1.6; margin-bottom: 20px;">
+              Extend your Voice AI to communicate across multiple channels. Send confirmations via SMS, email receipts, or even WhatsApp messages!
+            </p>
+          </div>
+
+          <div class="instructions" style="margin-top: 20px;">
+            <h4>📲 SMS Confirmation Function</h4>
+            <p>Send SMS confirmations using Twilio Messaging API (already included in the code above):</p>
+          </div>
+
+          <div class="code-editor" style="margin-bottom: 20px;">
+            <div class="code-header">
+              <span>💬 SMS Function Implementation</span>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn-copy" onclick="copyCode('smsFunction')">📋 Copy Code</button>
+              </div>
+            </div>
+            <textarea class="code-textarea" id="smsFunction" rows="18" readonly>// Tool Definition - Add to your tools array
+{
+  type: "function",
+  name: "send_sms",
+  description: "Send SMS message to customer",
+  parameters: {
+    type: "object",
+    properties: {
+      to: { type: "string", description: "Customer phone number (E.164 format)" },
+      message: { type: "string", description: "Message content (max 1600 chars)" }
+    },
+    required: ["to", "message"]
+  }
+}
+
+// Function Implementation
+async function sendSMS(args, twilioClient, context) {
+  try {
+    const { to, message } = args;
+
+    const sms = await twilioClient.messages.create({
+      body: message,
+      from: context.DEFAULT_TWILIO_NUMBER,  // Your Twilio number
+      to: to
+    });
+
+    return {
+      success: true,
+      messageSid: sms.sid,
+      status: sms.status,
+      message: 'SMS sent successfully'
+    };
+  } catch (error) {
+    console.error('SMS error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}</textarea>
+          </div>
+
+          <div class="instructions">
+            <h4>📧 Email Confirmation Function</h4>
+            <p>Send email confirmations using Twilio SendGrid API:</p>
+          </div>
+
+          <div class="code-editor" style="margin-bottom: 20px;">
+            <div class="code-header">
+              <span>✉️ Email Function Implementation</span>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn-copy" onclick="copyCode('emailFunction')">📋 Copy Code</button>
+              </div>
+            </div>
+            <textarea class="code-textarea" id="emailFunction" rows="25" readonly>// First, add SendGrid to your Twilio Functions:
+// In Twilio Console → Functions → Dependencies → Add: @sendgrid/mail
+
+// Tool Definition - Add to your tools array
+{
+  type: "function",
+  name: "send_email",
+  description: "Send email confirmation to customer",
+  parameters: {
+    type: "object",
+    properties: {
+      to: { type: "string", description: "Customer email address" },
+      subject: { type: "string", description: "Email subject line" },
+      body: { type: "string", description: "Email body content" }
+    },
+    required: ["to", "subject", "body"]
+  }
+}
+
+// Function Implementation
+async function sendEmail(args, context) {
+  try {
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(context.SENDGRID_API_KEY);  // Add to Environment Variables
+
+    const { to, subject, body } = args;
+
+    const msg = {
+      to: to,
+      from: context.SENDER_EMAIL,  // Verified sender in SendGrid
+      subject: subject,
+      text: body,
+      html: \`<div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #F22F46;">Appointment Confirmation</h2>
+        <p>\${body}</p>
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">
+          This is an automated message. Please do not reply.
+        </p>
+      </div>\`
+    };
+
+    await sgMail.send(msg);
+
+    return {
+      success: true,
+      message: 'Email sent successfully',
+      to: to
+    };
+  } catch (error) {
+    console.error('Email error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}</textarea>
+          </div>
+
+          <div class="instructions">
+            <h4>💬 WhatsApp Function</h4>
+            <p>Send WhatsApp messages using Twilio WhatsApp API:</p>
+          </div>
+
+          <div class="code-editor" style="margin-bottom: 20px;">
+            <div class="code-header">
+              <span>💚 WhatsApp Function Implementation</span>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn-copy" onclick="copyCode('whatsappFunction')">📋 Copy Code</button>
+              </div>
+            </div>
+            <textarea class="code-textarea" id="whatsappFunction" rows="20" readonly>// Tool Definition - Add to your tools array
+{
+  type: "function",
+  name: "send_whatsapp",
+  description: "Send WhatsApp message to customer",
+  parameters: {
+    type: "object",
+    properties: {
+      to: { type: "string", description: "Customer phone (E.164 format)" },
+      message: { type: "string", description: "Message content" }
+    },
+    required: ["to", "message"]
+  }
+}
+
+// Function Implementation
+async function sendWhatsApp(args, twilioClient, context) {
+  try {
+    const { to, message } = args;
+
+    const whatsapp = await twilioClient.messages.create({
+      body: message,
+      from: \`whatsapp:\${context.TWILIO_WHATSAPP_NUMBER}\`,  // e.g., whatsapp:+14155238886
+      to: \`whatsapp:\${to}\`
+    });
+
+    return {
+      success: true,
+      messageSid: whatsapp.sid,
+      status: whatsapp.status,
+      message: 'WhatsApp message sent successfully'
+    };
+  } catch (error) {
+    console.error('WhatsApp error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}</textarea>
+          </div>
+
+          <div class="service-card" style="background: #f8f9fa; border-left: 4px solid #10b981; margin-top: 20px;">
+            <h4 style="color: #059669; margin-bottom: 15px;">🔧 How to Add These Functions</h4>
+            <ol style="line-height: 1.8; color: #333;">
+              <li><strong>Copy the tool definition</strong> and add it to the <code>tools</code> array in your WebSocket handler</li>
+              <li><strong>Copy the function implementation</strong> and paste it before the <code>exports.handler</code> line</li>
+              <li><strong>Add the function call</strong> in the switch statement where tool calls are handled:
+                <pre style="background: #2c313c; color: #abb2bf; padding: 15px; border-radius: 6px; margin-top: 10px; overflow-x: auto;"><code>case 'send_email':
+  toolResult = await sendEmail(functionArgs, context);
+  break;
+case 'send_whatsapp':
+  toolResult = await sendWhatsApp(functionArgs, twilioClient, context);
+  break;</code></pre>
+              </li>
+              <li><strong>Add required environment variables</strong> in Twilio Console → Functions → Environment Variables:
+                <ul style="margin-top: 10px;">
+                  <li>For Email: <code>SENDGRID_API_KEY</code>, <code>SENDER_EMAIL</code></li>
+                  <li>For WhatsApp: <code>TWILIO_WHATSAPP_NUMBER</code></li>
+                </ul>
+              </li>
+              <li><strong>Update your system prompt</strong> to tell the AI about these new capabilities</li>
+            </ol>
+          </div>
+
+          <div class="service-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-top: 20px;">
+            <h4 style="color: white; margin-bottom: 15px;">💡 Multi-Channel Best Practices</h4>
+            <ul style="color: rgba(255,255,255,0.95); line-height: 1.8;">
+              <li><strong>Always get consent</strong> before sending SMS/WhatsApp/Email ("Can I send you a confirmation via text/email?")</li>
+              <li><strong>Validate contact info</strong> - Check format before sending (use regex or validation libraries)</li>
+              <li><strong>Handle failures gracefully</strong> - If SMS fails, offer to send email instead</li>
+              <li><strong>Keep messages concise</strong> - SMS has 160 char segments, emails should be scannable</li>
+              <li><strong>Include opt-out instructions</strong> - "Reply STOP to unsubscribe" for SMS/WhatsApp</li>
+              <li><strong>Consider costs</strong> - SMS/WhatsApp have per-message charges, email is typically flat-rate</li>
+              <li><strong>Use templates</strong> - Create consistent, professional message templates</li>
+              <li><strong>Track deliverability</strong> - Monitor delivery status and handle bounces</li>
+            </ul>
+          </div>
+
           <div style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8;">
             <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">💾 Ready to Deploy?</h3>
             <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">
