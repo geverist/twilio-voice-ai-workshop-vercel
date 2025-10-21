@@ -14643,8 +14643,9 @@ twilio serverless:deploy
      * Poll Codespace status until it's available and get the WebSocket URL
      */
     async function pollCodespaceStatus() {
-      const maxAttempts = 30; // 30 attempts = 2.5 minutes max
+      const maxAttempts = 40; // 40 attempts = up to 3.3 minutes max (extra time for server startup)
       let attempts = 0;
+      let healthCheckAttempts = 0;
 
       const poll = async () => {
         attempts++;
@@ -14675,18 +14676,63 @@ twilio serverless:deploy
             codespaceWebUrl = data.codespace.webUrl;
             const httpUrl = data.codespace.httpUrl;
 
-            // Test if server is actually running by checking /health endpoint
-            showStatus('codespaceDeployStatus', 'info', '⏳ Verifying WebSocket server is ready...');
+            // Test if WebSocket server is actually reachable
+            healthCheckAttempts++;
+            const healthCheckDuration = Math.round(healthCheckAttempts * 5);
 
+            showStatus('codespaceDeployStatus', 'info',
+              `⏳ Testing WebSocket connection... (${healthCheckDuration}s)<br>` +
+              `<span style="font-size: 12px; opacity: 0.8;">Connecting to: ${codespaceUrl}</span>`
+            );
+
+            // First check HTTP /health endpoint
+            let httpHealthy = false;
             try {
               const healthResponse = await fetch(httpUrl + '/health', {
                 method: 'GET',
                 mode: 'cors',
                 cache: 'no-cache'
               });
+              httpHealthy = healthResponse.ok;
+              console.log(`HTTP health check: ${httpHealthy ? 'OK' : 'FAILED'} (${healthResponse.status})`);
+            } catch (healthError) {
+              console.log(`HTTP health check failed:`, healthError.message);
+            }
 
-              if (healthResponse.ok) {
-                // Server is responding!
+            // If HTTP is healthy, test actual WebSocket connection
+            if (httpHealthy) {
+              try {
+                // Test WebSocket connection
+                const wsTestResult = await new Promise((resolve, reject) => {
+                  const timeout = setTimeout(() => {
+                    ws.close();
+                    reject(new Error('WebSocket connection timeout'));
+                  }, 5000);
+
+                  const ws = new WebSocket(codespaceUrl);
+
+                  ws.onopen = () => {
+                    clearTimeout(timeout);
+                    console.log('✅ WebSocket connected successfully!');
+                    ws.close();
+                    resolve(true);
+                  };
+
+                  ws.onerror = (error) => {
+                    clearTimeout(timeout);
+                    console.log('❌ WebSocket connection failed:', error);
+                    reject(new Error('WebSocket connection failed'));
+                  };
+
+                  ws.onclose = (event) => {
+                    if (!event.wasClean) {
+                      clearTimeout(timeout);
+                      reject(new Error(`WebSocket closed unexpectedly: ${event.code}`));
+                    }
+                  };
+                });
+
+                // WebSocket connection successful!
                 websocketUrl = codespaceUrl;
                 step5Deployed = true;
                 websocketBuilt = true;
@@ -14695,9 +14741,10 @@ twilio serverless:deploy
                 saveProgressToStorage();
 
                 showStatus('codespaceDeployStatus', 'success',
-                  `🎉 Codespace is live and server is responding!<br>` +
+                  `✅ WebSocket server is ready and verified!<br>` +
                   `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>` +
-                  `<a href="${codespaceWebUrl}" target="_blank" style="color: white; text-decoration: underline; margin-top: 10px; display: inline-block;">🌐 Open Codespace →</a>`
+                  `<a href="${codespaceWebUrl}" target="_blank" style="color: white; text-decoration: underline; margin-top: 10px; display: inline-block;">🌐 Open Codespace →</a><br>` +
+                  `<span style="font-size: 12px; opacity: 0.8; margin-top: 10px; display: block;">✓ WebSocket test passed after ${healthCheckDuration} seconds</span>`
                 );
 
                 celebrate('🎉 Your development environment is ready!', 'normal');
@@ -14711,32 +14758,44 @@ twilio serverless:deploy
                   }
                 }, 500);
                 return; // Exit polling
+              } catch (wsError) {
+                console.log(`WebSocket test failed:`, wsError.message);
               }
-            } catch (healthError) {
-              console.log('Health check failed, server may still be starting:', healthError.message);
             }
 
             // Health check failed - server may still be starting
             // Continue polling for a bit longer
             if (attempts < maxAttempts) {
               showStatus('codespaceDeployStatus', 'info',
-                `⏳ Codespace is running, waiting for server to start... (${Math.round(attempts * 5)} seconds)`
+                `⏳ Waiting for WebSocket server to start... (${healthCheckDuration}s)<br>` +
+                `<span style="font-size: 12px; opacity: 0.8;">The server auto-starts on Codespace launch. This can take up to 2 minutes.</span>`
               );
               setTimeout(poll, 5000);
             } else {
-              // Timeout - show warning but still save the URL
-              websocketUrl = codespaceUrl;
-              step5Deployed = true;
-              websocketBuilt = true;
-              saveProgressToStorage();
+              // Timeout - DO NOT allow progression, server must be reachable
+              const btn = document.getElementById('deployCodespaceBtn5');
+              if (btn) {
+                btn.disabled = false;
+                btn.textContent = '🔄 Retry Launch';
+              }
 
-              showStatus('codespaceDeployStatus', 'warning',
-                `⚠️ Codespace is running but server may still be starting.<br>` +
-                `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>` +
-                `<a href="${codespaceWebUrl}" target="_blank" style="color: #4fc1ff; margin-top: 10px; display: inline-block;">🌐 Open Codespace to check logs →</a><br>` +
-                `<span style="font-size: 12px; margin-top: 10px; display: block;">The server should auto-start within 60 seconds. Try testing the WebSocket connection below.</span>`
+              showStatus('codespaceDeployStatus', 'error',
+                `❌ WebSocket server is not reachable after 3 minutes.<br><br>` +
+                `<strong>The Codespace is running, but the WebSocket server isn't responding.</strong><br><br>` +
+                `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px;">` +
+                `<strong>Troubleshooting steps:</strong><br>` +
+                `1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc1ff;">Open the Codespace →</a><br>` +
+                `2. Check the terminal for errors<br>` +
+                `3. Look for <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 3px;">npm start</code> output<br>` +
+                `4. Verify server is running on port 3000<br>` +
+                `5. Run manually: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 3px;">bash .devcontainer/startup.sh</code><br>` +
+                `6. Wait 30 seconds, then click "Retry Launch" above<br>` +
+                `</div><br>` +
+                `<span style="font-size: 12px; opacity: 0.8;">Testing URL: ${codespaceUrl}</span>`
               );
-              renderStepContent();
+
+              // Do NOT set step5Deployed or websocketBuilt - block progression
+              console.error('WebSocket server health check failed after timeout');
             }
 
           } else if (state === 'Starting' || state === 'Created' || state === 'Provisioning') {
