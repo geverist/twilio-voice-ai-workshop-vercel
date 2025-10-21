@@ -1158,6 +1158,12 @@
     let projectDeployed = false;
     let aiCallTested = false;
 
+    // Code change tracking flags (for validate button state)
+    let code4Changed = false;
+    let code7Changed = false;
+    let code8Changed = false;
+    let code9Changed = false;
+
     let twilioCredentials = null;
     let openaiApiKey = null;
     let selectedPhoneNumber = null;
@@ -4050,7 +4056,7 @@
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode4()">Reset</button>
               </div>
             </div>
-            <textarea class="code-textarea" id="code4">${isOutbound ? `exports.handler = function(context, event, callback) {
+            <textarea class="code-textarea" id="code4" oninput="handleCodeChange('code4')">${isOutbound ? `exports.handler = function(context, event, callback) {
   const twilio = require('twilio');
   const twiml = new twilio.twiml.VoiceResponse();
 
@@ -4389,10 +4395,17 @@
 
           // Move next-action effect from Validate button to Commit button
           const validateBtn = document.querySelector('[onclick="validateCode4()"]');
-          if (validateBtn) validateBtn.classList.remove('next-action');
+          if (validateBtn) {
+            validateBtn.classList.remove('next-action');
+            validateBtn.disabled = true;
+            validateBtn.style.opacity = '0.5';
+          }
 
           const commitBtn = document.getElementById('commitStep4Btn');
           if (commitBtn) commitBtn.classList.add('next-action');
+
+          // Reset code change flag
+          code4Changed = false;
 
           // Scroll to reveal deploy section
           setTimeout(() => {
@@ -5843,12 +5856,13 @@ Expected: ${scenario.expected}</div>`;
             <div class="code-header">
               <span>📝 WebSocket Handler with Tools & Knowledge Base</span>
               <div style="display: flex; gap: 10px;">
+                <button class="btn btn-success next-action" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode9()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code9')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="showToolingSolution()">💡 Show Solution</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode9()">Reset</button>
               </div>
             </div>
-            <textarea class="code-textarea" id="code9" rows="30">exports.handler = async function(context, event, callback) {
+            <textarea class="code-textarea" id="code9" rows="30" oninput="handleCodeChange('code9')">exports.handler = async function(context, event, callback) {
   const OpenAI = require('openai');
   const twilio = require('twilio');
 
@@ -6259,6 +6273,7 @@ Remember: You're having a natural conversation, not reading a script!\`;
                 <div class="code-header">
                   <span>💬 SMS Function Implementation</span>
                   <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="addChannelCodeToEditor('smsFunction')" style="padding: 6px 12px; font-size: 13px;">➕ Add to My Tools Code</button>
                     <button class="btn-copy" onclick="copyCode('smsFunction')">📋 Copy Code</button>
                   </div>
                 </div>
@@ -6315,6 +6330,7 @@ async function sendSMS(args, twilioClient, context) {
                 <div class="code-header">
                   <span>✉️ Email Function Implementation</span>
                   <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="addChannelCodeToEditor('emailFunction')" style="padding: 6px 12px; font-size: 13px;">➕ Add to My Tools Code</button>
                     <button class="btn-copy" onclick="copyCode('emailFunction')">📋 Copy Code</button>
                   </div>
                 </div>
@@ -6388,6 +6404,7 @@ async function sendEmail(args, context) {
                 <div class="code-header">
                   <span>💚 WhatsApp Function Implementation</span>
                   <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="addChannelCodeToEditor('whatsappFunction')" style="padding: 6px 12px; font-size: 13px;">➕ Add to My Tools Code</button>
                     <button class="btn-copy" onclick="copyCode('whatsappFunction')">📋 Copy Code</button>
                   </div>
                 </div>
@@ -9232,7 +9249,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode8()">Reset</button>
               </div>
             </div>
-            <textarea class="code-textarea" id="code8">exports.handler = function(context, event, callback) {
+            <textarea class="code-textarea" id="code8" oninput="handleCodeChange('code8')">exports.handler = function(context, event, callback) {
   const twilio = require('twilio');
   const VoiceResponse = twilio.twiml.VoiceResponse;
   const response = new VoiceResponse();
@@ -9558,10 +9575,17 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
         // Move next-action effect from Validate button to Deploy button
         const validateBtn = document.querySelector('[onclick="validateCode8()"]');
-        if (validateBtn) validateBtn.classList.remove('next-action');
+        if (validateBtn) {
+          validateBtn.classList.remove('next-action');
+          validateBtn.disabled = true;
+          validateBtn.style.opacity = '0.5';
+        }
 
         const deployBtn = document.getElementById('commitStep6Btn');
         if (deployBtn) deployBtn.classList.add('next-action');
+
+        // Reset code change flag
+        code8Changed = false;
 
         // Enable next button (Step 6 uses nextBtn8)
         const nextBtn = document.getElementById('nextBtn8');
@@ -9620,6 +9644,65 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 };`;
       document.getElementById('console8').innerHTML = '';
       document.getElementById('step8Status').innerHTML = '';
+    }
+
+    // Validate Step 8 WebSocket Handler with Tools & Knowledge Base
+    function validateCode9() {
+      const code = document.getElementById('code9').value;
+
+      // Validation checks for advanced WebSocket handler with tools
+      const checks = {
+        hasOpenAI: code.includes('OpenAI') || code.includes('openai'),
+        hasTwilio: code.includes('twilio'),
+        hasTools: code.includes('tools') && code.includes('type: "function"'),
+        hasKnowledgeBase: code.includes('knowledgeBase') || code.includes('knowledge'),
+        hasSystemPrompt: code.includes('systemPrompt') || code.includes('system'),
+        hasWebSocket: code.includes('ws.on') || code.includes('event.request'),
+        hasToolFunctions: (
+          code.includes('check_availability') || code.includes('checkAvailability')
+        ) && (
+          code.includes('book_appointment') || code.includes('bookAppointment')
+        ) && (
+          code.includes('send_confirmation_sms') || code.includes('sendConfirmationSMS')
+        ),
+        hasConversationHistory: code.includes('conversationHistory') || code.includes('messages'),
+        hasAsyncHandler: code.includes('async function') || code.includes('await')
+      };
+
+      const allValid = Object.values(checks).every(v => v);
+
+      if (allValid) {
+        toolsConfigured = true;
+        showStatus('step9Status', 'success', '✅ Excellent! Your WebSocket handler with tools and knowledge base is complete!');
+        updateProgressBar();
+
+        // Move next-action effect from Validate button to Commit button
+        const validateBtn = document.querySelector('[onclick="validateCode9()"]');
+        if (validateBtn) {
+          validateBtn.classList.remove('next-action');
+          validateBtn.disabled = true;
+          validateBtn.style.opacity = '0.5';
+        }
+
+        // Reset code change flag
+        code9Changed = false;
+
+        // Note: Step 8 is optional, so we don't move to a commit button
+        // Students can use this code in their own projects
+      } else {
+        const missing = [];
+        if (!checks.hasOpenAI) missing.push('OpenAI import/initialization');
+        if (!checks.hasTwilio) missing.push('Twilio client');
+        if (!checks.hasTools) missing.push('Tools array definition');
+        if (!checks.hasKnowledgeBase) missing.push('Knowledge base');
+        if (!checks.hasSystemPrompt) missing.push('System prompt');
+        if (!checks.hasWebSocket) missing.push('WebSocket event handlers');
+        if (!checks.hasToolFunctions) missing.push('Tool implementation functions (check_availability, book_appointment, send_confirmation_sms)');
+        if (!checks.hasConversationHistory) missing.push('Conversation history tracking');
+        if (!checks.hasAsyncHandler) missing.push('Async/await pattern');
+
+        showStatus('step9Status', 'error', `❌ Missing elements: ${missing.join(', ')}`);
+      }
     }
 
     // Update ConversationRelay code based on settings
@@ -9888,7 +9971,7 @@ ${hintsLine}
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode7()">Reset</button>
               </div>
             </div>
-            <textarea class="code-textarea" id="code7">/**
+            <textarea class="code-textarea" id="code7" oninput="handleCodeChange('code7')">/**
  * WebSocket Handler for Real-Time Voice AI (Node.js/Express)
  *
  * ⚠️ IMPORTANT: WebSocket servers cannot run on Twilio Serverless!
@@ -10883,10 +10966,17 @@ app.get('/health', (req, res) => {
 
         // Move next-action effect from Validate button to Deploy button
         const validateBtn = document.querySelector('[onclick="validateCode7()"]');
-        if (validateBtn) validateBtn.classList.remove('next-action');
+        if (validateBtn) {
+          validateBtn.classList.remove('next-action');
+          validateBtn.disabled = true;
+          validateBtn.style.opacity = '0.5';
+        }
 
         const deployBtn = document.getElementById('deployCodespaceBtn5');
         if (deployBtn) deployBtn.classList.add('next-action');
+
+        // Reset code change flag
+        code7Changed = false;
       } else {
         let message = '⚠️ Validation issues found:\n';
         if (!checks.hasWebSocket) message += '- Missing WebSocket import (require(\'ws\') or WebSocketServer)\n';
@@ -11900,6 +11990,97 @@ app.get('/health', (req, res) => {
       }
       element.className = `status-box show ${type}`;
       element.innerHTML = message;
+    }
+
+    // Handle code change detection for validate buttons
+    function handleCodeChange(codeId) {
+      // Map code IDs to their change flags and button selectors
+      const config = {
+        'code4': {
+          flag: 'code4Changed',
+          buttonSelector: '[onclick="validateCode4()"]',
+          validatedFlag: 'step4CodeValidated'
+        },
+        'code7': {
+          flag: 'code7Changed',
+          buttonSelector: '[onclick="validateCode7()"]',
+          validatedFlag: 'step5CodeValidated'
+        },
+        'code8': {
+          flag: 'code8Changed',
+          buttonSelector: '[onclick="validateCode8()"]',
+          validatedFlag: 'step6CodeValidated'
+        },
+        'code9': {
+          flag: 'code9Changed',
+          buttonSelector: '[onclick="validateCode9()"]',
+          validatedFlag: 'toolsConfigured'
+        }
+      };
+
+      const cfg = config[codeId];
+      if (!cfg) return;
+
+      // If code was previously validated, mark as changed and re-enable validate button
+      if (eval(cfg.validatedFlag)) {
+        eval(`${cfg.flag} = true`);
+        const validateBtn = document.querySelector(cfg.buttonSelector);
+        if (validateBtn) {
+          validateBtn.disabled = false;
+          validateBtn.style.opacity = '1';
+          validateBtn.classList.add('next-action');
+        }
+      }
+    }
+
+    // Add channel code to the code9 editor
+    function addChannelCodeToEditor(channelCodeId) {
+      const channelCode = document.getElementById(channelCodeId);
+      const code9Editor = document.getElementById('code9');
+
+      if (!channelCode || !code9Editor) {
+        console.error('Could not find code elements');
+        return;
+      }
+
+      const codeToAdd = channelCode.value;
+      const currentCode = code9Editor.value;
+
+      // Find where to insert the code (before the closing of exports.handler)
+      // Look for the last closing brace
+      const lastBraceIndex = currentCode.lastIndexOf('};');
+
+      if (lastBraceIndex !== -1) {
+        // Insert the channel code before the closing
+        const beforeClosing = currentCode.substring(0, lastBraceIndex);
+        const closing = currentCode.substring(lastBraceIndex);
+
+        // Add a comment header and the new code
+        const channelName = channelCodeId.replace('Function', '').toUpperCase();
+        const insertCode = `\n\n  // ============================================\n  // ${channelName} CHANNEL CODE - Added from examples\n  // ============================================\n\n  ${codeToAdd.split('\n').map(line => '  ' + line).join('\n')}\n\n`;
+
+        code9Editor.value = beforeClosing + insertCode + closing;
+      } else {
+        // If we can't find the structure, just append at the end
+        code9Editor.value = currentCode + '\n\n' + codeToAdd;
+      }
+
+      // Trigger change detection to re-enable validate button if needed
+      handleCodeChange('code9');
+
+      // Scroll back up to the code9 editor
+      const code9Container = code9Editor.closest('.code-editor');
+      if (code9Container) {
+        code9Container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Give a visual indication that code was added
+        code9Editor.style.border = '2px solid #10b981';
+        setTimeout(() => {
+          code9Editor.style.border = '';
+        }, 2000);
+      }
+
+      // Show success message
+      showStatus('step9Status', 'success', `✅ ${channelName} code added to your Tools & Knowledge Base handler!`);
     }
 
     // Switch between multi-channel tabs
