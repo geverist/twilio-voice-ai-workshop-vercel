@@ -6890,6 +6890,57 @@ case 'send_whatsapp':
             </div>
           </div>
 
+          <!-- Deploy to Hosting Platforms -->
+          <div class="service-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; margin: 30px 0;">
+            <h3 style="color: white; margin: 0 0 15px 0;">🚀 Deploy to Production</h3>
+            <p style="color: rgba(255,255,255,0.95); margin-bottom: 20px; line-height: 1.6;">
+              Ready to take your Voice AI system to production? Deploy your WebSocket server to a hosting platform with one click:
+            </p>
+
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+              <div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
+
+                <!-- Railway Deploy -->
+                <a href="https://railway.app/template/new" target="_blank" style="text-decoration: none;">
+                  <img src="https://railway.app/button.svg" alt="Deploy on Railway" style="height: 40px; border-radius: 6px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                </a>
+
+                <!-- Render Deploy -->
+                <a href="https://render.com/deploy" target="_blank" style="text-decoration: none;">
+                  <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" style="height: 40px; border-radius: 6px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                </a>
+
+                <!-- Heroku Deploy -->
+                <a href="https://heroku.com/deploy" target="_blank" style="text-decoration: none;">
+                  <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" style="height: 40px; border-radius: 6px; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                </a>
+
+              </div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: 15px;">
+              <h4 style="color: white; margin: 0 0 10px 0; font-size: 1rem;">📝 Deployment Notes:</h4>
+              <ul style="margin: 0; padding-left: 20px; color: rgba(255,255,255,0.9); line-height: 1.8; font-size: 14px;">
+                <li><strong>Railway:</strong> Free tier available, supports WebSockets, great for Node.js apps</li>
+                <li><strong>Render:</strong> Free tier with persistent storage, automatic HTTPS, easy scaling</li>
+                <li><strong>Heroku:</strong> Popular platform with extensive add-ons and documentation</li>
+                <li><strong>Environment Variables:</strong> Don't forget to set <code>TWILIO_ACCOUNT_SID</code>, <code>TWILIO_AUTH_TOKEN</code>, and <code>OPENAI_API_KEY</code></li>
+                <li><strong>WebSocket URL:</strong> After deployment, update your Twilio phone number webhook to point to your new production URL</li>
+              </ul>
+            </div>
+
+            ${studentRepoName ? `
+            <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.2); border-radius: 8px; border-left: 4px solid white;">
+              <p style="margin: 0; color: white; line-height: 1.6;">
+                <strong>💡 Your Code:</strong> All your code is in your GitHub repository:
+                <a href="https://github.com/${githubUsername}/${studentRepoName}" target="_blank" style="color: #ffd43b; text-decoration: underline; font-weight: 600;">
+                  ${githubUsername}/${studentRepoName}
+                </a>
+              </p>
+            </div>
+            ` : ''}
+          </div>
+
           <!-- Next Steps & Resources -->
           <div class="instructions">
             <h3>🎯 What's Next?</h3>
