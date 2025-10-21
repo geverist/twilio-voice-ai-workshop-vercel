@@ -2988,7 +2988,7 @@
 
           <div id="step2Status" class="status-box"></div>
 
-          <div class="button-group">
+          <div class="button-group" style="gap: 20px;">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
             <button class="btn btn-primary" id="nextBtn2" onclick="nextStep()" disabled>
               Next: Provision Services →
@@ -3021,6 +3021,7 @@
 
         if (nextBtn) {
           nextBtn.disabled = false;
+          nextBtn.classList.add('next-action'); // Add glow effect
           console.log('✅ Next button enabled for call direction:', direction);
         } else {
           console.error('❌ Could not find nextBtn2 element');
@@ -3106,7 +3107,7 @@
 
           <div id="step3Status" class="status-box"></div>
 
-          <div class="button-group">
+          <div class="button-group" style="gap: 20px;">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
             <button class="btn btn-primary" id="nextBtn3" onclick="nextStep()" disabled>
               Next: Create Basic TwiML →
@@ -3305,7 +3306,11 @@
       if (hasMessaging && (hasSync || syncServiceSkipped)) {
         if (selectedPhoneNumber) {
           servicesReady = true;
-          document.getElementById('nextBtn3').disabled = false;
+          const nextBtn3 = document.getElementById('nextBtn3');
+          if (nextBtn3) {
+            nextBtn3.disabled = false;
+            nextBtn3.classList.add('next-action'); // Add glow effect
+          }
           showStatus('step3Status', 'success', '🎉 All required services are ready!');
           updateProgressBar();
         } else if (hasPhone) {
@@ -3332,7 +3337,11 @@
 
         if (hasMessaging && (hasSync || syncServiceSkipped)) {
           servicesReady = true;
-          document.getElementById('nextBtn3').disabled = false;
+          const nextBtn3 = document.getElementById('nextBtn3');
+          if (nextBtn3) {
+            nextBtn3.disabled = false;
+            nextBtn3.classList.add('next-action'); // Add glow effect
+          }
           showStatus('step3Status', 'success', '🎉 All required services are ready!');
           updateProgressBar();
         }
