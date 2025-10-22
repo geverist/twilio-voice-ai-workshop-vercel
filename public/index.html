@@ -1176,6 +1176,7 @@
     let githubUsername = null;
     let studentRepoName = null; // Student's GitHub repository name
     let studentName = localStorage.getItem('studentName') || '';
+    let studentEmail = localStorage.getItem('studentEmail') || '';
     let studentDemoMode = localStorage.getItem('studentDemoMode') === 'true';
 
     // Codespaces variables
@@ -1263,6 +1264,77 @@
       if (typeof highlightNextAction === 'function') {
         setTimeout(() => highlightNextAction(), 100);
       }
+
+      // Track progress to API if student email is provided
+      trackStudentProgress();
+    }
+
+    async function trackStudentProgress() {
+      // Only track if we have a student email
+      if (!studentEmail) {
+        return;
+      }
+
+      try {
+        // Calculate which exercises are completed based on step progress
+        const exercises = {};
+
+        // Map steps to exercise IDs
+        const stepToExercise = {
+          1: 'connect-accounts',
+          2: 'choose-use-case',
+          3: 'provision-number',
+          4: 'create-basic-twiml',
+          5: 'build-websocket-handler',
+          6: 'create-conversation-relay',
+          7: 'add-ai-tools',
+          8: 'test-full-call',
+          9: 'add-multichannel'
+        };
+
+        // Mark exercises as completed based on currentStep
+        for (let i = 1; i < currentStep; i++) {
+          const exerciseId = stepToExercise[i];
+          if (exerciseId) {
+            exercises[exerciseId] = {
+              completed: true,
+              timestamp: new Date().toISOString()
+            };
+          }
+        }
+
+        // Add current step as in-progress
+        const currentExercise = stepToExercise[currentStep];
+        if (currentExercise && !exercises[currentExercise]) {
+          exercises[currentExercise] = {
+            completed: false,
+            attempts: 1,
+            lastAttempt: new Date().toISOString()
+          };
+        }
+
+        const response = await fetch(`${window.location.origin}/api/track-student-progress`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            studentId: studentEmail,
+            studentName: studentName || studentEmail,
+            exerciseId: currentExercise || 'unknown',
+            completed: false,
+            totalExercises: 9,
+            repoCreated: !!studentRepoName
+          })
+        });
+
+        if (!response.ok) {
+          console.warn('Failed to track student progress:', await response.text());
+        }
+      } catch (error) {
+        console.warn('Error tracking student progress:', error);
+        // Don't interrupt the user experience if tracking fails
+      }
     }
 
     function loadProgressFromStorage() {
@@ -1327,6 +1399,23 @@
             </p>
           </div>
           <div style="margin-bottom: 25px;">
+            <label for="studentEmail" style="display: block; text-align: left; color: #666; font-size: 0.95rem; margin-bottom: 8px; font-weight: 500;">
+              Your Email <span style="color: #999; font-weight: 400;">(optional)</span>
+            </label>
+            <input
+              type="email"
+              id="studentEmail"
+              value="${studentEmail}"
+              placeholder="e.g., alex.johnson@company.com"
+              style="width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;"
+              onfocus="this.style.borderColor='#F22F46'"
+              onblur="this.style.borderColor='#ddd'"
+            />
+            <p style="color: #999; font-size: 0.85rem; margin-top: 6px; text-align: left;">
+              Optional: Helps instructors track your progress during the workshop
+            </p>
+          </div>
+          <div style="margin-bottom: 25px;">
             <label for="studentName" style="display: block; text-align: left; color: #666; font-size: 0.95rem; margin-bottom: 8px; font-weight: 500;">
               Your Name <span style="color: #999; font-weight: 400;">(optional)</span>
             </label>
@@ -1338,9 +1427,6 @@
               onfocus="this.style.borderColor='#F22F46'"
               onblur="this.style.borderColor='#ddd'"
             />
-            <p style="color: #999; font-size: 0.85rem; margin-top: 6px; text-align: left;">
-              Optional: Helps instructors track your progress during the workshop
-            </p>
           </div>
           <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
             <button onclick="saveStudentNameAndStart(false)" style="flex: 1; min-width: 220px; max-width: 280px; padding: 18px 30px; background: linear-gradient(135deg, #F22F46 0%, #ff6b6b 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s;">
@@ -1361,11 +1447,18 @@
 
     function saveStudentNameAndStart(isDemoMode) {
       const nameInput = document.getElementById('studentName');
+      const emailInput = document.getElementById('studentEmail');
       const name = nameInput ? nameInput.value.trim() : '';
+      const email = emailInput ? emailInput.value.trim() : '';
 
       if (name) {
         studentName = name;
         localStorage.setItem('studentName', name);
+      }
+
+      if (email) {
+        studentEmail = email;
+        localStorage.setItem('studentEmail', email);
       }
 
       studentDemoMode = isDemoMode;
