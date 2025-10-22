@@ -15036,6 +15036,59 @@ twilio serverless:deploy
     }
 
     /**
+     * Test WebSocket Connection
+     * Attempts to connect to WebSocket URL and verify it responds
+     */
+    async function testWebSocketConnection(wsUrl, timeoutMs = 10000) {
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          if (ws) ws.close();
+          resolve({
+            success: false,
+            error: 'Connection timeout - server did not respond'
+          });
+        }, timeoutMs);
+
+        try {
+          const ws = new WebSocket(wsUrl);
+
+          ws.onopen = () => {
+            clearTimeout(timeout);
+            ws.close();
+            resolve({
+              success: true,
+              message: 'WebSocket connection successful'
+            });
+          };
+
+          ws.onerror = (error) => {
+            clearTimeout(timeout);
+            resolve({
+              success: false,
+              error: 'WebSocket connection failed - server may still be starting'
+            });
+          };
+
+          ws.onclose = (event) => {
+            if (!event.wasClean) {
+              clearTimeout(timeout);
+              resolve({
+                success: false,
+                error: `Connection closed unexpectedly: ${event.code}`
+              });
+            }
+          };
+        } catch (error) {
+          clearTimeout(timeout);
+          resolve({
+            success: false,
+            error: error.message
+          });
+        }
+      });
+    }
+
+    /**
      * Deploy WebSocket Server to Deno Deploy
      * Uses Deno Subhosting API to deploy student code programmatically
      */
@@ -15100,8 +15153,15 @@ twilio serverless:deploy
           throw new Error(data.error || 'Deployment failed');
         }
 
-        showStatus('codespaceDeployStatus', 'info', '🚀 Deploying to Deno Deploy...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Deployment is built and ready, now test WebSocket
+        showStatus('codespaceDeployStatus', 'info', '🔍 Testing WebSocket connection...');
+
+        // Test WebSocket connection
+        const wsTestResult = await testWebSocketConnection(data.websocketUrl);
+
+        if (!wsTestResult.success) {
+          throw new Error(`WebSocket test failed: ${wsTestResult.error}`);
+        }
 
         websocketUrl = data.websocketUrl;
         codespaceUrl = data.websocketUrl;
@@ -15114,9 +15174,9 @@ twilio serverless:deploy
         updateProgressBar();
 
         showStatus('codespaceDeployStatus', 'success',
-          `✅ WebSocket server deployed successfully!<br>` +
+          `✅ WebSocket server deployed and verified!<br>` +
           `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${websocketUrl}</div>` +
-          `<div style="margin-top: 10px; font-size: 13px; opacity: 0.8;">Your server is live and ready to handle calls!</div>`
+          `<div style="margin-top: 10px; font-size: 13px; opacity: 0.8;">✓ WebSocket connection test passed - server is ready to handle calls!</div>`
         );
 
         btn.disabled = false;

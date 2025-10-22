@@ -89,12 +89,25 @@ export default async function handler(req, res) {
 
     console.log(`✓ Deployment created: ${deployment.id}`);
 
-    // Step 4: Get deployment URL
+    // Step 5: Wait for deployment to be ready
+    const deploymentStatus = await waitForDeploymentReady(
+      DENO_DEPLOY_TOKEN,
+      deployment.id,
+      60 // 60 second timeout
+    );
+
+    if (!deploymentStatus.ready) {
+      throw new Error('Deployment did not become ready within timeout period');
+    }
+
+    // Step 6: Get deployment URL
     const deploymentUrl = deployment.domains && deployment.domains.length > 0
       ? `https://${deployment.domains[0]}`
       : `https://${projectName}-${deployment.id.substring(0, 8)}.deno.dev`;
 
     const websocketUrl = deploymentUrl.replace(/^https:\/\//, 'wss://');
+
+    console.log(`✓ Deployment ready at: ${deploymentUrl}`);
 
     return res.status(200).json({
       success: true,
@@ -102,6 +115,7 @@ export default async function handler(req, res) {
       deploymentId: deployment.id,
       deploymentUrl: deploymentUrl,
       websocketUrl: websocketUrl,
+      buildLogs: deploymentStatus.logs,
       message: 'WebSocket server deployed successfully to Deno Deploy!'
     });
 
@@ -252,4 +266,89 @@ async function createDenoDeployment(token, projectId, assets, envVars = {}) {
   }
 
   return await response.json();
+}
+
+/**
+ * Wait for Deno deployment to be ready
+ * Polls the deployment status until it's ready or times out
+ */
+async function waitForDeploymentReady(token, deploymentId, timeoutSeconds = 60) {
+  const startTime = Date.now();
+  const maxTime = timeoutSeconds * 1000;
+  let lastStatus = null;
+  let buildLogs = [];
+
+  while (Date.now() - startTime < maxTime) {
+    // Get deployment details
+    const response = await fetch(
+      `https://api.deno.com/v1/deployments/${deploymentId}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      console.error(`Failed to get deployment status: ${response.status}`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      continue;
+    }
+
+    const deployment = await response.json();
+    lastStatus = deployment.status;
+
+    console.log(`Deployment ${deploymentId} status: ${lastStatus}`);
+
+    // Check if deployment is ready
+    if (lastStatus === 'success') {
+      return {
+        ready: true,
+        status: lastStatus,
+        logs: buildLogs
+      };
+    }
+
+    // Check if deployment failed
+    if (lastStatus === 'failed') {
+      // Try to get build logs to see what went wrong
+      try {
+        const logsResponse = await fetch(
+          `https://api.deno.com/v1/deployments/${deploymentId}/build_logs`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
+          }
+        );
+
+        if (logsResponse.ok) {
+          const logsData = await logsResponse.json();
+          buildLogs = logsData.logs || [];
+        }
+      } catch (logError) {
+        console.error('Failed to fetch build logs:', logError);
+      }
+
+      return {
+        ready: false,
+        status: lastStatus,
+        logs: buildLogs,
+        error: 'Deployment failed during build'
+      };
+    }
+
+    // Still building, wait and try again
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+
+  // Timeout
+  return {
+    ready: false,
+    status: lastStatus || 'unknown',
+    logs: buildLogs,
+    error: 'Deployment timed out'
+  };
 }
