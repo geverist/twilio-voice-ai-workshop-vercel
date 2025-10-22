@@ -1270,9 +1270,9 @@
     }
 
     async function trackStudentProgress() {
-      // Only track if we have a student email
-      if (!studentEmail) {
-        console.log('📊 Progress tracking skipped - no student email');
+      // Only track if we have email and session token
+      if (!studentEmail || !sessionToken) {
+        console.log('📊 Progress tracking skipped - missing email or session');
         return;
       }
 
@@ -1303,42 +1303,43 @@
           9: 'step-9-multichannel'
         };
 
-        console.log(`📊 Tracking progress for ${studentEmail} (currentStep: ${currentStep + 1})`);
+        console.log(`📊 Tracking progress for ${studentEmail} session ${sessionToken.substring(0, 8)} (currentStep: ${currentStep + 1})`);
 
-        // Send progress for each completed step AND the current step
-        for (let stepNum = 1; stepNum <= 9; stepNum++) {
+        // IMPORTANT: Only track steps up to the current step
+        // This prevents showing future steps when student restarts workshop
+        const maxStepToTrack = currentStep + 1; // currentStep is 0-indexed
+
+        // Send progress for steps up to and including current step
+        for (let stepNum = 1; stepNum <= maxStepToTrack; stepNum++) {
           const exerciseId = stepToExercise[stepNum];
           const isCompleted = stepCompletionStatus[stepNum] || false;
-          const isCurrentStep = stepNum === (currentStep + 1); // currentStep is 0-indexed
 
-          // Only send if step is completed OR it's the current step
-          if (isCompleted || isCurrentStep) {
-            console.log(`  📝 Sending: ${exerciseId} - ${isCompleted ? 'COMPLETED' : 'IN PROGRESS'}`);
+          console.log(`  📝 Sending: ${exerciseId} - ${isCompleted ? 'COMPLETED' : 'IN PROGRESS'}`);
 
-            const response = await fetch(`${window.location.origin}/api/track-student-progress`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                studentId: studentEmail,
-                studentName: studentName || studentEmail,
-                exerciseId: exerciseId,
-                completed: isCompleted,
-                totalExercises: 9,
-                repoCreated: !!studentRepoName,
-                demoMode: studentDemoMode || false
-              })
-            });
+          const response = await fetch(`${window.location.origin}/api/track-student-progress`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sessionToken: sessionToken,  // Session is primary key
+              studentEmail: studentEmail,  // For grouping by student
+              studentName: studentName || studentEmail,
+              exerciseId: exerciseId,
+              completed: isCompleted,
+              totalExercises: 9,
+              repoCreated: !!studentRepoName,
+              demoMode: studentDemoMode || false
+            })
+          });
 
-            const data = await response.json();
-            if (!data.success) {
-              console.warn(`  ⚠️ Failed to track ${exerciseId}:`, data.error);
-            }
+          const data = await response.json();
+          if (!data.success) {
+            console.warn(`  ⚠️ Failed to track ${exerciseId}:`, data.error);
           }
         }
 
-        console.log('📊 Progress tracking complete');
+        console.log(`📊 Progress tracking complete (tracked ${maxStepToTrack} of 9 steps)`);
       } catch (error) {
         console.error('❌ Error tracking student progress:', error);
         // Don't interrupt the user experience if tracking fails
@@ -1408,31 +1409,29 @@
           </div>
           <div style="margin-bottom: 25px;">
             <label for="studentEmail" style="display: block; text-align: left; color: #666; font-size: 0.95rem; margin-bottom: 8px; font-weight: 500;">
-              Your Email <span style="color: #F22F46; font-weight: 600;">*</span>
+              Your Email <span style="color: #999; font-weight: 400;">(optional)</span>
             </label>
             <input
               type="email"
               id="studentEmail"
               value="${studentEmail}"
               placeholder="e.g., alex.johnson@company.com"
-              required
               style="width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;"
               onfocus="this.style.borderColor='#F22F46'"
               onblur="this.style.borderColor='#ddd'"
             />
             <p style="color: #999; font-size: 0.85rem; margin-top: 6px; text-align: left;">
-              Required: Helps instructors track your progress during the workshop
+              Optional: Helps instructors track your progress during the workshop
             </p>
           </div>
           <div style="margin-bottom: 25px;">
             <label for="studentName" style="display: block; text-align: left; color: #666; font-size: 0.95rem; margin-bottom: 8px; font-weight: 500;">
-              Your Name <span style="color: #F22F46; font-weight: 600;">*</span>
+              Your Name <span style="color: #999; font-weight: 400;">(optional)</span>
             </label>
             <input
               type="text"
               id="studentName"
               placeholder="e.g., Alex Johnson"
-              required
               style="width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;"
               onfocus="this.style.borderColor='#F22F46'"
               onblur="this.style.borderColor='#ddd'"
@@ -1461,26 +1460,7 @@
       const name = nameInput ? nameInput.value.trim() : '';
       const email = emailInput ? emailInput.value.trim() : '';
 
-      // Validate required fields (except in demo mode where they're optional)
-      if (!isDemoMode) {
-        if (!name) {
-          alert('Please enter your name to continue. This helps instructors track your progress.');
-          nameInput?.focus();
-          return;
-        }
-        if (!email) {
-          alert('Please enter your email to continue. This helps instructors track your progress.');
-          emailInput?.focus();
-          return;
-        }
-        // Basic email validation
-        if (!email.includes('@') || !email.includes('.')) {
-          alert('Please enter a valid email address.');
-          emailInput?.focus();
-          return;
-        }
-      }
-
+      // Save name and email if provided (both are optional now)
       if (name) {
         studentName = name;
         localStorage.setItem('studentName', name);

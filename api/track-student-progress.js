@@ -146,7 +146,9 @@ export default async function handler(req, res) {
     // POST: Update progress
     if (req.method === 'POST') {
       const {
-        studentId,
+        sessionToken,
+        studentEmail,
+        studentId, // Legacy support - will be removed
         studentName,
         exerciseId,
         completed,
@@ -157,26 +159,30 @@ export default async function handler(req, res) {
         demoMode
       } = req.body;
 
-      if (!studentId || !exerciseId) {
+      // Support both new (sessionToken + studentEmail) and legacy (studentId) formats
+      const session = sessionToken;
+      const email = studentEmail || studentId;
+
+      if (!session || !email || !exerciseId) {
         return res.status(400).json({
           success: false,
-          error: 'studentId and exerciseId are required'
+          error: 'sessionToken, studentEmail, and exerciseId are required'
         });
       }
 
       const timestamp = new Date().toISOString();
 
       try {
-        // Try to fetch existing student
-        const existingStudent = await sql`
+        // Try to fetch existing session
+        const existingSession = await sql`
           SELECT * FROM workshop_students
-          WHERE student_email = ${studentId}
+          WHERE session_token = ${session}
         `;
 
         let progressData;
 
-        if (existingStudent.length === 0) {
-          // Create new student record
+        if (existingSession.length === 0) {
+          // Create new session record
           progressData = {
             exercises: {
               [exerciseId]: {
@@ -191,10 +197,11 @@ export default async function handler(req, res) {
 
           await sql`
             INSERT INTO workshop_students
-            (student_email, student_name, exercises, started_at, last_activity, total_time_spent, completion_rate, repo_created, demo_mode)
+            (session_token, student_email, student_name, exercises, started_at, last_activity, total_time_spent, completion_rate, repo_created, demo_mode)
             VALUES (
-              ${studentId},
-              ${studentName || studentId},
+              ${session},
+              ${email},
+              ${studentName || email},
               ${JSON.stringify(progressData.exercises)},
               ${timestamp},
               ${timestamp},
@@ -209,8 +216,9 @@ export default async function handler(req, res) {
             success: true,
             message: 'Progress recorded successfully',
             progress: {
-              studentId,
-              studentName: studentName || studentId,
+              sessionToken: session,
+              studentEmail: email,
+              studentName: studentName || email,
               exercises: progressData.exercises,
               startedAt: timestamp,
               lastActivity: timestamp,
@@ -221,9 +229,9 @@ export default async function handler(req, res) {
           });
         }
 
-        // Update existing student
-        const student = existingStudent[0];
-        progressData = student.exercises || {};
+        // Update existing session
+        const sessionData = existingSession[0];
+        progressData = sessionData.exercises || {};
 
         // Update exercise progress
         const existingExercise = progressData[exerciseId] || {};
@@ -249,28 +257,30 @@ export default async function handler(req, res) {
         await sql`
           UPDATE workshop_students
           SET
-            student_name = ${studentName || student.student_name},
+            student_email = ${email},
+            student_name = ${studentName || sessionData.student_name},
             exercises = ${JSON.stringify(progressData)},
             last_activity = ${timestamp},
             total_time_spent = ${newTotalTimeSpent},
             completion_rate = ${newCompletionRate},
-            repo_created = ${repoCreated !== undefined ? repoCreated : student.repo_created},
-            demo_mode = ${demoMode !== undefined ? demoMode : student.demo_mode}
-          WHERE student_email = ${studentId}
+            repo_created = ${repoCreated !== undefined ? repoCreated : sessionData.repo_created},
+            demo_mode = ${demoMode !== undefined ? demoMode : sessionData.demo_mode}
+          WHERE session_token = ${session}
         `;
 
         return res.status(200).json({
           success: true,
           message: 'Progress updated successfully',
           progress: {
-            studentId,
-            studentName: studentName || student.student_name,
+            sessionToken: session,
+            studentEmail: email,
+            studentName: studentName || sessionData.student_name,
             exercises: progressData,
-            startedAt: student.started_at,
+            startedAt: sessionData.started_at,
             lastActivity: timestamp,
             totalTimeSpent: newTotalTimeSpent,
             completionRate: newCompletionRate,
-            repoCreated: repoCreated !== undefined ? repoCreated : student.repo_created
+            repoCreated: repoCreated !== undefined ? repoCreated : sessionData.repo_created
           }
         });
 
