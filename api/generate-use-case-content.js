@@ -63,11 +63,9 @@ Return your response as valid JSON only, with no markdown formatting or code blo
             content: `The student wants to build: "${useCaseDescription}"
 Call direction: ${callDirection}
 
-Generate the following customized content (return as JSON):
+Generate a "systemPrompt" that follows this EXACT structure but customized for their use case:
 
-1. "systemPrompt": A system prompt following this EXACT format and structure (customize for their use case):
-
-You are a helpful assistant for [their specific use case].
+You are a helpful assistant [describe their specific role based on the use case].
 
 # Voice Conversation Guidelines
 - Keep responses BRIEF (1-2 sentences max)
@@ -84,16 +82,30 @@ You are a helpful assistant for [their specific use case].
 - Natural and human-like
 
 # Example Interactions
-[Include 2 examples specific to their use case showing GOOD (brief) vs BAD (too long) responses]
+
+GOOD Response:
+User: [example question relevant to their use case]
+You: [brief 1-2 sentence response]
+
+BAD Response (too long):
+User: [same question]
+You: [verbose multi-sentence response showing what NOT to do]
 
 Remember: In voice conversations, brevity is key. Keep it natural and conversational.
 
-2. "ivrGreeting": A friendly greeting message for the ${callDirection} call (1-2 sentences)
-3. "exampleQuestions": Array of 3-4 example questions/scenarios users might encounter with this bot
-4. "suggestedVoice": Recommended voice type (professional, friendly, authoritative, etc.)
+IMPORTANT INSTRUCTIONS:
+- Keep the EXACT section headings: "# Voice Conversation Guidelines", "# Response Style", "# Example Interactions"
+- Keep the same guidelines bullet points word-for-word
+- ONLY customize: the opening line, and the example User/You interactions to match their use case
+- Make the examples realistic and specific to what they described
+- Show contrast between brief (GOOD) and verbose (BAD) responses
 
-IMPORTANT: The systemPrompt MUST follow the voice best practices format above. Keep responses brief and conversational.
-Return ONLY valid JSON with these keys, no markdown or explanations.`
+Also generate:
+2. "ivrGreeting": A friendly greeting message for the ${callDirection} call (1-2 sentences)
+3. "exampleQuestions": Array of 3-4 example questions/scenarios users might encounter
+4. "suggestedVoice": Recommended voice type
+
+Return ONLY valid JSON with these keys (systemPrompt, ivrGreeting, exampleQuestions, suggestedVoice). No markdown.`
           }
         ],
         temperature: 0.7,
