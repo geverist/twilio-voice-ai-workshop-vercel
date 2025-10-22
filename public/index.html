@@ -2358,12 +2358,12 @@
                 <button
                   class="btn btn-primary next-action"
                   id="deployCodespaceBtn"
-                  onclick="deployToCodespaces()"
+                  onclick="deployToDeno()"
                   style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #1a7f37; border: none; font-weight: bold;">
-                  🚀 Launch Development Environment
+                  🚀 Deploy WebSocket Server
                 </button>
                 <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
-                  Takes about 120 seconds to provision • Free with GitHub (60 hours/month)
+                  Instant deployment • Your code runs on Deno's edge network
                 </p>
                 <div id="codespacesUsageInfo" style="margin-top: 10px; text-align: center;"></div>
               </div>
@@ -15032,6 +15032,110 @@ twilio serverless:deploy
           `❌ Automatic fix failed: ${error.message}<br><br>` +
           `Please try the manual steps in "Advanced troubleshooting" above.`
         );
+      }
+    }
+
+    /**
+     * Deploy WebSocket Server to Deno Deploy
+     * Uses Deno Subhosting API to deploy student code programmatically
+     */
+    async function deployToDeno() {
+      const btn = document.getElementById('deployCodespaceBtn');
+
+      // Demo mode simulation
+      if (studentDemoMode || twilioCredentials?.demoMode) {
+        btn.disabled = true;
+        btn.textContent = '🚀 Deploying...';
+
+        showStatus('codespaceDeployStatus', 'info', '📦 Demo: Deploying WebSocket server...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        websocketUrl = 'wss://demo-workshop-server.deno.dev';
+        codespaceUrl = websocketUrl;
+        step5Deployed = true;
+        websocketBuilt = true;
+
+        saveProgressToStorage();
+        updateProgressBar();
+
+        showStatus('codespaceDeployStatus', 'success',
+          `✅ Demo: WebSocket server deployed!<br>` +
+          `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${websocketUrl}</div>`
+        );
+
+        btn.disabled = false;
+        btn.textContent = '✅ Server Deployed';
+        renderStepContent();
+        return;
+      }
+
+      if (!githubToken || !githubUsername || !studentRepoName) {
+        showStatus('codespaceDeployStatus', 'error', '❌ Missing GitHub credentials or repository');
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+        btn.textContent = '🚀 Deploying...';
+
+        const repoFullName = `${githubUsername}/${studentRepoName}`;
+
+        showStatus('codespaceDeployStatus', 'info', '📦 Fetching your code from GitHub...');
+
+        // Call Deno Deploy API
+        const response = await fetch('/api/deno-deploy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            githubToken: githubToken,
+            repoFullName: repoFullName,
+            studentName: studentName || githubUsername
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Deployment failed');
+        }
+
+        showStatus('codespaceDeployStatus', 'info', '🚀 Deploying to Deno Deploy...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        websocketUrl = data.websocketUrl;
+        codespaceUrl = data.websocketUrl;
+        denoProjectId = data.projectId;
+        denoDeploymentId = data.deploymentId;
+        step5Deployed = true;
+        websocketBuilt = true;
+
+        saveProgressToStorage();
+        updateProgressBar();
+
+        showStatus('codespaceDeployStatus', 'success',
+          `✅ WebSocket server deployed successfully!<br>` +
+          `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${websocketUrl}</div>` +
+          `<div style="margin-top: 10px; font-size: 13px; opacity: 0.8;">Your server is live and ready to handle calls!</div>`
+        );
+
+        btn.disabled = false;
+        btn.textContent = '✅ Server Deployed';
+
+        celebrate('🎉 Your WebSocket server is live!', 'normal');
+        renderStepContent();
+
+        setTimeout(() => {
+          const connectTwilioBtn = document.querySelector('[onclick*="connectTwilio"]');
+          if (connectTwilioBtn && !twilioConnected) {
+            connectTwilioBtn.classList.add('next-action');
+          }
+        }, 500);
+
+      } catch (error) {
+        console.error('Deno Deploy error:', error);
+        showStatus('codespaceDeployStatus', 'error', `❌ Deployment failed: ${error.message}`);
+        btn.disabled = false;
+        btn.textContent = '🔄 Retry Deployment';
       }
     }
 
