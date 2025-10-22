@@ -139,37 +139,37 @@
 
     const stateListeners = {};
     let syncTimer = null;
-    let syncCallCount = 0;
-    let syncCallHistory = [];
 
-    // Mock variables
-    let sessionToken = null;
-    let studentEmail = null;
-    let studentName = null;
-    let twilioConnected = false;
-    let openaiConnected = false;
-    let callDirectionChosen = false;
-    let useCaseDescription = '';
-    let selectedPhoneNumber = null;
-    let servicesReady = false;
-    let step4CodeValidated = false;
-    let step4Committed = false;
-    let step4Deployed = false;
-    let step5CodeValidated = false;
-    let step5Committed = false;
-    let step5Deployed = false;
-    let step6CodeValidated = false;
-    let step6Committed = false;
-    let step6Deployed = false;
-    let systemPromptSaved = false;
-    let step7Committed = false;
-    let step7Deployed = false;
-    let toolsConfigured = false;
-    let step8CodeValidated = false;
-    let step8Committed = false;
-    let step8Deployed = false;
-    let projectDeployed = false;
-    let currentStep = 0;
+    // Mock variables - initialize on window object
+    window.sessionToken = null;
+    window.studentEmail = null;
+    window.studentName = null;
+    window.twilioConnected = false;
+    window.openaiConnected = false;
+    window.callDirectionChosen = false;
+    window.useCaseDescription = '';
+    window.selectedPhoneNumber = null;
+    window.servicesReady = false;
+    window.step4CodeValidated = false;
+    window.step4Committed = false;
+    window.step4Deployed = false;
+    window.step5CodeValidated = false;
+    window.step5Committed = false;
+    window.step5Deployed = false;
+    window.step6CodeValidated = false;
+    window.step6Committed = false;
+    window.step6Deployed = false;
+    window.systemPromptSaved = false;
+    window.step7Committed = false;
+    window.step7Deployed = false;
+    window.toolsConfigured = false;
+    window.step8CodeValidated = false;
+    window.step8Committed = false;
+    window.step8Deployed = false;
+    window.projectDeployed = false;
+    window.currentStep = 0;
+    window.syncCallCount = 0;
+    window.syncCallHistory = [];
 
     function setState(path, value) {
       const varName = path.split('.').pop();
