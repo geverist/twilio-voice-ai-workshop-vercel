@@ -2350,7 +2350,7 @@
       // Generate or restore session token (used for identifying student across workshop)
       if (!sessionToken || sessionToken === 'null' || sessionToken === 'undefined') {
         // Generate a unique session token
-        setState("sessionToken", 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+        setState("sessionToken", 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15));
         localStorage.setItem('sessionToken', sessionToken);
         console.log('Generated new session token:', sessionToken);
       }
