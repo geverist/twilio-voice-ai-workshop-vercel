@@ -23,16 +23,22 @@
  * }
  */
 
-import { sql } from '@vercel/postgres';
+import postgres from 'postgres';
+import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
+
+// Create postgres connection
+const sql = postgres(process.env.POSTGRES_URL, {
+  ssl: 'require',
+  max: 1
+});
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Apply CORS
+  applyCORS(req, res);
 
-  // Handle preflight OPTIONS request
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+  // Handle preflight
+  if (handlePreflightRequest(req, res)) {
+    return;
   }
 
   try {
@@ -68,8 +74,8 @@ export default async function handler(req, res) {
 
           return res.status(200).json({
             success: true,
-            students: result.rows,
-            count: result.rows.length
+            students: result,
+            count: result.length
           });
         } catch (error) {
           console.error('Error fetching all students:', error);
@@ -104,7 +110,7 @@ export default async function handler(req, res) {
           WHERE student_email = ${studentId}
         `;
 
-        if (result.rows.length === 0) {
+        if (result.length === 0) {
           // Student not found - return empty progress
           return res.status(200).json({
             success: true,
@@ -122,7 +128,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
           success: true,
-          progress: result.rows[0]
+          progress: result[0]
         });
 
       } catch (error) {
@@ -166,7 +172,7 @@ export default async function handler(req, res) {
 
         let progressData;
 
-        if (existingStudent.rows.length === 0) {
+        if (existingStudent.length === 0) {
           // Create new student record
           progressData = {
             exercises: {
@@ -212,7 +218,7 @@ export default async function handler(req, res) {
         }
 
         // Update existing student
-        const student = existingStudent.rows[0];
+        const student = existingStudent[0];
         progressData = student.exercises || {};
 
         // Update exercise progress
