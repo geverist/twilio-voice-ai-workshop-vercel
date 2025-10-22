@@ -5,8 +5,14 @@
  * This config is used by the shared WebSocket server to handle their calls.
  */
 
-import { sql } from '@vercel/postgres';
+import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
+
+// Create postgres connection
+const sql = postgres(process.env.POSTGRES_URL, {
+  ssl: 'require',
+  max: 1
+});
 import { applyRateLimit } from './_lib/ratelimit.js';
 import {
   validateRequired,

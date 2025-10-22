@@ -5,8 +5,14 @@
  * Also provides a health check for the database connection.
  */
 
-import { sql } from '@vercel/postgres';
+import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
+
+// Create postgres connection
+const sql = postgres(process.env.POSTGRES_URL, {
+  ssl: 'require',
+  max: 1
+});
 
 export default async function handler(req, res) {
   // Apply CORS
@@ -38,7 +44,7 @@ export default async function handler(req, res) {
       FROM student_configs
     `;
 
-    const count = parseInt(result.rows[0].count);
+    const count = parseInt(result[0].count);
 
     return res.status(200).json({
       success: true,
