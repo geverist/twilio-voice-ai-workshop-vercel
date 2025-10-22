@@ -169,14 +169,14 @@ export default async function handler(req, res) {
 
     console.log(`✅ Config saved for session: ${sessionToken.substring(0, 8)}...`);
 
-    // Generate WebSocket URL
+    // Generate WebSocket URL to return to client
     const domain = (process.env.RAILWAY_WEBSOCKET_DOMAIN || '').trim();
-    const websocketUrl = `wss://${domain}/ws/${sessionToken}`;
+    const generatedWebsocketUrl = `wss://${domain}/ws/${sessionToken}`;
 
     return res.status(200).json({
       success: true,
       message: 'Configuration saved',
-      websocketUrl: websocketUrl
+      websocketUrl: generatedWebsocketUrl
     });
 
   } catch (error) {
