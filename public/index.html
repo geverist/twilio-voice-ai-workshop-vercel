@@ -2648,31 +2648,6 @@
                 </ul>
               </div>
 
-            <!-- Self-Hosted Auth - REMOVED (not applicable for Vercel deployment) -->
-            <div id="selfhostedAuth" style="display: none;">
-              <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c3e6cb;">
-                <h5 style="margin: 0 0 10px 0; color: #155724;">🏠 Self-Hosted Mode</h5>
-                <p style="margin: 0 0 10px 0; color: #155724; font-size: 14px;">
-                  You deployed this tutorial to YOUR Twilio account. No credentials needed!
-                </p>
-                <p style="margin: 0; color: #666; font-size: 13px;">
-                  <strong>How it works:</strong> Since you deployed this via <code>twilio serverless:deploy</code>,
-                  all API calls automatically use your account. Your credentials never leave Twilio's servers.
-                </p>
-              </div>
-              <button class="btn btn-primary" onclick="connectSelfHosted()" style="width: 100%; padding: 15px; font-size: 16px;">
-                ✅ Verify Connection
-              </button>
-              <div id="selfHostedStatus" style="margin-top: 15px; display: none;">
-                <div style="background: #d4edda; padding: 15px; border-radius: 8px; border: 1px solid #c3e6cb;">
-                  <div>
-                    <div style="color: #155724; font-weight: bold;">✅ Connected to Your Account:</div>
-                    <div id="selfHostedAccountName" style="color: #155724; margin-top: 5px;"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <!-- Token Auth -->
             <div id="tokenAuth">
               <div class="form-group">
@@ -2843,50 +2818,6 @@
     }
 
     // Self-Hosted Authentication (No credentials needed!)
-    async function connectSelfHosted() {
-      try {
-        showStatus('step1Status', 'info', 'Verifying connection to your account...');
-
-        // Call the self-hosted proxy (uses context.getTwilioClient())
-        const response = await fetch('/tutorial-proxy-selfhosted', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'getAccountInfo'
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Show success status
-          document.getElementById('selfHostedStatus').style.display = 'block';
-          document.getElementById('selfHostedAccountName').textContent =
-            data.account.friendlyName || data.account.sid;
-
-          // Mark as connected
-          twilioConnected = true;
-          twilioCredentials = {
-            accountSid: data.account.sid,
-            friendlyName: data.account.friendlyName,
-            selfHosted: true
-          };
-
-          showStatus('step1Status', 'success', '✅ Connected to your Twilio account!');
-          checkStep1Complete();
-
-        } else {
-          showStatus('step1Status', 'error', 'Failed to connect: ' + (data.error || 'Unknown error'));
-        }
-
-      } catch (error) {
-        console.error('Connection error:', error);
-        showStatus('step1Status', 'error',
-          'Failed to connect. Make sure you deployed this tutorial to your Twilio account via: twilio serverless:deploy'
-        );
-      }
-    }
-
     async function connectTwilio() {
       clearHighlights(); // Remove highlight immediately when clicked
       const accountSid = document.getElementById('twilioAccountSid').value.trim();
