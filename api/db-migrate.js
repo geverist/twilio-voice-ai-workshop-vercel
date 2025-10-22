@@ -57,7 +57,8 @@ export default async function handler(req, res) {
       { name: 'websocket_url', sql: `ALTER TABLE student_configs ADD COLUMN IF NOT EXISTS websocket_url TEXT` },
       { name: 'codespace_url', sql: `ALTER TABLE student_configs ADD COLUMN IF NOT EXISTS codespace_url TEXT` },
       { name: 'github_repo_url', sql: `ALTER TABLE student_configs ADD COLUMN IF NOT EXISTS github_repo_url TEXT` },
-      { name: 'railway_url', sql: `ALTER TABLE student_configs ADD COLUMN IF NOT EXISTS railway_url TEXT` }
+      { name: 'railway_url', sql: `ALTER TABLE student_configs ADD COLUMN IF NOT EXISTS railway_url TEXT` },
+      { name: 'openai_assistant_id', sql: `ALTER TABLE student_configs ADD COLUMN IF NOT EXISTS openai_assistant_id TEXT` }
     ];
 
     for (const migration of migrations) {

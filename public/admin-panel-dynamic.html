@@ -612,6 +612,9 @@
           config.tools = updatedTools;
           renderFunctions();
           clearFunctionForm();
+
+          // Sync to OpenAI Assistant (if OpenAI key available)
+          syncToOpenAIAssistant();
         } else {
           alert('❌ Failed to add function: ' + data.error);
         }
@@ -644,6 +647,9 @@
           alert('✅ Function deleted successfully!');
           config.tools = updatedTools;
           renderFunctions();
+
+          // Sync to OpenAI Assistant (if OpenAI key available)
+          syncToOpenAIAssistant();
         } else {
           alert('❌ Failed to delete function: ' + data.error);
         }
@@ -672,6 +678,47 @@
       document.getElementById('newFunctionName').value = '';
       document.getElementById('newFunctionDescription').value = '';
       document.getElementById('newFunctionParameters').value = '';
+    }
+
+    /**
+     * Syncs tools to OpenAI Assistant
+     * Creates or updates the Assistant with current tool configuration
+     */
+    async function syncToOpenAIAssistant() {
+      // Check if we have an OpenAI key (from localStorage)
+      const openaiKey = localStorage.getItem('openaiApiKey');
+
+      if (!openaiKey) {
+        console.log('⚠️ No OpenAI API key found in localStorage - skipping Assistant sync');
+        return;
+      }
+
+      try {
+        console.log('🔄 Syncing tools to OpenAI Assistant...');
+
+        const response = await fetch(`${API_BASE}/api/openai-create-assistant`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN,
+            openaiApiKey: openaiKey,
+            systemPrompt: config.systemPrompt || '',
+            tools: config.tools || [],
+            assistantName: `${config.studentName || 'Voice AI'} Assistant`
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log(`✅ OpenAI Assistant ${data.action}:`, data.assistantId);
+          console.log(`   Tools synced: ${data.toolsCount}`);
+        } else {
+          console.warn('⚠️ Failed to sync to OpenAI:', data.error);
+        }
+      } catch (error) {
+        console.error('❌ OpenAI sync error:', error);
+      }
     }
 
     loadConfig();
