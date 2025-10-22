@@ -27,6 +27,7 @@ const ALLOWED_ACTIONS = [
   'addNumberToMessagingService',
   'createSyncService',
   'checkConversationalIntelligence',
+  'createCIService',
   'listMessagingServices',
   'listSyncServices',
   'setupComplete',
@@ -495,6 +496,46 @@ export default async function handler(req, res) {
             friendlyName: syncService.friendlyName
           }
         };
+        break;
+
+      case 'createCIService':
+        // Create a Conversational Intelligence service
+        try {
+          const { uniqueName, friendlyName, autoTranscribe, languageCode } = params;
+
+          // Create CI service
+          const ciService = await client.intelligence.v2.services.create({
+            uniqueName: uniqueName || `workshop-${Date.now()}`,
+            friendlyName: friendlyName || 'Workshop Conversational Intelligence',
+            autoTranscribe: autoTranscribe !== false, // Default to true
+            languageCode: languageCode || 'en-US',
+            autoRedaction: false // Optional: enable PII redaction
+          });
+
+          result = {
+            success: true,
+            serviceSid: ciService.sid,
+            uniqueName: ciService.uniqueName,
+            friendlyName: ciService.friendlyName,
+            message: 'Conversational Intelligence service created successfully'
+          };
+        } catch (ciError) {
+          console.error('Error creating CI service:', ciError);
+
+          // Check if CI is not enabled on account
+          if (ciError.code === 20404 || ciError.message.includes('not found') || ciError.message.includes('not available')) {
+            result = {
+              success: false,
+              error: 'Conversational Intelligence is not enabled on your Twilio account. Contact Twilio Sales to enable it.',
+              upgradeUrl: 'https://www.twilio.com/docs/voice/intelligence'
+            };
+          } else {
+            result = {
+              success: false,
+              error: ciError.message || 'Failed to create Conversational Intelligence service'
+            };
+          }
+        }
         break;
 
       case 'checkConversationalIntelligence':

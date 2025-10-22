@@ -4082,6 +4082,71 @@
       }
     }
 
+    /**
+     * Enable Conversational Intelligence for the student's account
+     * Creates a CI service via Twilio Intelligence API
+     */
+    async function enableConversationalIntelligence() {
+      const btn = event.target;
+      const originalText = btn.textContent;
+
+      if (ciServiceSid) {
+        showStatus('step3Status', 'info', '✅ Conversational Intelligence is already enabled!');
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+        btn.textContent = '⚡ Enabling...';
+        showStatus('step3Status', 'info', '🧠 Creating Conversational Intelligence service...');
+
+        // Call API to create CI service
+        const response = await fetch('/api/tutorial-proxy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'createCIService',
+            accountSid: twilioCredentials.accountSid,
+            authToken: twilioCredentials.authToken,
+            uniqueName: `workshop-${sessionToken}`,
+            friendlyName: `${studentName || githubUsername || 'Student'}'s Workshop CI`,
+            autoTranscribe: true,
+            languageCode: 'en-US'
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to create Conversational Intelligence service');
+        }
+
+        // Store the service SID
+        ciServiceSid = data.serviceSid;
+        localStorage.setItem('ciServiceSid', ciServiceSid);
+        saveProgressToStorage();
+
+        console.log('✅ Conversational Intelligence enabled:', ciServiceSid);
+        showStatus('step3Status', 'success',
+          `✅ Conversational Intelligence enabled!<br>` +
+          `<div style="margin-top: 10px; font-size: 13px;">Service ID: <code>${ciServiceSid}</code></div>` +
+          `<div style="margin-top: 8px; font-size: 13px;">All your calls will now include AI-powered transcripts and insights!</div>`
+        );
+
+        // Refresh services display to show enabled state
+        await loadServices();
+
+      } catch (error) {
+        console.error('❌ Failed to enable Conversational Intelligence:', error);
+        showStatus('step3Status', 'error',
+          `❌ Failed to enable Conversational Intelligence: ${error.message}<br>` +
+          `<div style="margin-top: 10px; font-size: 13px;">You can continue without it, or try again later.</div>`
+        );
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
     // =========================================================================
     // STEP 4: BASIC TWIML - Simple Dial or Receive
     // =========================================================================
@@ -10109,6 +10174,9 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       // Build hints line if provided
       const hintsLine = hints ? `    hints: '${hints}',` : `    // hints: 'Twilio,ConversationRelay,WebSocket,API'`;
 
+      // Add CI service if enabled
+      const intelligenceLine = ciServiceSid ? `\n    // Conversational Intelligence (transcripts, sentiment, topics)\n    intelligenceService: '${ciServiceSid}',\n` : '';
+
       const code = `exports.handler = function(context, event, callback) {
   const twilio = require('twilio');
   const VoiceResponse = twilio.twiml.VoiceResponse;
@@ -10147,7 +10215,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     dtmfDetection: ${dtmfDetection},
 
     // Speech Recognition Hints (helps with domain-specific terms)
-${hintsLine}
+${hintsLine}${intelligenceLine}
   });
 
   callback(null, response);
