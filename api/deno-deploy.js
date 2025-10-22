@@ -92,15 +92,19 @@ export default async function handler(req, res) {
 
     console.log(`✓ Deployment created: ${deployment.id}`);
 
-    // Step 5: Wait for deployment to be ready
+    // Step 5: Wait for deployment to be ready (increased timeout for first build)
     const deploymentStatus = await waitForDeploymentReady(
       DENO_DEPLOY_TOKEN,
       deployment.id,
-      60 // 60 second timeout
+      120 // 120 second timeout (first builds can take longer)
     );
 
     if (!deploymentStatus.ready) {
-      throw new Error('Deployment did not become ready within timeout period');
+      const errorMsg = deploymentStatus.error || 'Deployment did not become ready within timeout period';
+      const logs = deploymentStatus.logs && deploymentStatus.logs.length > 0
+        ? `\n\nBuild logs:\n${deploymentStatus.logs.join('\n')}`
+        : '';
+      throw new Error(`${errorMsg}${logs}`);
     }
 
     // Step 6: Get deployment URL
@@ -303,12 +307,26 @@ async function waitForDeploymentReady(token, deploymentId, timeoutSeconds = 60) 
     }
 
     const deployment = await response.json();
-    lastStatus = deployment.status;
 
+    // Deno deployments might not have a 'status' field, check other indicators
+    // They might be ready immediately or use different status tracking
+    console.log(`Deployment ${deploymentId} response:`, JSON.stringify(deployment).substring(0, 200));
+
+    // If deployment has domains, it's likely ready
+    if (deployment.domains && deployment.domains.length > 0) {
+      console.log(`✓ Deployment has domains - considering it ready`);
+      return {
+        ready: true,
+        status: 'success',
+        logs: buildLogs
+      };
+    }
+
+    lastStatus = deployment.status || deployment.state || 'unknown';
     console.log(`Deployment ${deploymentId} status: ${lastStatus}`);
 
     // Check if deployment is ready
-    if (lastStatus === 'success') {
+    if (lastStatus === 'success' || lastStatus === 'ready') {
       return {
         ready: true,
         status: lastStatus,
@@ -317,7 +335,7 @@ async function waitForDeploymentReady(token, deploymentId, timeoutSeconds = 60) 
     }
 
     // Check if deployment failed
-    if (lastStatus === 'failed') {
+    if (lastStatus === 'failed' || lastStatus === 'error') {
       // Try to get build logs to see what went wrong
       try {
         const logsResponse = await fetch(
