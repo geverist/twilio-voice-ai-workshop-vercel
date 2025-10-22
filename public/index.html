@@ -2242,11 +2242,29 @@
           nextButton = document.getElementById('nextBtn2');
         }
       } else if (currentStep === 2) {
-        // Step 3: Services - highlight phone number selection
+        // Step 3: Services - guide through phone → messaging → sync/skip → next
         if (!selectedPhoneNumberSid) {
+          // No phone selected - highlight phone options
           const selectBtn = document.querySelector('.phone-option');
           if (selectBtn) selectBtn.classList.add('next-action');
+        } else if (selectedPhoneNumberSid && !servicesReady) {
+          // Phone selected but services not ready
+          // Check what's missing and highlight accordingly
+          const hasMessaging = twilioCredentials?.services?.messagingService;
+          const hasSyncOrSkipped = twilioCredentials?.services?.syncService || syncServiceSkipped;
+
+          if (!hasMessaging) {
+            // Messaging service needed - highlight Create Service button
+            nextButton = document.getElementById('createMessagingBtn');
+          } else if (!hasSyncOrSkipped) {
+            // Messaging done, now need Sync or Skip
+            const createSyncBtn = document.querySelector('[onclick*="provisionSync"]');
+            const skipSyncBtn = document.querySelector('[onclick*="skipSync"]');
+            // Highlight Skip button as it's the recommended action
+            nextButton = skipSyncBtn || createSyncBtn;
+          }
         } else {
+          // All services ready - highlight Next button
           nextButton = document.getElementById('nextBtn3');
         }
       } else if (currentStep >= 3 && currentStep <= 7) {
@@ -3707,7 +3725,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
           <div class="service-status">
             <span>${hasMessaging ? '✅ Configured' : '❌ Required'}</span>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
-              <button class="btn btn-${hasMessaging ? 'secondary' : 'primary'} ${!hasMessaging && hasPhone ? 'next-action' : ''}" onclick="provisionMessaging()" ${hasMessaging ? 'disabled style="opacity: 0.6;"' : ''}>
+              <button class="btn btn-${hasMessaging ? 'secondary' : 'primary'}" id="createMessagingBtn" onclick="provisionMessaging()" ${hasMessaging ? 'disabled style="opacity: 0.6;"' : ''}>
                 ${hasMessaging ? '✅ Service Created' : 'Create Service'}
               </button>
               <span style="color: #666;">or</span>
