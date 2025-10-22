@@ -37,7 +37,8 @@ export default async function handler(req, res) {
       githubToken,
       repoFullName,
       studentName,
-      openaiApiKey
+      openaiApiKey,
+      githubUsername
     } = req.body;
 
     // Input validation
@@ -65,8 +66,10 @@ export default async function handler(req, res) {
     // Step 1: Fetch repository files from GitHub
     const repoFiles = await fetchGitHubRepoFiles(githubToken, repoFullName);
 
-    // Step 2: Create Deno project
-    const projectName = `workshop-${repoFullName.split('/')[1]}-${Date.now()}`.toLowerCase();
+    // Step 2: Create Deno project with valid name (3-26 chars, alphanumeric + hyphens)
+    // Use student's GitHub username + random suffix to keep it short
+    const randomSuffix = Math.random().toString(36).substring(2, 8); // 6 random chars
+    const projectName = `ws-${githubUsername.toLowerCase().substring(0, 12)}-${randomSuffix}`.substring(0, 26);
     const project = await createDenoProject(DENO_DEPLOY_TOKEN, DENO_ORG_ID, projectName, studentName);
 
     console.log(`✓ Created Deno project: ${project.id}`);
