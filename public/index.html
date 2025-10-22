@@ -2637,7 +2637,8 @@
             `}
 
             ${!twilioConnected ? `
-              <div id="whyApiKeys" style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
+              <!-- Why API Keys info box - Hidden for now (API key auth under development) -->
+              <div id="whyApiKeys" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ffc107;">
                 <strong>💡 Why API Keys?</strong>
                 <ul style="margin: 10px 0 0 20px; font-size: 14px;">
                   <li>Can be deleted after the workshop</li>
@@ -2647,8 +2648,8 @@
                 </ul>
               </div>
 
-            <!-- Self-Hosted Auth -->
-            <div id="selfhostedAuth">
+            <!-- Self-Hosted Auth - REMOVED (not applicable for Vercel deployment) -->
+            <div id="selfhostedAuth" style="display: none;">
               <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #c3e6cb;">
                 <h5 style="margin: 0 0 10px 0; color: #155724;">🏠 Self-Hosted Mode</h5>
                 <p style="margin: 0 0 10px 0; color: #155724; font-size: 14px;">
