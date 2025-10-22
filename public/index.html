@@ -15169,9 +15169,33 @@ twilio serverless:deploy
         btn.disabled = true;
         btn.textContent = '⚡ Setting up...';
 
-        showStatus('codespaceDeployStatus', 'info', '💾 Saving your configuration...');
+        // Step 1: Push starter code to their GitHub repo
+        if (githubToken && githubUsername) {
+          showStatus('codespaceDeployStatus', 'info', '📦 Creating your GitHub repository...');
 
-        // The WebSocket URL is instant - it uses the shared server
+          const pushResponse = await fetch('/api/github-push-starter-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              githubToken: githubToken,
+              githubUsername: githubUsername,
+              repoName: studentRepoName || 'conversationrelay-voice-ai'
+            })
+          });
+
+          const pushData = await pushResponse.json();
+
+          if (pushData.success) {
+            console.log('✅ Starter code pushed to GitHub');
+            studentRepoName = pushData.repoName;
+          } else {
+            console.warn('⚠️ GitHub push failed, continuing anyway:', pushData.error);
+          }
+        }
+
+        showStatus('codespaceDeployStatus', 'info', '⚡ Setting up your WebSocket server...');
+
+        // Step 2: The WebSocket URL is instant - it uses the shared server
         websocketUrl = `wss://workshop-websocket-server-production.up.railway.app/ws/${sessionToken}`;
         codespaceUrl = websocketUrl;
 
@@ -15185,6 +15209,7 @@ twilio serverless:deploy
         showStatus('codespaceDeployStatus', 'success',
           `✅ WebSocket server ready!<br>` +
           `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${websocketUrl}</div>` +
+          (studentRepoName ? `<div style="margin-top: 10px; font-size: 13px; opacity: 0.8;">📦 Code saved to: <a href="https://github.com/${githubUsername}/${studentRepoName}" target="_blank" style="color: #58a6ff;">${githubUsername}/${studentRepoName}</a></div>` : '') +
           `<div style="margin-top: 10px; font-size: 13px; opacity: 0.8;">✨ Your AI will be configured when you complete Step 7 (System Prompt)</div>`
         );
 
