@@ -350,17 +350,25 @@ async function waitForDeploymentReady(token, deploymentId, timeoutSeconds = 60) 
 
         if (logsResponse.ok) {
           const logsData = await logsResponse.json();
-          buildLogs = logsData.logs || [];
+          console.log('Build logs response:', JSON.stringify(logsData));
+          buildLogs = logsData.logs || logsData || [];
+        } else {
+          console.error(`Failed to fetch build logs: ${logsResponse.status}`);
         }
       } catch (logError) {
         console.error('Failed to fetch build logs:', logError);
       }
 
+      // Also log the full deployment object to see if there's error info
+      console.error('Failed deployment details:', JSON.stringify(deployment));
+
+      const errorDetails = deployment.error || deployment.message || 'Deployment failed during build';
+
       return {
         ready: false,
         status: lastStatus,
         logs: buildLogs,
-        error: 'Deployment failed during build'
+        error: errorDetails
       };
     }
 
