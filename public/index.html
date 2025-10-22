@@ -3197,18 +3197,95 @@
         return false;
       }
 
-      if (!openaiApiKey) {
-        console.log('⚠️ No OpenAI API key configured, skipping content generation');
-        if (isRegenerate) {
-          showStatus('step2Status', 'error', '❌ OpenAI API key required for content generation');
-        }
-        return false;
-      }
-
       if (!callDirection) {
         console.log('⚠️ No call direction selected, skipping content generation');
         if (isRegenerate) {
           showStatus('step2Status', 'error', '❌ Please select a call direction first');
+        }
+        return false;
+      }
+
+      // Demo mode: Simulate AI content generation
+      if (studentDemoMode || !openaiApiKey || openaiApiKey === 'demo-key') {
+        try {
+          showStatus('step2Status', 'info', '🤖 Generating custom content... (Demo Mode)');
+          console.log('🤖 Generating custom content (Demo Mode)...');
+
+          // Simulate AI delay
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
+          // Generate demo content based on use case
+          const roleDescription = callDirection === 'inbound'
+            ? `helping customers who call about: ${useCaseDescription}`
+            : `making calls to users for: ${useCaseDescription}`;
+
+          generatedContent = {
+            systemPrompt: `You are a helpful assistant ${roleDescription}.
+
+# Voice Conversation Guidelines
+- Keep responses BRIEF (1-2 sentences max)
+- Be conversational and natural
+- Avoid lists, bullet points, or structured formatting
+- Don't say "as an AI" or mention you're artificial
+- If you don't know something, say so briefly
+- Respond quickly - every second matters in voice
+- Use casual language, contractions, and natural speech patterns
+
+# Response Style
+- Short and direct
+- Friendly but professional
+- Natural and human-like
+
+# Example Interactions
+
+GOOD Response:
+User: "Can you help me with this?"
+You: "Of course! What would you like help with?"
+
+BAD Response (too long):
+User: "Can you help me with this?"
+You: "I'd be absolutely delighted to help you with whatever you need assistance with today. I have a wide range of capabilities and knowledge at my disposal, so please feel free to ask me anything and I'll do my very best to provide you with the most comprehensive and helpful answer possible."
+
+Remember: In voice conversations, brevity is key. Keep it natural and conversational.`,
+            ivrGreeting: callDirection === 'inbound'
+              ? `Hi! Thanks for calling. I'm here to help with ${useCaseDescription}. How can I assist you?`
+              : `Hello! I'm calling about ${useCaseDescription}. Do you have a moment to chat?`,
+            exampleQuestions: [
+              `How can I help with ${useCaseDescription}?`,
+              'Can you tell me more about what you need?',
+              'What specific aspect would you like to know about?'
+            ],
+            suggestedVoice: 'friendly'
+          };
+
+          saveProgressToStorage();
+
+          console.log('✅ Generated content (Demo Mode):', generatedContent);
+          showStatus('step2Status', 'success',
+            `✨ AI customized the workshop content! (Demo Mode)<br>` +
+            `<div style="margin-top: 8px; font-size: 13px;">📝 Using simulated AI generation for learning purposes.</div>`
+          );
+
+          // Show regenerate button if not already visible
+          const regenerateBtn = document.getElementById('regenerateContentBtn');
+          if (regenerateBtn) {
+            regenerateBtn.style.display = 'inline-flex';
+          }
+
+          return true;
+
+        } catch (error) {
+          console.error('❌ Error in demo content generation:', error);
+          showStatus('step2Status', 'warning', '⚠️ Demo content generation failed. Using defaults.');
+          return false;
+        }
+      }
+
+      // Real mode: Call OpenAI API
+      if (!openaiApiKey) {
+        console.log('⚠️ No OpenAI API key configured, skipping content generation');
+        if (isRegenerate) {
+          showStatus('step2Status', 'error', '❌ OpenAI API key required for content generation');
         }
         return false;
       }
