@@ -60,17 +60,20 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check if normalized tables exist
-    const checkNormalized = await sql`
+    // Check what tables exist
+    const checkTables = await sql`
       SELECT table_name
       FROM information_schema.tables
-      WHERE table_name IN ('students', 'sessions')
+      WHERE table_schema = 'public'
+      AND (table_name = 'students' OR table_name = 'sessions' OR table_name = 'workshop_students' OR table_name = 'student_configs')
     `;
 
+    const tableNames = checkTables.map(t => t.table_name);
     let students = [];
     let sessions = [];
 
-    if (checkNormalized.length === 2) {
+    // Check if normalized structure exists
+    if (tableNames.includes('students') && tableNames.includes('sessions')) {
       // Use normalized structure
       students = await sql`
         SELECT
@@ -97,12 +100,90 @@ export default async function handler(req, res) {
         FROM sessions
         ORDER BY created_at DESC
       `;
-    } else {
-      // Fallback to old structure
+    }
+    // Check if merged structure exists (with session_token column)
+    else if (tableNames.includes('workshop_students')) {
+      // Check if session_token column exists
+      const columns = await sql`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'workshop_students'
+        AND column_name = 'session_token'
+      `;
+
+      if (columns.length > 0) {
+        // Has session_token - use merged structure
+        const result = await sql`
+          SELECT
+            session_token,
+            student_email,
+            student_name,
+            selected_phone_number,
+            selected_voice,
+            tts_provider,
+            CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
+            CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
+            CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
+            created_at,
+            updated_at
+          FROM workshop_students
+          ORDER BY created_at DESC
+        `;
+
+        // Extract unique students
+        const uniqueStudents = {};
+        result.forEach(row => {
+          if (!uniqueStudents[row.student_email]) {
+            uniqueStudents[row.student_email] = {
+              student_email: row.student_email,
+              student_name: row.student_name,
+              created_at: row.created_at,
+              updated_at: row.updated_at
+            };
+          }
+        });
+        students = Object.values(uniqueStudents);
+        sessions = result;
+      } else {
+        // Old structure - student_email is PK, no session_token
+        const result = await sql`
+          SELECT
+            student_email,
+            student_name,
+            selected_phone_number,
+            selected_voice,
+            tts_provider,
+            CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
+            CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
+            CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
+            created_at,
+            updated_at
+          FROM workshop_students
+          ORDER BY created_at DESC
+        `;
+
+        // In old structure, each row is a student (not a session)
+        students = result;
+        // No sessions - just return student data as if they're sessions
+        sessions = result.map(row => ({
+          session_token: row.student_email, // Use email as pseudo session token
+          student_email: row.student_email,
+          selected_phone_number: row.selected_phone_number,
+          selected_voice: row.selected_voice,
+          tts_provider: row.tts_provider,
+          has_api_key: row.has_api_key,
+          has_system_prompt: row.has_system_prompt,
+          has_tools: row.has_tools,
+          created_at: row.created_at,
+          updated_at: row.updated_at
+        }));
+      }
+    }
+    // Fallback to student_configs if it exists
+    else if (tableNames.includes('student_configs')) {
       const result = await sql`
         SELECT
           session_token,
-          student_email,
           student_name,
           selected_phone_number,
           selected_voice,
@@ -112,24 +193,13 @@ export default async function handler(req, res) {
           CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
           created_at,
           updated_at
-        FROM workshop_students
+        FROM student_configs
         ORDER BY created_at DESC
       `;
 
-      // Extract unique students from denormalized data
-      const uniqueStudents = {};
-      result.forEach(row => {
-        if (!uniqueStudents[row.student_email]) {
-          uniqueStudents[row.student_email] = {
-            student_email: row.student_email,
-            student_name: row.student_name,
-            created_at: row.created_at,
-            updated_at: row.updated_at
-          };
-        }
-      });
-      students = Object.values(uniqueStudents);
-      sessions = result;
+      // No student_email in old student_configs, so use unknown
+      students = [{ student_email: 'unknown@example.com', student_name: 'Legacy Students', created_at: new Date(), updated_at: new Date() }];
+      sessions = result.map(r => ({ ...r, student_email: 'unknown@example.com' }));
     }
 
     return res.status(200).json({
