@@ -108,6 +108,7 @@
   <h1>🧪 State Management Unit Tests</h1>
 
   <button class="run-tests-btn" onclick="runAllTests()">Run All Tests</button>
+  <button class="run-tests-btn" onclick="showTextSummary()" style="background: #6c757d; margin-left: 10px;">📋 Copy Text Summary</button>
 
   <div class="summary" id="summary">
     <div class="summary-item">
@@ -214,17 +215,17 @@
     }
 
     async function syncToDatabase() {
-      if (!sessionToken) {
+      if (!window.sessionToken) {
         return;
       }
 
-      syncCallCount++;
-      syncCallHistory.push({
+      window.syncCallCount++;
+      window.syncCallHistory.push({
         timestamp: Date.now(),
-        sessionToken,
-        twilioConnected,
-        openaiConnected,
-        step4Deployed
+        sessionToken: window.sessionToken,
+        twilioConnected: window.twilioConnected,
+        openaiConnected: window.openaiConnected,
+        step4Deployed: window.step4Deployed
       });
 
       // Mock API call
@@ -232,15 +233,15 @@
     }
 
     const STEP_CONDITIONS = {
-      0: () => twilioConnected && openaiConnected,
-      1: () => callDirectionChosen && useCaseDescription?.trim(),
-      2: () => selectedPhoneNumber && servicesReady,
-      3: () => step4CodeValidated && step4Deployed,
-      4: () => step5CodeValidated && step5Deployed,
-      5: () => step6CodeValidated && step6Deployed,
-      6: () => systemPromptSaved,
-      7: () => toolsConfigured && step8Deployed,
-      8: () => projectDeployed
+      0: () => window.twilioConnected && window.openaiConnected,
+      1: () => window.callDirectionChosen && window.useCaseDescription?.trim(),
+      2: () => window.selectedPhoneNumber && window.servicesReady,
+      3: () => window.step4CodeValidated && window.step4Deployed,
+      4: () => window.step5CodeValidated && window.step5Deployed,
+      5: () => window.step6CodeValidated && window.step6Deployed,
+      6: () => window.systemPromptSaved,
+      7: () => window.toolsConfigured && window.step8Deployed,
+      8: () => window.projectDeployed
     };
 
     function checkStepComplete(stepNum) {
@@ -312,39 +313,40 @@
     }
 
     function resetState() {
-      sessionToken = null;
-      studentEmail = null;
-      studentName = null;
-      twilioConnected = false;
-      openaiConnected = false;
-      callDirectionChosen = false;
-      useCaseDescription = '';
-      selectedPhoneNumber = null;
-      servicesReady = false;
-      step4CodeValidated = false;
-      step4Committed = false;
-      step4Deployed = false;
-      step5CodeValidated = false;
-      step5Committed = false;
-      step5Deployed = false;
-      step6CodeValidated = false;
-      step6Committed = false;
-      step6Deployed = false;
-      systemPromptSaved = false;
-      step7Committed = false;
-      step7Deployed = false;
-      toolsConfigured = false;
-      step8CodeValidated = false;
-      step8Committed = false;
-      step8Deployed = false;
-      projectDeployed = false;
-      currentStep = 0;
-      syncCallCount = 0;
-      syncCallHistory = [];
+      window.sessionToken = null;
+      window.studentEmail = null;
+      window.studentName = null;
+      window.twilioConnected = false;
+      window.openaiConnected = false;
+      window.callDirectionChosen = false;
+      window.useCaseDescription = '';
+      window.selectedPhoneNumber = null;
+      window.servicesReady = false;
+      window.step4CodeValidated = false;
+      window.step4Committed = false;
+      window.step4Deployed = false;
+      window.step5CodeValidated = false;
+      window.step5Committed = false;
+      window.step5Deployed = false;
+      window.step6CodeValidated = false;
+      window.step6Committed = false;
+      window.step6Deployed = false;
+      window.systemPromptSaved = false;
+      window.step7Committed = false;
+      window.step7Deployed = false;
+      window.toolsConfigured = false;
+      window.step8CodeValidated = false;
+      window.step8Committed = false;
+      window.step8Deployed = false;
+      window.projectDeployed = false;
+      window.currentStep = 0;
+      window.syncCallCount = 0;
+      window.syncCallHistory = [];
       Object.keys(stateListeners).forEach(key => {
         stateListeners[key] = [];
       });
       localStorage.clear();
+      clearTimeout(syncTimer);
     }
 
     async function wait(ms) {
@@ -363,7 +365,7 @@
       it('should update variable value', () => {
         resetState();
         setState('twilioConnected', true);
-        expect(twilioConnected).toBe(true);
+        expect(window.twilioConnected).toBe(true);
       });
 
       it('should save to localStorage', () => {
@@ -378,7 +380,7 @@
         setState('sessionToken', 'test123');
         setState('twilioConnected', true);
         await wait(2100); // Wait for debounce
-        expect(syncCallCount).toBeGreaterThan(0);
+        expect(window.syncCallCount).toBeGreaterThan(0);
       });
 
       it('should trigger state listeners', () => {
@@ -470,7 +472,7 @@
         resetState();
         setState('sessionToken', 'test123');
 
-        syncCallCount = 0;
+        window.syncCallCount = 0;
         setState('twilioConnected', true);
         setState('openaiConnected', true);
         setState('step4CodeValidated', true);
@@ -478,29 +480,29 @@
         await wait(2100);
 
         // Should only sync once despite 3 setState calls
-        expect(syncCallCount).toBe(1);
+        expect(window.syncCallCount).toBe(1);
       });
 
       it('should sync after 2 seconds of inactivity', async () => {
         resetState();
         setState('sessionToken', 'test123');
 
-        syncCallCount = 0;
+        window.syncCallCount = 0;
         setState('projectDeployed', true);
 
         await wait(2100);
-        expect(syncCallCount).toBe(1);
+        expect(window.syncCallCount).toBe(1);
       });
 
       it('should not sync without sessionToken', async () => {
         resetState();
         // Don't set sessionToken
 
-        syncCallCount = 0;
+        window.syncCallCount = 0;
         setState('twilioConnected', true);
 
         await wait(2100);
-        expect(syncCallCount).toBe(0);
+        expect(window.syncCallCount).toBe(0);
       });
 
     }));
@@ -622,6 +624,7 @@
             testDiv.querySelector('.test-result').textContent = '✅ PASS';
             passedTests++;
             test.status = 'pass';
+            test.suite = suite.name; // Track suite name
           } catch (error) {
             testDiv.className = 'test-case fail';
             testDiv.querySelector('.test-result').innerHTML = `
@@ -631,6 +634,7 @@
             failedTests++;
             test.status = 'fail';
             test.error = error.message;
+            test.suite = suite.name; // Track suite name
           }
 
           testResults.push(test);
@@ -652,6 +656,91 @@
       } else {
         summaryDiv.style.background = '#dc3545';
       }
+    }
+
+    // Generate text summary for copying/pasting
+    function showTextSummary() {
+      if (testResults.length === 0) {
+        alert('Please run tests first!');
+        return;
+      }
+
+      const totalTests = testResults.length;
+      const passedTests = testResults.filter(t => t.status === 'pass').length;
+      const failedTests = testResults.filter(t => t.status === 'fail').length;
+
+      let summary = '🧪 STATE MANAGEMENT TEST RESULTS\n';
+      summary += '='.repeat(60) + '\n\n';
+      summary += `Total Tests:  ${totalTests}\n`;
+      summary += `Passed:       ${passedTests} ✅\n`;
+      summary += `Failed:       ${failedTests} ❌\n\n`;
+
+      if (failedTests > 0) {
+        summary += '❌ FAILED TESTS:\n';
+        summary += '-'.repeat(60) + '\n\n';
+
+        const suiteMap = {};
+        testResults.forEach(test => {
+          if (test.status === 'fail') {
+            if (!suiteMap[test.suite]) {
+              suiteMap[test.suite] = [];
+            }
+            suiteMap[test.suite].push(test);
+          }
+        });
+
+        Object.keys(suiteMap).forEach(suiteName => {
+          summary += `${suiteName}:\n`;
+          suiteMap[suiteName].forEach(test => {
+            summary += `  ❌ ${test.name}\n`;
+            summary += `     ${test.error}\n\n`;
+          });
+        });
+      } else {
+        summary += '✅ ALL TESTS PASSED!\n';
+      }
+
+      summary += '='.repeat(60);
+
+      // Show in a textarea modal for easy copying
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999;';
+
+      const content = document.createElement('div');
+      content.style.cssText = 'background: white; padding: 30px; border-radius: 8px; max-width: 800px; width: 90%;';
+
+      const title = document.createElement('h2');
+      title.textContent = 'Test Results Summary';
+      title.style.marginTop = '0';
+
+      const textarea = document.createElement('textarea');
+      textarea.value = summary;
+      textarea.style.cssText = 'width: 100%; height: 400px; font-family: monospace; font-size: 0.9em; padding: 15px; border: 1px solid #ccc; border-radius: 4px; margin: 15px 0;';
+      textarea.readOnly = true;
+
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = '📋 Copy to Clipboard';
+      copyBtn.style.cssText = 'background: #0066cc; color: white; border: none; padding: 12px 24px; font-size: 1em; border-radius: 4px; cursor: pointer; margin-right: 10px;';
+      copyBtn.onclick = () => {
+        textarea.select();
+        document.execCommand('copy');
+        copyBtn.textContent = '✅ Copied!';
+        setTimeout(() => { copyBtn.textContent = '📋 Copy to Clipboard'; }, 2000);
+      };
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Close';
+      closeBtn.style.cssText = 'background: #6c757d; color: white; border: none; padding: 12px 24px; font-size: 1em; border-radius: 4px; cursor: pointer;';
+      closeBtn.onclick = () => document.body.removeChild(modal);
+
+      content.appendChild(title);
+      content.appendChild(textarea);
+      content.appendChild(copyBtn);
+      content.appendChild(closeBtn);
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+
+      textarea.select();
     }
 
     // Auto-run tests on page load
