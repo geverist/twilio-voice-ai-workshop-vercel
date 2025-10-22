@@ -2544,17 +2544,17 @@
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                   <button
                     id="authMethodApiKey"
-                    onclick="selectAuthMethod('apikey')"
+                    disabled
                     class="auth-method-btn"
-                    style="flex: 1; padding: 12px 20px; border: 2px solid #0066cc; background: #0066cc; color: white; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                    🔑 API Key<br><span style="font-size: 11px; font-weight: 400; opacity: 0.9;">Recommended</span>
+                    style="flex: 1; padding: 12px 20px; border: 2px solid #ddd; background: #f5f5f5; color: #999; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: not-allowed; transition: all 0.2s; opacity: 0.6;">
+                    🔑 API Key<br><span style="font-size: 11px; font-weight: 400;">Coming Soon</span>
                   </button>
                   <button
                     id="authMethodToken"
                     onclick="selectAuthMethod('token')"
                     class="auth-method-btn"
-                    style="flex: 1; padding: 12px 20px; border: 2px solid #ddd; background: white; color: #666; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                    🔐 SID + Token<br><span style="font-size: 11px; font-weight: 400;">Account Credentials</span>
+                    style="flex: 1; padding: 12px 20px; border: 2px solid #0066cc; background: #0066cc; color: white; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    🔐 SID + Token<br><span style="font-size: 11px; font-weight: 400;">Recommended</span>
                   </button>
                 </div>
               </div>
@@ -2597,7 +2597,7 @@
             </div>
 
             <!-- Token Auth -->
-            <div id="tokenAuth" style="display: none;">
+            <div id="tokenAuth">
               <div class="form-group">
                 <label>Account SID</label>
                 <input type="text" id="twilioAccountSid" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
@@ -2609,8 +2609,8 @@
               <button class="btn btn-primary" onclick="connectTwilio()">Connect Twilio</button>
             </div>
 
-            <!-- API Key Auth -->
-            <div id="apiKeyAuth">
+            <!-- API Key Auth (DISABLED - Coming Soon) -->
+            <div id="apiKeyAuth" style="display: none;">
               <div style="background: #e7f5ff; padding: 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #0066cc;">
                 <h5 style="margin: 0 0 10px 0; color: #0066cc;">📝 Quick Setup (30 seconds)</h5>
                 <ol style="margin: 0; padding-left: 20px; color: #555; font-size: 14px; line-height: 1.8;">
@@ -2738,38 +2738,30 @@
     }
 
     function selectAuthMethod(method) {
+      // API Key is disabled - ignore if user somehow clicks it
+      if (method === 'apikey') {
+        return;
+      }
+
       // Update button styles
-      const apiKeyBtn = document.getElementById('authMethodApiKey');
       const tokenBtn = document.getElementById('authMethodToken');
 
-      if (method === 'apikey') {
-        apiKeyBtn.style.background = '#0066cc';
-        apiKeyBtn.style.color = 'white';
-        apiKeyBtn.style.borderColor = '#0066cc';
-
-        tokenBtn.style.background = 'white';
-        tokenBtn.style.color = '#666';
-        tokenBtn.style.borderColor = '#ddd';
-      } else if (method === 'token') {
+      if (method === 'token') {
         tokenBtn.style.background = '#0066cc';
         tokenBtn.style.color = 'white';
         tokenBtn.style.borderColor = '#0066cc';
-
-        apiKeyBtn.style.background = 'white';
-        apiKeyBtn.style.color = '#666';
-        apiKeyBtn.style.borderColor = '#ddd';
       }
 
-      // Show/hide "Why API Keys?" info box
+      // Hide "Why API Keys?" info box (API Key auth is disabled)
       const whyApiKeys = document.getElementById('whyApiKeys');
       if (whyApiKeys) {
-        whyApiKeys.style.display = method === 'apikey' ? 'block' : 'none';
+        whyApiKeys.style.display = 'none';
       }
 
       // Show/hide auth sections
       document.getElementById('selfhostedAuth').style.display = method === 'selfhosted' ? 'block' : 'none';
       document.getElementById('tokenAuth').style.display = method === 'token' ? 'block' : 'none';
-      document.getElementById('apiKeyAuth').style.display = method === 'apikey' ? 'block' : 'none';
+      document.getElementById('apiKeyAuth').style.display = 'none'; // API Key auth disabled
       document.getElementById('demoAuth').style.display = method === 'demo' ? 'block' : 'none';
     }
 
