@@ -5317,14 +5317,27 @@ You: "Absolutely! I can definitely help you with that. We offer a variety of app
       showStatus('systemPromptStatus', 'success', '✅ System prompt saved! Deploy it below or skip to next step.');
       saveProgressToStorage();
 
+      // Move next-action effect from Save Prompt button to Commit button
+      const saveBtn = document.querySelector('[onclick="saveSystemPrompt()"]');
+      if (saveBtn) {
+        saveBtn.classList.remove('next-action');
+      }
+
       // Enable Next button immediately - deployment is optional
-      const nextBtn = document.getElementById('nextBtn7');
+      const nextBtn = document.getElementById('nextBtn9');
       if (nextBtn) nextBtn.disabled = false;
 
-      // Show the deploy section
+      // Show the deploy section and add next-action to Commit button
       const deploySection = document.getElementById('step7DeploySection');
       if (deploySection) {
         deploySection.style.display = 'block';
+
+        // Add next-action to Commit button
+        const commitBtn = document.getElementById('commitStep7Btn');
+        if (commitBtn) {
+          commitBtn.classList.add('next-action');
+        }
+
         setTimeout(() => {
           deploySection.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 300);
@@ -6002,7 +6015,6 @@ Expected: ${scenario.expected}</div>`;
               <div style="display: flex; gap: 10px;">
                 <button class="btn btn-success next-action" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode9()">✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code9')">📋 Copy Code</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="showToolingSolution()">💡 Show Solution</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode9()">Reset</button>
               </div>
             </div>
@@ -8330,25 +8342,90 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           functionCode = document.getElementById('code8')?.value || '';
           functionName = 'voice-handler';  // Update voice-handler with ConversationRelay
         } else if (stepNumber === 7) {
-          // Step 7: Custom Prompt - UPDATE websocket-handler with custom system prompt
-          functionCode = document.getElementById('code7')?.value || '';
-
-          // Replace the default system prompt with the custom one
-          const defaultPrompt = 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.';
-          if (customSystemPrompt && customSystemPrompt.trim()) {
-            // Escape special characters in the prompt for safe string replacement
-            const escapedPrompt = customSystemPrompt.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
-            functionCode = functionCode.replace(
-              /content:\s*['"`]You are a helpful voice assistant\. Keep responses brief and conversational since they will be spoken aloud\.['"`]/,
-              `content: '${escapedPrompt}'`
-            );
-          }
-
-          functionName = 'websocket-handler';  // Redeploy websocket-handler with new prompt
+          // Step 7: Custom Prompt - UPDATE database with custom system prompt
+          // Since we're using Railway shared server, no code deployment needed
+          // The commit will update the database via the success handler below
+          functionCode = null; // No code to deploy
+          functionName = null;
         } else if (stepNumber === 8) {
           // Step 8: Tooling - Update websocket-handler with tools
           functionCode = document.getElementById('code9')?.value || '';
           functionName = 'websocket-handler';
+        }
+
+        // Step 7: Special handling - no code deployment, just database update
+        if (stepNumber === 7) {
+          showStatus(statusId, 'info', '💾 Updating system prompt in database...');
+
+          try {
+            const configResponse = await fetch('/api/student-config-save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionToken: sessionToken,
+                studentName: studentName || githubUsername || 'Student',
+                openaiApiKey: openaiApiKey,
+                systemPrompt: customSystemPrompt || 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.',
+                tools: [],
+                voiceSettings: {
+                  provider: ttsProvider,
+                  voice: conversationRelayVoice
+                }
+              })
+            });
+
+            const configData = await configResponse.json();
+
+            if (!configData.success) {
+              throw new Error(configData.error || 'Failed to update system prompt in database');
+            }
+
+            // Mark as deployed and proceed to success handler
+            step7Committed = true;
+            step7Deployed = true;
+            saveProgressToStorage();
+
+            showStatus(statusId, 'success', '✅ Custom prompt updated successfully!');
+            console.log('✅ Step 7 deployed, step7Deployed =', step7Deployed);
+
+            // Move next-action effect from Commit button to Next button
+            const commitBtn = document.getElementById('commitStep7Btn');
+            if (commitBtn) {
+              commitBtn.classList.remove('next-action');
+            }
+
+            // Enable Next button and add next-action effect
+            const nextBtn9 = document.getElementById('nextBtn9');
+            if (nextBtn9) {
+              nextBtn9.disabled = false;
+              nextBtn9.classList.add('next-action');
+            }
+
+            // Show the voice test section
+            const testSection = document.getElementById('step7VoiceTestSection');
+            if (testSection) {
+              testSection.style.display = 'block';
+              setTimeout(() => {
+                testSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 500);
+            }
+
+            // Re-enable button
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = '✅ Committed';
+            }
+
+            return; // Skip the rest of the deployment process
+
+          } catch (error) {
+            showStatus(statusId, 'error', `❌ Failed to update prompt: ${error.message}`);
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = '💾 Commit Step 7';
+            }
+            return;
+          }
         }
 
         if (!functionCode) {
@@ -8790,28 +8867,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           // Show SDK version notice
           showSDKVersionNotice();
         }
-        if (stepNumber === 7) {
-          step7Committed = true;
-          step7Deployed = true;
-
-          // Save progress immediately
-          saveProgressToStorage();
-
-          showStatus(statusId, 'success', '✅ Custom prompt deployed successfully!');
-          console.log('✅ Step 7 deployed, step7Deployed =', step7Deployed);
-
-          // Enable Next button and show test section
-          document.getElementById('nextBtn7').disabled = false;
-
-          // Show the voice test section after deploying prompt
-          const testSection = document.getElementById('step7VoiceTestSection');
-          if (testSection) {
-            testSection.style.display = 'block';
-            setTimeout(() => {
-              testSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 500);
-          }
-        }
+        // Step 7 is handled in special case above (lines 8357-8430)
         if (stepNumber === 8) {
           step8Committed = true;
           toolsConfigured = true;
