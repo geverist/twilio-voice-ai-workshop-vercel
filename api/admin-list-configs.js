@@ -74,35 +74,52 @@ export default async function handler(req, res) {
 
     // Check if normalized structure exists
     if (tableNames.includes('students') && tableNames.includes('sessions')) {
-      // Use normalized structure
-      students = await sql`
-        SELECT
-          student_email,
-          student_name,
-          created_at,
-          updated_at
-        FROM students
-        ORDER BY created_at DESC
+      // First check if sessions table has the expected columns
+      const sessionColumns = await sql`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'sessions'
+        AND column_name IN ('selected_phone_number', 'selected_voice', 'session_token')
       `;
 
-      sessions = await sql`
-        SELECT
-          session_token,
-          student_email,
-          selected_phone_number,
-          selected_voice,
-          tts_provider,
-          CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
-          CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
-          CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
-          created_at,
-          updated_at
-        FROM sessions
-        ORDER BY created_at DESC
-      `;
+      const hasRequiredColumns = sessionColumns.length >= 2; // At least session_token and one config column
+
+      if (!hasRequiredColumns) {
+        // Sessions table exists but doesn't have the right structure
+        // Fall through to check workshop_students instead
+        console.warn('⚠️ Sessions table exists but missing required columns, checking workshop_students');
+      } else {
+        // Use normalized structure
+        students = await sql`
+          SELECT
+            student_email,
+            student_name,
+            created_at,
+            updated_at
+          FROM students
+          ORDER BY created_at DESC
+        `;
+
+        sessions = await sql`
+          SELECT
+            session_token,
+            student_email,
+            selected_phone_number,
+            selected_voice,
+            tts_provider,
+            CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
+            CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
+            CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
+            created_at,
+            updated_at
+          FROM sessions
+          ORDER BY created_at DESC
+        `;
+      }
     }
+
     // Check if merged structure exists (with session_token column)
-    else if (tableNames.includes('workshop_students')) {
+    if ((students.length === 0 && sessions.length === 0) && tableNames.includes('workshop_students')) {
       // Check if session_token column exists
       const columns = await sql`
         SELECT column_name
