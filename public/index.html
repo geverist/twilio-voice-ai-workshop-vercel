@@ -2207,17 +2207,17 @@
 
       switch(currentStep) {
         case 0:
-          container.innerHTML = renderStep1_Setup();
+          container.innerHTML = renderStep_Setup();
           break;
         case 1:
-          container.innerHTML = renderStep2_Direction();
+          container.innerHTML = renderStep_Direction();
           break;
         case 2:
-          container.innerHTML = renderStep3_Services();
+          container.innerHTML = renderStep_Services();
           loadServices();
           break;
         case 3:
-          container.innerHTML = renderStep4_BasicTwiML();
+          container.innerHTML = renderStep_BasicTwiML();
           break;
         case 4:
           container.innerHTML = renderStep_WebSocket();
@@ -2389,7 +2389,7 @@
     // STEP 1: SETUP - Connect Accounts
     // =========================================================================
 
-    function renderStep1_Setup() {
+    function renderStep_Setup() {
       return `
         <div class="step-content active">
           <div class="step-header">
@@ -3180,7 +3180,7 @@
     // STEP 2: DIRECTION - Choose Call Direction
     // =========================================================================
 
-    function renderStep2_Direction() {
+    function renderStep_Direction() {
       return `
         <div class="step-content active">
           <div class="step-header">
@@ -3531,7 +3531,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
     // STEP 3: SERVICES - Provision Twilio Services
     // =========================================================================
 
-    function renderStep3_Services() {
+    function renderStep_Services() {
       return `
         <div class="step-content active">
           <div class="step-header">
@@ -4384,7 +4384,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
     // STEP 4: BASIC TWIML - Simple Dial or Receive
     // =========================================================================
 
-    function renderStep4_BasicTwiML() {
+    function renderStep_BasicTwiML() {
       const isOutbound = callDirection === 'outbound';
 
       return `
