@@ -14087,7 +14087,7 @@ twilio serverless:deploy
 
               // Refresh the modal to show updated repo list
               closeRepoSelectionModal();
-              await cloneRepository(); // This will show the modal again with updated list
+              await cloneWorkshopRepo(); // This will show the modal again with updated list
             } else {
               throw new Error(deleteData.error || 'Failed to delete repository');
             }
