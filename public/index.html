@@ -14740,25 +14740,10 @@ twilio serverless:deploy
               `<span style="font-size: 12px; opacity: 0.8;">Connecting to: ${codespaceUrl}</span>`
             );
 
-            // First check HTTP /health endpoint
-            let httpHealthy = false;
+            // Test WebSocket connection directly (skip HTTP health check to avoid CORS issues)
             try {
-              const healthResponse = await fetch(httpUrl + '/health', {
-                method: 'GET',
-                mode: 'cors',
-                cache: 'no-cache'
-              });
-              httpHealthy = healthResponse.ok;
-              console.log(`HTTP health check: ${httpHealthy ? 'OK' : 'FAILED'} (${healthResponse.status})`);
-            } catch (healthError) {
-              console.log(`HTTP health check failed:`, healthError.message);
-            }
-
-            // If HTTP is healthy, test actual WebSocket connection
-            if (httpHealthy) {
-              try {
-                // Test WebSocket connection
-                const wsTestResult = await new Promise((resolve, reject) => {
+              // Test WebSocket connection
+              const wsTestResult = await new Promise((resolve, reject) => {
                   const timeout = setTimeout(() => {
                     ws.close();
                     reject(new Error('WebSocket connection timeout'));
@@ -14857,6 +14842,8 @@ twilio serverless:deploy
                   }
                 }
               }
+            } catch (outerError) {
+              console.log('Error in WebSocket test:', outerError.message);
             }
 
             // Health check failed - server may still be starting
