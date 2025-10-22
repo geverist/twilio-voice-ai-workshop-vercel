@@ -15275,6 +15275,8 @@ twilio serverless:deploy
 
         // Step 2: Create initial student config in database
         if (!studentDemoMode && !twilioCredentials?.demoMode) {
+          showStatus('codespaceDeployStatus', 'info', '💾 Creating your AI configuration...');
+
           try {
             console.log('💾 Creating initial student config in database...');
 
@@ -15296,15 +15298,23 @@ twilio serverless:deploy
 
             const configData = await configResponse.json();
 
-            if (configData.success) {
-              console.log('✅ Initial student config created in database');
-              console.log('   Session token:', sessionToken);
-            } else {
-              console.warn('⚠️ Failed to create student config:', configData.error);
+            if (!configData.success) {
+              throw new Error(configData.error || 'Failed to save configuration to database');
             }
+
+            console.log('✅ Initial student config created in database');
+            console.log('   Session token:', sessionToken);
+            console.log('   WebSocket URL:', configData.websocketUrl);
+
           } catch (error) {
             console.error('❌ Error creating student config:', error);
-            // Don't fail deployment if config save fails - they can retry later
+            showStatus('codespaceDeployStatus', 'error',
+              `❌ Failed to create AI configuration: ${error.message}<br>` +
+              `<div style="margin-top: 10px; font-size: 13px;">This is required for the WebSocket server to work. Please try again.</div>`
+            );
+            btn.disabled = false;
+            btn.textContent = '🔄 Retry Setup';
+            return; // Block progress
           }
         }
 
