@@ -33,7 +33,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { githubToken, repoFullName, studentName } = req.body;
+    const {
+      githubToken,
+      repoFullName,
+      studentName,
+      openaiApiKey
+    } = req.body;
 
     // Input validation
     try {
@@ -66,11 +71,20 @@ export default async function handler(req, res) {
 
     console.log(`✓ Created Deno project: ${project.id}`);
 
-    // Step 3: Create deployment with repo files
+    // Step 3: Build environment variables for deployment
+    const envVars = {};
+
+    // Add student's OpenAI API key if provided
+    if (openaiApiKey) {
+      envVars.OPENAI_API_KEY = openaiApiKey;
+    }
+
+    // Step 4: Create deployment with repo files and environment variables
     const deployment = await createDenoDeployment(
       DENO_DEPLOY_TOKEN,
       project.id,
-      repoFiles
+      repoFiles,
+      envVars
     );
 
     console.log(`✓ Deployment created: ${deployment.id}`);
@@ -212,7 +226,7 @@ async function createDenoProject(token, orgId, projectName, description) {
 /**
  * Create a Deno deployment
  */
-async function createDenoDeployment(token, projectId, assets) {
+async function createDenoDeployment(token, projectId, assets, envVars = {}) {
   const response = await fetch(
     `https://api.deno.com/v1/projects/${projectId}/deployments`,
     {
@@ -224,7 +238,7 @@ async function createDenoDeployment(token, projectId, assets) {
       body: JSON.stringify({
         entryPointUrl: 'server.js',
         assets: assets,
-        envVars: {}, // Empty for now, can add Twilio creds later
+        envVars: envVars, // Student's Twilio and OpenAI credentials
         importMapUrl: null, // Auto-discover from deno.json if exists
         lockFileUrl: null, // Auto-discover
         description: 'Workshop WebSocket server deployment'

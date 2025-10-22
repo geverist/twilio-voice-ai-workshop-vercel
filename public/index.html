@@ -15082,14 +15082,15 @@ twilio serverless:deploy
 
         showStatus('codespaceDeployStatus', 'info', '📦 Fetching your code from GitHub...');
 
-        // Call Deno Deploy API
+        // Call Deno Deploy API with student's OpenAI key
         const response = await fetch('/api/deno-deploy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             githubToken: githubToken,
             repoFullName: repoFullName,
-            studentName: studentName || githubUsername
+            studentName: studentName || githubUsername,
+            openaiApiKey: openaiApiKey
           })
         });
 
