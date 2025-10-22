@@ -15448,6 +15448,18 @@ twilio serverless:deploy
         renderStepContent();
 
         setTimeout(() => {
+          // Move next-action effect from Deploy button to Next button
+          const deployBtn = document.getElementById('deployCodespaceBtn');
+          if (deployBtn) {
+            deployBtn.classList.remove('next-action');
+          }
+
+          // Add next-action to the Next button (Step 5 → Step 6)
+          const nextBtn = document.getElementById('nextBtn7');
+          if (nextBtn) {
+            nextBtn.classList.add('next-action');
+          }
+
           const connectTwilioBtn = document.querySelector('[onclick*="connectTwilio"]');
           if (connectTwilioBtn && !twilioConnected) {
             connectTwilioBtn.classList.add('next-action');
