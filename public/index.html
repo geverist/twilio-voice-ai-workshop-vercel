@@ -15346,10 +15346,26 @@ twilio serverless:deploy
           try {
             console.log('💾 Creating initial student config in database...');
 
-            // Create initial system prompt from use case description
-            const initialSystemPrompt = useCaseDescription && useCaseDescription.trim()
-              ? `You are a helpful voice assistant. Your role: ${useCaseDescription}. Keep responses brief and conversational since they will be spoken aloud.`
-              : 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.';
+            // Create initial system prompt with best practices
+            const roleDescription = useCaseDescription && useCaseDescription.trim()
+              ? useCaseDescription
+              : 'a helpful assistant';
+
+            const initialSystemPrompt = `You are ${roleDescription}.
+
+# Voice Conversation Guidelines
+- Keep responses BRIEF (1-2 sentences max)
+- Be conversational and natural
+- Avoid lists, bullet points, or structured formatting
+- Don't say "as an AI" or mention you're artificial
+- If you don't know something, say so briefly
+- Respond quickly - every second matters in voice
+- Use casual language, contractions, and natural speech patterns
+
+# Response Style
+- Short and direct
+- Friendly but professional
+- Natural and human-like`.trim();
 
             const configResponse = await fetch('/api/student-config-save', {
               method: 'POST',
