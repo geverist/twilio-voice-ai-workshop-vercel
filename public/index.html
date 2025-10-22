@@ -2727,7 +2727,7 @@
 
           // Re-render to show OpenAI section
           renderStepContent();
-          checkStep1Complete();
+          await checkStep1Complete();
         } else {
           throw new Error(data.error);
         }
@@ -2800,7 +2800,7 @@
 
           // Re-render to show OpenAI section
           renderStepContent();
-          checkStep1Complete();
+          await checkStep1Complete();
         } else {
           throw new Error(data.error);
         }
@@ -2972,7 +2972,7 @@
       }
     }
 
-    function checkStep1Complete() {
+    async function checkStep1Complete() {
       if (twilioConnected && !openaiConnected) {
         // Twilio is connected but OpenAI is not - highlight OpenAI button
         setTimeout(() => {
@@ -2983,7 +2983,55 @@
         }, 500);
         showStatus('step1Status', 'success', '✅ Twilio connected! Now connect your OpenAI account below.');
       } else if (twilioConnected && openaiConnected) {
-        // Both connected - enable Next button
+        // Both connected - create session in database and enable Next button
+
+        // Create initial session in database (skip for demo mode)
+        if (!twilioCredentials?.demoMode && !studentDemoMode) {
+          try {
+            console.log('💾 Creating initial student session in database...');
+
+            const initialSystemPrompt = `You are a helpful assistant.
+
+# Voice Conversation Guidelines
+- Keep responses BRIEF (1-2 sentences max)
+- Be conversational and natural
+- Avoid lists, bullet points, or structured formatting
+- Don't say "as an AI" or mention you're artificial
+- If you don't know something, say so briefly
+- Respond quickly - every second matters in voice
+- Use casual language, contractions, and natural speech patterns
+
+# Response Style
+- Short and direct
+- Friendly but professional
+- Natural and human-like`.trim();
+
+            const configResponse = await fetch('/api/student-config-save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionToken: sessionToken,
+                studentName: studentName || githubUsername || 'Student',
+                openaiApiKey: openaiApiKey || null,
+                systemPrompt: initialSystemPrompt,
+                tools: [],
+                voiceSettings: {}
+              })
+            });
+
+            const configData = await configResponse.json();
+
+            if (configData.success) {
+              console.log('✅ Initial student session created in database');
+            } else {
+              console.warn('⚠️ Failed to create initial session:', configData.error);
+            }
+          } catch (error) {
+            console.error('❌ Error creating initial session:', error);
+            // Don't block progress - just log the error
+          }
+        }
+
         const nextBtn = document.getElementById('nextBtn1');
         if (nextBtn) {
           nextBtn.disabled = false;
@@ -3522,6 +3570,48 @@
               </button>
               ` : ''}
             </div>
+          </div>
+        </div>
+
+        <div class="service-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: 2px solid #5a67d8;">
+          <h4 style="color: white;">🧠 Conversational Intelligence (Recommended)</h4>
+          <p style="color: rgba(255,255,255,0.95); font-size: 13px; margin-bottom: 15px; line-height: 1.6;">
+            Get AI-powered call transcripts, sentiment analysis, and topic detection for all your workshop calls.
+            This helps you see exactly what your AI said and how callers responded!
+          </p>
+          <div class="service-status">
+            <span style="color: white;">${ciServiceSid ? '✅ Enabled' : '⚪ Optional'}</span>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 15px;">
+              <button
+                class="btn"
+                onclick="enableConversationalIntelligence()"
+                ${ciServiceSid ? 'disabled' : ''}
+                style="background: ${ciServiceSid ? 'rgba(255,255,255,0.3)' : 'white'}; color: ${ciServiceSid ? 'rgba(255,255,255,0.7)' : '#667eea'}; padding: 10px 20px; font-weight: 600; ${ciServiceSid ? 'opacity: 0.6; cursor: not-allowed;' : ''}">
+                ${ciServiceSid ? '✅ Intelligence Enabled' : '🧠 Enable Conversational Intelligence'}
+              </button>
+              <a href="https://www.twilio.com/docs/conversational-intelligence" target="_blank"
+                 style="color: rgba(255,255,255,0.9); text-decoration: underline; font-size: 13px;">
+                📚 Learn More
+              </a>
+            </div>
+            ${ciServiceSid ? `
+              <div style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px;">
+                <p style="color: rgba(255,255,255,0.95); font-size: 12px; margin: 0; line-height: 1.6;">
+                  ✅ <strong>Service ID:</strong> <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">${ciServiceSid}</code><br>
+                  All calls will automatically include transcripts and insights!
+                </p>
+              </div>
+            ` : `
+              <div style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; border-left: 3px solid #ffd43b;">
+                <p style="color: rgba(255,255,255,0.95); font-size: 12px; margin: 0; line-height: 1.6;">
+                  💡 <strong>Why enable this?</strong><br>
+                  • See full transcripts of AI conversations<br>
+                  • Analyze sentiment (positive, negative, neutral)<br>
+                  • Track conversation topics automatically<br>
+                  • Debug and improve your AI assistant
+                </p>
+              </div>
+            `}
           </div>
         </div>
       `;
