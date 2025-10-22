@@ -1272,6 +1272,7 @@
     async function trackStudentProgress() {
       // Only track if we have a student email
       if (!studentEmail) {
+        console.log('📊 Progress tracking skipped - no student email');
         return;
       }
 
@@ -1302,7 +1303,9 @@
           9: 'step-9-multichannel'
         };
 
-        // Send progress for each completed step
+        console.log(`📊 Tracking progress for ${studentEmail} (currentStep: ${currentStep + 1})`);
+
+        // Send progress for each completed step AND the current step
         for (let stepNum = 1; stepNum <= 9; stepNum++) {
           const exerciseId = stepToExercise[stepNum];
           const isCompleted = stepCompletionStatus[stepNum] || false;
@@ -1310,7 +1313,9 @@
 
           // Only send if step is completed OR it's the current step
           if (isCompleted || isCurrentStep) {
-            await fetch(`${window.location.origin}/api/track-student-progress`, {
+            console.log(`  📝 Sending: ${exerciseId} - ${isCompleted ? 'COMPLETED' : 'IN PROGRESS'}`);
+
+            const response = await fetch(`${window.location.origin}/api/track-student-progress`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -1325,10 +1330,17 @@
                 demoMode: studentDemoMode || false
               })
             });
+
+            const data = await response.json();
+            if (!data.success) {
+              console.warn(`  ⚠️ Failed to track ${exerciseId}:`, data.error);
+            }
           }
         }
+
+        console.log('📊 Progress tracking complete');
       } catch (error) {
-        console.warn('Error tracking student progress:', error);
+        console.error('❌ Error tracking student progress:', error);
         // Don't interrupt the user experience if tracking fails
       }
     }
