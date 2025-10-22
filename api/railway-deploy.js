@@ -49,6 +49,10 @@ export default async function handler(req, res) {
 
     console.log(`Creating Railway deployment URL for ${repoFullName}...`);
 
+    // Generate unique session ID for this deployment
+    // This will be used to match the deployment callback
+    const sessionId = `railway-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
     // Railway "Deploy from GitHub" URL format
     // This opens Railway with the repo pre-selected for deployment
     const railwayDeployUrl = `https://railway.app/new/github?repo=${encodeURIComponent(repoFullName)}`;
@@ -59,13 +63,18 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       deployUrl: railwayDeployUrl,
+      sessionId: sessionId,
       repoFullName: repoFullName,
       message: 'Railway deployment URL generated',
       instructions: {
         step1: 'Click the Deploy URL to open Railway',
         step2: 'Authenticate with GitHub (if not already)',
         step3: 'Railway will auto-deploy your repository',
-        step4: 'Copy the deployment URL when ready'
+        step4: 'Wait for deployment to complete automatically',
+        envVars: {
+          WORKSHOP_SESSION_ID: sessionId,
+          WORKSHOP_CALLBACK_URL: 'https://voice-ai-workshop.vercel.app'
+        }
       }
     });
 

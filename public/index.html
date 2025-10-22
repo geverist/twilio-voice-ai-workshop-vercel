@@ -2275,20 +2275,20 @@
           <!-- GitHub Codespaces Deployment -->
           ${githubToken && studentRepoName ? `
           <div class="service-card" style="background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; margin-bottom: 30px;">
-            <h4 style="color: white; margin-bottom: 15px;">🚀 Step 1b: Deploy Your Development Environment</h4>
+            <h4 style="color: white; margin-bottom: 15px;">🚀 Step 1b: Deploy Your WebSocket Server</h4>
             <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
-              Launch your code in GitHub Codespaces - a cloud development environment with a live WebSocket server!
+              Deploy your WebSocket server to Railway - a cloud platform that gives you a public URL for Twilio to connect to!
             </p>
             <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
               <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
                 <strong>💡 What you get:</strong>
               </p>
               <ul style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                <li>Cloud-based development environment in your browser</li>
+                <li>Automatic deployment from your GitHub repository</li>
                 <li>WebSocket server for Twilio Conversation Relay (auto-starts on port 3000)</li>
-                <li>Public URL for connecting Twilio phone calls to your AI assistant</li>
-                <li>Write code, test calls, and iterate all from your browser</li>
-                <li>60 hours/month free with your GitHub account</li>
+                <li>Public wss:// URL for connecting Twilio phone calls to your AI assistant</li>
+                <li>Free tier with $5 monthly credit (no credit card required)</li>
+                <li>Faster and more reliable than development environments</li>
               </ul>
             </div>
 
@@ -2357,15 +2357,14 @@
               <div style="margin-bottom: 15px;">
                 <button
                   class="btn btn-primary next-action"
-                  id="deployCodespaceBtn"
-                  onclick="deployToCodespaces()"
-                  style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #1a7f37; border: none; font-weight: bold;">
-                  🚀 Launch Development Environment
+                  id="deployRailwayBtn"
+                  onclick="deployToRailway()"
+                  style="width: 100%; padding: 15px; font-size: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; font-weight: bold;">
+                  🚂 Deploy to Railway
                 </button>
                 <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
-                  Takes about 120 seconds to provision • Free with GitHub (60 hours/month)
+                  Takes about 2-3 minutes • Free tier with $5/month credit
                 </p>
-                <div id="codespacesUsageInfo" style="margin-top: 10px; text-align: center;"></div>
               </div>
             `}
 
@@ -14905,6 +14904,207 @@ twilio serverless:deploy
       setTimeout(() => {
         deployToCodespaces();
       }, 500);
+    }
+
+    /**
+     * Deploy to Railway
+     */
+    let railwaySessionId = null; // Track current deployment session
+
+    async function deployToRailway() {
+      clearHighlights();
+      const btn = document.getElementById('deployRailwayBtn');
+      const statusEl = document.getElementById('codespaceDeployStatus');
+
+      // Demo mode simulation
+      if (studentDemoMode || twilioCredentials?.demoMode) {
+        btn.disabled = true;
+        btn.textContent = '🚀 Deploying to Railway...';
+
+        showStatus('codespaceDeployStatus', 'info', '📦 Demo: Deploying WebSocket server...');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        showStatus('codespaceDeployStatus', 'info', '⚙️ Demo: Installing dependencies...');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        showStatus('codespaceDeployStatus', 'info', '🚀 Demo: Starting server...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Set demo Railway info
+        codespaceUrl = 'wss://demo-railway-production.up.railway.app';
+        websocketUrl = codespaceUrl;
+        step5Deployed = true;
+        websocketBuilt = true;
+
+        saveProgressToStorage();
+        updateProgressBar();
+
+        showStatus('codespaceDeployStatus', 'success',
+          `✅ Demo: Railway deployment complete!<br>` +
+          `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>`
+        );
+
+        btn.disabled = false;
+        btn.textContent = '✅ Deployed to Railway';
+        renderStepContent();
+        return;
+      }
+
+      if (!githubToken || !githubUsername || !studentRepoName) {
+        showStatus('codespaceDeployStatus', 'error', '❌ Missing GitHub credentials or repository');
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+        btn.textContent = '🚀 Opening Railway...';
+
+        const repoFullName = `${githubUsername}/${studentRepoName}`;
+
+        // Call Railway deploy API to get deployment URL and session ID
+        showStatus('codespaceDeployStatus', 'info', '🚂 Generating Railway deployment link...');
+
+        const response = await fetch('/api/railway-deploy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            repoFullName: repoFullName
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to generate Railway deployment URL');
+        }
+
+        railwaySessionId = data.sessionId;
+
+        // Show instructions modal
+        showStatus('codespaceDeployStatus', 'success',
+          `<div style="text-align: left;">` +
+          `<strong style="color: #28a745;">✅ Railway deployment link ready!</strong><br><br>` +
+          `<div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 15px 0;">` +
+          `<strong style="color: white;">📋 Follow these steps:</strong><br><br>` +
+          `<strong>1.</strong> Click the button below to open Railway<br>` +
+          `<strong>2.</strong> Authenticate with GitHub (if needed)<br>` +
+          `<strong>3.</strong> Click "Deploy Now" in Railway<br>` +
+          `<strong>4.</strong> Go to Variables tab and add these:<br>` +
+          `<div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; margin: 10px 0 10px 20px; font-family: monospace; font-size: 11px;">` +
+          `WORKSHOP_SESSION_ID=${railwaySessionId}<br>` +
+          `WORKSHOP_CALLBACK_URL=https://voice-ai-workshop.vercel.app` +
+          `</div>` +
+          `<strong>5.</strong> Wait for deployment to complete (~2-3 min)<br>` +
+          `<strong>6.</strong> This page will automatically continue!<br>` +
+          `</div>` +
+          `<a href="${data.deployUrl}" target="_blank" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); text-decoration: none; display: inline-block; text-align: center; margin-bottom: 10px;">` +
+          `🚂 Open Railway Deployment →` +
+          `</a><br>` +
+          `<span style="font-size: 12px; opacity: 0.8;">Waiting for deployment to complete...</span>` +
+          `</div>`
+        );
+
+        btn.textContent = '⏳ Waiting for Railway...';
+
+        // Start polling for deployment completion
+        pollRailwayDeployment();
+
+      } catch (error) {
+        console.error('Railway deployment error:', error);
+        showStatus('codespaceDeployStatus', 'error', '❌ ' + error.message);
+        btn.disabled = false;
+        btn.textContent = '🚂 Deploy to Railway';
+      }
+    }
+
+    /**
+     * Poll Railway deployment status
+     */
+    async function pollRailwayDeployment() {
+      if (!railwaySessionId) {
+        console.error('No Railway session ID');
+        return;
+      }
+
+      const maxAttempts = 60; // 60 attempts = 5 minutes max
+      let attempts = 0;
+
+      const poll = async () => {
+        attempts++;
+
+        try {
+          const response = await fetch(`/api/railway-deployed?sessionId=${encodeURIComponent(railwaySessionId)}`);
+          const data = await response.json();
+
+          if (data.success && data.deployed) {
+            // Deployment complete!
+            codespaceUrl = data.deploymentUrl;
+            websocketUrl = codespaceUrl;
+            step5Deployed = true;
+            websocketBuilt = true;
+
+            saveProgressToStorage();
+            updateProgressBar();
+
+            showStatus('codespaceDeployStatus', 'success',
+              `✅ Railway deployment complete!<br>` +
+              `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${codespaceUrl}</div>`
+            );
+
+            const btn = document.getElementById('deployRailwayBtn');
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = '✅ Deployed to Railway';
+            }
+
+            celebrate('🎉 Your WebSocket server is deployed!', 'normal');
+            renderStepContent();
+
+            // Add next-action effect to Connect Twilio button
+            setTimeout(() => {
+              const connectTwilioBtn = document.querySelector('[onclick*="connectTwilio"]');
+              if (connectTwilioBtn && !twilioConnected) {
+                connectTwilioBtn.classList.add('next-action');
+              }
+            }, 500);
+
+            return; // Exit polling
+          }
+
+          // Not deployed yet - continue polling
+          if (attempts < maxAttempts) {
+            const elapsed = Math.round(attempts * 5);
+            showStatus('codespaceDeployStatus', 'info',
+              `⏳ Waiting for Railway deployment to complete... (${elapsed}s)<br>` +
+              `<span style="font-size: 12px; opacity: 0.8;">This usually takes 2-3 minutes. Don't close this tab!</span>`
+            );
+            setTimeout(poll, 5000); // Poll every 5 seconds
+          } else {
+            // Timeout
+            const btn = document.getElementById('deployRailwayBtn');
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = '🔄 Retry Deployment';
+            }
+
+            showStatus('codespaceDeployStatus', 'warning',
+              `⚠️ Deployment is taking longer than expected.<br><br>` +
+              `<strong>Troubleshooting:</strong><br>` +
+              `1. Check Railway dashboard for deployment status<br>` +
+              `2. Verify environment variables are set correctly<br>` +
+              `3. Check deployment logs for errors<br>` +
+              `4. Click "Retry Deployment" above to try again`
+            );
+          }
+
+        } catch (error) {
+          console.error('Error polling Railway deployment:', error);
+          showStatus('codespaceDeployStatus', 'error', '❌ Error checking deployment status: ' + error.message);
+        }
+      };
+
+      // Start polling
+      poll();
     }
 
     // Initialize on load
