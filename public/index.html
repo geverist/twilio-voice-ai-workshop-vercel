@@ -13521,6 +13521,7 @@ twilio serverless:deploy
         } else {
           // Clear invalid session
           sessionStorage.removeItem('twilioSession');
+          localStorage.removeItem('sessionToken');
           sessionToken = null;
           document.getElementById('oauthStatus').style.display = 'none';
         }
@@ -13528,6 +13529,7 @@ twilio serverless:deploy
       } catch (error) {
         console.error('Auth check error:', error);
         sessionStorage.removeItem('twilioSession');
+        localStorage.removeItem('sessionToken');
         sessionToken = null;
       }
     }
@@ -13549,6 +13551,7 @@ twilio serverless:deploy
       } finally {
         // Clear local session
         sessionStorage.removeItem('twilioSession');
+        localStorage.removeItem('sessionToken');
         sessionToken = null;
         twilioConnected = false;
         twilioCredentials = null;
