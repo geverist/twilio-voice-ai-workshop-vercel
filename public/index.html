@@ -329,9 +329,9 @@
     }
 
     .status-box.success {
-      background: #d4edda;
-      border: 1px solid #c3e6cb;
-      color: #155724;
+      background: #f0fdf4;
+      border: 2px solid #22c55e;
+      color: #0f172a;
     }
 
     .status-box.error {
@@ -2320,14 +2320,6 @@
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
                   <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 5px;">WebSocket URL:</div>
                   <code style="color: white; font-size: 12px; word-break: break-all; font-family: monospace;">${codespaceUrl}</code>
-                </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                  <button class="btn" onclick="window.open('${codespaceWebUrl}', '_blank')" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 13px;">
-                    🌐 Open Codespace
-                  </button>
-                  <button class="btn" onclick="refreshCodespaceStatus()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 13px;">
-                    🔄 Refresh Status
-                  </button>
                 </div>
                 <details style="margin-top: 15px;">
                   <summary style="color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer;">⚠️ Troubleshooting</summary>
@@ -10444,14 +10436,6 @@ app.get('/health', (req, res) => {
                 ` : ''}
                 <div id="commitStep5Status" style="margin-top: 15px; color: white;"></div>
                 <div id="codespaceDeployStatus5" style="margin-top: 15px; color: white;"></div>
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                  <button class="btn" onclick="window.open('${codespaceWebUrl}', '_blank')" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);">
-                    🌐 Open Codespace
-                  </button>
-                  <button class="btn" onclick="refreshCodespaceStatus()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);">
-                    🔄 Refresh Status
-                  </button>
-                </div>
               </div>
             ` : studentDemoMode ? `
               <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
