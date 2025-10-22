@@ -40,7 +40,8 @@ export default function handler(req, res) {
     // GitHub OAuth scopes needed:
     // - public_repo: Create repos from template
     // - codespace: Create and manage Codespaces
-    const scopes = 'public_repo codespace';
+    // - delete_repo: Delete repositories
+    const scopes = 'public_repo codespace delete_repo';
 
     // Build OAuth URL
     const githubOAuthUrl = `https://github.com/login/oauth/authorize?` +
