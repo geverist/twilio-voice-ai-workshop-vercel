@@ -7,18 +7,21 @@
 
 import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
-
-// Create postgres connection
-const sql = postgres(process.env.POSTGRES_URL, {
-  ssl: 'require',
-  max: 1
-});
 import { applyRateLimit } from './_lib/ratelimit.js';
 import {
   validateRequired,
   validateString,
   handleValidationError
 } from './_lib/validation.js';
+
+// Create postgres connection (only if POSTGRES_URL is set)
+let sql;
+if (process.env.POSTGRES_URL) {
+  sql = postgres(process.env.POSTGRES_URL, {
+    ssl: 'require',
+    max: 1
+  });
+}
 
 export default async function handler(req, res) {
   // Apply CORS
@@ -37,6 +40,14 @@ export default async function handler(req, res) {
   const allowed = await applyRateLimit(req, res);
   if (!allowed) {
     return;
+  }
+
+  // Check if Postgres is configured
+  if (!process.env.POSTGRES_URL || !sql) {
+    return res.status(500).json({
+      success: false,
+      error: 'Database not configured. Please set POSTGRES_URL in environment variables.'
+    });
   }
 
   try {
