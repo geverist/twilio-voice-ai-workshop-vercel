@@ -1542,9 +1542,11 @@
           step4Test.style.display = 'block';
         }
 
-        // Step 6 - Always show for now (to be fixed later)
+        // Step 6 - Only show if deployed
         const step6Test = document.getElementById('step6TestCallSection');
-        if (step6Test) step6Test.style.display = 'block';
+        if (step6Test && step6Deployed) {
+          step6Test.style.display = 'block';
+        }
       }, 100);
     }
 
@@ -9798,7 +9800,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           </div>
 
           <!-- Test ConversationRelay with basic prompt -->
-          <div id="step6TestCallSection" style="margin: 30px 0; display: ${step6Committed ? 'block' : 'none'};">
+          <div id="step6TestCallSection" style="margin: 30px 0; display: ${step6Deployed ? 'block' : 'none'};">
             <div style="padding: 25px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; border: 2px solid #059669; color: white;">
               <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">🎙️ Test ConversationRelay with AI</h3>
 
