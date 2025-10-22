@@ -411,10 +411,6 @@
     </div>
   </div>
 
-  <script src="/state-management-tests-embed.js"></script>
-  <script src="/api-endpoint-tests-embed.js"></script>
-  <script src="/ui-interaction-tests-embed.js"></script>
-
   <script>
     let allResults = {
       state: [],
@@ -469,58 +465,146 @@
 
     async function runStateTests() {
       document.getElementById('status-text').textContent = 'Running state tests...';
+      document.getElementById('state-results').innerHTML = '<div class="loading">Running tests</div>';
+
       const iframe = document.createElement('iframe');
       iframe.src = '/state-management-tests.html';
       iframe.style.display = 'none';
       document.body.appendChild(iframe);
 
-      // Wait for tests to complete
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      // Wait for iframe to load
+      await new Promise(resolve => {
+        iframe.onload = () => resolve();
+      });
 
-      // Extract results (placeholder - would need actual integration)
-      allResults.state = extractResultsFromIframe(iframe);
+      // Wait for tests to complete
+      await new Promise(resolve => setTimeout(resolve, 10000));
+
+      // Extract results
+      try {
+        const iframeWindow = iframe.contentWindow;
+        const results = iframeWindow.testResults || [];
+        allResults.state = results;
+        renderResults('state', results);
+      } catch (e) {
+        console.error('Error extracting state test results:', e);
+        allResults.state = [];
+      }
+
       updateSummary();
       updateBadges();
-
       document.body.removeChild(iframe);
     }
 
     async function runAPITests() {
       document.getElementById('status-text').textContent = 'Running API tests...';
+      document.getElementById('api-results').innerHTML = '<div class="loading">Running tests</div>';
+
       const iframe = document.createElement('iframe');
       iframe.src = '/api-endpoint-tests.html';
       iframe.style.display = 'none';
       document.body.appendChild(iframe);
 
-      await new Promise(resolve => setTimeout(resolve, 8000));
+      await new Promise(resolve => {
+        iframe.onload = () => resolve();
+      });
 
-      allResults.api = extractResultsFromIframe(iframe);
+      await new Promise(resolve => setTimeout(resolve, 15000));
+
+      try {
+        const iframeWindow = iframe.contentWindow;
+        const results = iframeWindow.testResults || [];
+        allResults.api = results;
+        renderResults('api', results);
+      } catch (e) {
+        console.error('Error extracting API test results:', e);
+        allResults.api = [];
+      }
+
       updateSummary();
       updateBadges();
-
       document.body.removeChild(iframe);
     }
 
     async function runUITests() {
       document.getElementById('status-text').textContent = 'Running UI tests...';
+      document.getElementById('ui-results').innerHTML = '<div class="loading">Running tests</div>';
+
       const iframe = document.createElement('iframe');
       iframe.src = '/ui-interaction-tests.html';
       iframe.style.display = 'none';
       document.body.appendChild(iframe);
 
-      await new Promise(resolve => setTimeout(resolve, 8000));
+      await new Promise(resolve => {
+        iframe.onload = () => resolve();
+      });
 
-      allResults.ui = extractResultsFromIframe(iframe);
+      await new Promise(resolve => setTimeout(resolve, 15000));
+
+      try {
+        const iframeWindow = iframe.contentWindow;
+        const results = iframeWindow.testResults || [];
+        allResults.ui = results;
+        renderResults('ui', results);
+      } catch (e) {
+        console.error('Error extracting UI test results:', e);
+        allResults.ui = [];
+      }
+
       updateSummary();
       updateBadges();
-
       document.body.removeChild(iframe);
     }
 
-    function extractResultsFromIframe(iframe) {
-      // This would extract actual test results from the iframe
-      // For now, return placeholder
-      return [];
+    function renderResults(category, results) {
+      const container = document.getElementById(`${category}-results`);
+
+      if (results.length === 0) {
+        container.innerHTML = '<div class="loading">No results available</div>';
+        return;
+      }
+
+      // Group by suite
+      const suiteMap = {};
+      results.forEach(test => {
+        const suiteName = test.suite || 'Unknown Suite';
+        if (!suiteMap[suiteName]) {
+          suiteMap[suiteName] = [];
+        }
+        suiteMap[suiteName].push(test);
+      });
+
+      let html = '';
+      Object.keys(suiteMap).forEach(suiteName => {
+        html += `<div class="test-suite">`;
+        html += `<h3>${suiteName}</h3>`;
+
+        suiteMap[suiteName].forEach(test => {
+          const statusClass = test.status || 'running';
+          html += `<div class="test-case ${statusClass}">`;
+          html += `<div class="test-name">`;
+          html += `<span class="status-indicator ${statusClass}"></span>`;
+          html += test.name;
+          html += `</div>`;
+
+          if (statusClass === 'pass') {
+            html += `<div class="test-result">✅ PASS</div>`;
+          } else if (statusClass === 'fail') {
+            html += `<div class="test-result">❌ FAIL</div>`;
+            if (test.error) {
+              html += `<div class="test-error">${test.error}</div>`;
+            }
+          } else {
+            html += `<div class="test-result">Running...</div>`;
+          }
+
+          html += `</div>`;
+        });
+
+        html += `</div>`;
+      });
+
+      container.innerHTML = html;
     }
 
     function updateSummary() {
