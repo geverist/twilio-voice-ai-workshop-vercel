@@ -205,21 +205,56 @@ export default async function handler(req, res) {
         SELECT
           session_token,
           student_name,
+          student_email,
           selected_phone_number,
           selected_voice,
           tts_provider,
           CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
           CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
           CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
+          current_step,
+          twilio_connected,
+          openai_connected,
+          call_direction_chosen,
+          services_ready,
+          step4_code_validated,
+          step4_committed,
+          step4_deployed,
+          step5_code_validated,
+          step5_committed,
+          step5_deployed,
+          step6_code_validated,
+          step6_committed,
+          step6_deployed,
+          system_prompt_saved,
+          step7_committed,
+          step7_deployed,
+          tools_configured,
+          step8_code_validated,
+          step8_committed,
+          step8_deployed,
+          project_deployed,
           created_at,
           updated_at
         FROM student_configs
         ORDER BY created_at DESC
       `;
 
-      // No student_email in old student_configs, so use unknown
-      students = [{ student_email: 'unknown@example.com', student_name: 'Legacy Students', created_at: new Date(), updated_at: new Date() }];
-      sessions = result.map(r => ({ ...r, student_email: 'unknown@example.com' }));
+      // Extract unique students from student_email
+      const uniqueStudents = {};
+      result.forEach(row => {
+        const email = row.student_email || 'unknown@example.com';
+        if (!uniqueStudents[email]) {
+          uniqueStudents[email] = {
+            student_email: email,
+            student_name: row.student_name || 'Unnamed',
+            created_at: row.created_at,
+            updated_at: row.updated_at
+          };
+        }
+      });
+      students = Object.values(uniqueStudents);
+      sessions = result.map(r => ({ ...r, student_email: r.student_email || 'unknown@example.com' }));
     }
 
     return res.status(200).json({
@@ -240,6 +275,29 @@ export default async function handler(req, res) {
         hasApiKey: session.has_api_key,
         hasSystemPrompt: session.has_system_prompt,
         hasTools: session.has_tools,
+        // State tracking data
+        currentStep: session.current_step || 0,
+        twilioConnected: session.twilio_connected || false,
+        openaiConnected: session.openai_connected || false,
+        callDirectionChosen: session.call_direction_chosen || false,
+        servicesReady: session.services_ready || false,
+        step4CodeValidated: session.step4_code_validated || false,
+        step4Committed: session.step4_committed || false,
+        step4Deployed: session.step4_deployed || false,
+        step5CodeValidated: session.step5_code_validated || false,
+        step5Committed: session.step5_committed || false,
+        step5Deployed: session.step5_deployed || false,
+        step6CodeValidated: session.step6_code_validated || false,
+        step6Committed: session.step6_committed || false,
+        step6Deployed: session.step6_deployed || false,
+        systemPromptSaved: session.system_prompt_saved || false,
+        step7Committed: session.step7_committed || false,
+        step7Deployed: session.step7_deployed || false,
+        toolsConfigured: session.tools_configured || false,
+        step8CodeValidated: session.step8_code_validated || false,
+        step8Committed: session.step8_committed || false,
+        step8Deployed: session.step8_deployed || false,
+        projectDeployed: session.project_deployed || false,
         createdAt: session.created_at,
         updatedAt: session.updated_at
       }))
