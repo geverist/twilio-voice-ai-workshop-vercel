@@ -6251,7 +6251,7 @@ Expected: ${scenario.expected}</div>`;
             <div class="code-header">
               <span>📝 WebSocket Handler with Tools & Knowledge Base</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success next-action" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode9()">✓ Validate</button>
+                <button class="btn btn-success ${toolsConfigured ? '' : 'next-action'}" style="padding: 6px 12px; font-size: 13px; ${toolsConfigured ? 'opacity: 0.5;' : ''}" onclick="validateCode9()" ${toolsConfigured ? 'disabled' : ''}>✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code9')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode9()">Reset</button>
               </div>
