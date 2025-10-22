@@ -14841,45 +14841,46 @@ twilio serverless:deploy
                     console.log('⚠️ Port fix error:', fixError.message);
                   }
                 }
-              }
 
-              // Health check failed - server may still be starting
-              // Continue polling for a bit longer
-              if (attempts < maxAttempts) {
-                showStatus('codespaceDeployStatus', 'info',
-                  `⏳ Waiting for WebSocket server to start... (${healthCheckDuration}s)<br>` +
-                  `<span style="font-size: 12px; opacity: 0.8;">The server auto-starts on Codespace launch. This can take up to 2 minutes.</span>`
-                );
-                setTimeout(poll, 5000);
-              } else {
-              // Timeout - DO NOT allow progression, server must be reachable
-              const btn = document.getElementById('deployCodespaceBtn5');
-              if (btn) {
-                btn.disabled = false;
-                btn.textContent = '🔄 Retry Launch';
-              }
+                // Health check failed - server may still be starting
+                // Continue polling for a bit longer
+                if (attempts < maxAttempts) {
+                  showStatus('codespaceDeployStatus', 'info',
+                    `⏳ Waiting for WebSocket server to start... (${healthCheckDuration}s)<br>` +
+                    `<span style="font-size: 12px; opacity: 0.8;">The server auto-starts on Codespace launch. This can take up to 2 minutes.</span>`
+                  );
+                  setTimeout(poll, 5000);
+                } else {
+                  // Timeout - DO NOT allow progression, server must be reachable
+                  const btn = document.getElementById('deployCodespaceBtn5');
+                  if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '🔄 Retry Launch';
+                  }
 
-              showStatus('codespaceDeployStatus', 'error',
-                `❌ WebSocket connection is not working.<br><br>` +
-                `<strong>Don't worry - this is fixable!</strong><br><br>` +
-                `<button class="btn btn-primary" onclick="fixCodespaceConnection()" style="width: 100%; padding: 15px; font-size: 16px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); margin-bottom: 15px;">` +
-                `🔧 Fix Connection (One Click)` +
-                `</button>` +
-                `<details style="margin-top: 10px;">` +
-                `<summary style="cursor: pointer; color: rgba(255,255,255,0.7); font-size: 13px;">Advanced troubleshooting</summary>` +
-                `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 12px;">` +
-                `<strong>Manual steps:</strong><br>` +
-                `1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc1ff;">Open Codespace →</a><br>` +
-                `2. Go to PORTS tab (bottom panel)<br>` +
-                `3. Find port 3000, right-click → Port Visibility → Public<br>` +
-                `4. Come back and click "Fix Connection" above<br>` +
-                `</div>` +
-                `</details>`
-              );
+                  showStatus('codespaceDeployStatus', 'error',
+                    `❌ WebSocket connection is not working.<br><br>` +
+                    `<strong>Don't worry - this is fixable!</strong><br><br>` +
+                    `<button class="btn btn-primary" onclick="fixCodespaceConnection()" style="width: 100%; padding: 15px; font-size: 16px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); margin-bottom: 15px;">` +
+                    `🔧 Fix Connection (One Click)` +
+                    `</button>` +
+                    `<details style="margin-top: 10px;">` +
+                    `<summary style="cursor: pointer; color: rgba(255,255,255,0.7); font-size: 13px;">Advanced troubleshooting</summary>` +
+                    `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 12px;">` +
+                    `<strong>Manual steps:</strong><br>` +
+                    `1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc1ff;">Open Codespace →</a><br>` +
+                    `2. Go to PORTS tab (bottom panel)<br>` +
+                    `3. Find port 3000, right-click → Port Visibility → Public<br>` +
+                    `4. Come back and click "Fix Connection" above<br>` +
+                    `</div>` +
+                    `</details>`
+                  );
 
-                // Do NOT set step5Deployed or websocketBuilt - block progression
-                console.error('WebSocket server health check failed after timeout');
-              }
+                  // Do NOT set step5Deployed or websocketBuilt - block progression
+                  console.error('WebSocket server health check failed after timeout');
+                }
+              } // End of catch(wsError)
+            } // End of try-catch for WebSocket testing
 
           } else if (state === 'Starting' || state === 'Created' || state === 'Provisioning') {
             // Still starting, continue polling
