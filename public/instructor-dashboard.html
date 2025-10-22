@@ -32,6 +32,7 @@
       padding: 40px;
       color: white;
       text-align: center;
+      position: relative;
     }
 
     .header h1 {
@@ -42,6 +43,31 @@
     .header p {
       opacity: 0.95;
       font-size: 1.1rem;
+    }
+
+    .admin-login-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .admin-login-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.8);
+    }
+
+    .admin-login-btn.logged-in {
+      background: rgba(76, 175, 80, 0.3);
+      border-color: rgba(76, 175, 80, 0.8);
     }
 
     .content {
@@ -337,6 +363,9 @@
 <body>
   <div class="container">
     <div class="header">
+      <button class="admin-login-btn" id="adminLoginBtn" onclick="handleAdminLogin()">
+        🔓 Admin Login
+      </button>
       <h1>👨‍🏫 Workshop Instructor Dashboard</h1>
       <p>Send workshop invitations and manage student access</p>
     </div>
@@ -1231,12 +1260,54 @@ student2@example.com,Jane Smith</pre>
     let selectedStudentEmails = new Set();
     let studentViewMode = 'view'; // 'view' or 'manage'
 
+    // Admin login management
+    function handleAdminLogin() {
+      const cachedPassword = sessionStorage.getItem('adminPassword');
+
+      if (cachedPassword) {
+        // Already logged in - show option to logout
+        const shouldLogout = confirm('You are currently logged in as admin.\n\nClick OK to logout and clear your session.');
+        if (shouldLogout) {
+          sessionStorage.removeItem('adminPassword');
+          document.getElementById('cleanupAdminPassword').value = '';
+          updateAdminLoginButton();
+          showAlert('success', '✅ Admin session cleared');
+        }
+      } else {
+        // Prompt for password
+        const password = prompt('Enter admin password:');
+        if (password) {
+          // Save to session storage
+          sessionStorage.setItem('adminPassword', password);
+          document.getElementById('cleanupAdminPassword').value = password;
+          updateAdminLoginButton();
+          showAlert('success', '✅ Admin password saved for this browser session');
+        }
+      }
+    }
+
+    function updateAdminLoginButton() {
+      const btn = document.getElementById('adminLoginBtn');
+      const cachedPassword = sessionStorage.getItem('adminPassword');
+
+      if (cachedPassword) {
+        btn.textContent = '✅ Logged In';
+        btn.classList.add('logged-in');
+        btn.title = 'Click to logout';
+      } else {
+        btn.textContent = '🔓 Admin Login';
+        btn.classList.remove('logged-in');
+        btn.title = 'Click to enter admin password';
+      }
+    }
+
     // Load cached admin password on page load
     window.addEventListener('DOMContentLoaded', () => {
       const cachedPassword = sessionStorage.getItem('adminPassword');
       if (cachedPassword) {
         document.getElementById('cleanupAdminPassword').value = cachedPassword;
       }
+      updateAdminLoginButton();
     });
 
     // Toggle between view and manage modes
