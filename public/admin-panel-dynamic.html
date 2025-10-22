@@ -225,6 +225,7 @@
         <button class="tab active" onclick="showTab('overview')">📊 Overview</button>
         <button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
         <button class="tab" onclick="showTab('prompts')">📝 Prompts</button>
+        <button class="tab" onclick="showTab('functions')">🛠️ Functions</button>
         <button class="tab" onclick="showTab('calls')">📞 Call Logs</button>
       </div>
 
@@ -288,6 +289,49 @@
             <h3>IVR Greeting</h3>
             <input type="text" id="ivrGreetingEditor" placeholder="Enter greeting...">
             <button class="btn" onclick="updateIvrGreeting()">💾 Save Greeting</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="functions" class="tab-content">
+        <div class="panel">
+          <h2>AI Functions & Tools</h2>
+          <p style="color: #666; margin-bottom: 20px;">
+            Add custom functions that your AI can call during conversations. Functions let your AI take actions like checking availability, booking appointments, or querying databases.
+          </p>
+
+          <!-- Add New Function Form -->
+          <div class="setting-card" style="background: #f8f9fa; border: 2px dashed #667eea;">
+            <h3>➕ Add New Function</h3>
+            <div style="margin-top: 15px;">
+              <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Function Name</label>
+              <input type="text" id="newFunctionName" placeholder="e.g., check_availability" style="margin-top: 0;">
+
+              <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Description</label>
+              <textarea id="newFunctionDescription" placeholder="What does this function do? Be specific so the AI knows when to use it." style="min-height: 80px;"></textarea>
+
+              <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Parameters (JSON Schema)</label>
+              <textarea id="newFunctionParameters" placeholder='{"type": "object", "properties": {"date": {"type": "string", "description": "Date to check"}}, "required": ["date"]}' style="min-height: 120px; font-family: monospace;"></textarea>
+
+              <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; font-size: 13px; color: #856404;">
+                💡 <strong>Tip:</strong> Parameters use JSON Schema format. Define what inputs your function needs.
+              </div>
+
+              <button class="btn" onclick="addFunction()" style="margin-top: 15px; margin-right: 10px;">
+                ✅ Add Function
+              </button>
+              <button class="btn btn-secondary" onclick="clearFunctionForm()" style="margin-top: 15px;">
+                Clear Form
+              </button>
+            </div>
+          </div>
+
+          <!-- Existing Functions List -->
+          <div style="margin-top: 30px;">
+            <h3 style="color: #333; margin-bottom: 15px;">Configured Functions</h3>
+            <div id="functionsList">
+              <!-- Dynamically populated -->
+            </div>
           </div>
         </div>
       </div>
@@ -384,6 +428,9 @@
 
       document.getElementById('systemPromptEditor').value = config.systemPrompt || '';
       document.getElementById('ivrGreetingEditor').value = config.ivrGreeting || '';
+
+      // Render functions list
+      renderFunctions();
     }
 
     function getTTSProviderName(provider) {
@@ -453,6 +500,178 @@
       document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
       document.getElementById(tabName).classList.add('active');
       event.target.classList.add('active');
+    }
+
+    // =========================================================================
+    // FUNCTIONS TAB - Function Management
+    // =========================================================================
+
+    function renderFunctions() {
+      const functionsList = document.getElementById('functionsList');
+      const tools = config.tools || [];
+
+      if (tools.length === 0) {
+        functionsList.innerHTML = `
+          <div style="text-align: center; padding: 40px; background: #f8f9fa; border-radius: 8px; color: #666;">
+            <div style="font-size: 48px; margin-bottom: 15px;">🛠️</div>
+            <p style="font-size: 16px; margin-bottom: 10px;">No functions configured yet</p>
+            <p style="font-size: 14px;">Add your first function above to extend your AI's capabilities!</p>
+          </div>
+        `;
+        return;
+      }
+
+      functionsList.innerHTML = tools.map((tool, index) => {
+        const func = tool.function || tool; // Support both formats
+        return `
+        <div class="setting-card" style="margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+            <div style="flex: 1;">
+              <h3 style="margin: 0 0 5px 0; color: #667eea;">${func.name || 'Unnamed Function'}</h3>
+              <p style="color: #666; font-size: 13px; margin: 0;">${func.description || 'No description'}</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-secondary" onclick="editFunction(${index})" style="padding: 6px 12px; font-size: 12px; cursor: pointer; background: #667eea; color: white; border: none; border-radius: 4px;">
+                ✏️ Edit
+              </button>
+              <button class="btn-secondary" onclick="deleteFunction(${index})" style="padding: 6px 12px; font-size: 12px; cursor: pointer; background: #ef4444; color: white; border: none; border-radius: 4px;">
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+          ${func.parameters ? `
+            <details style="margin-top: 10px;">
+              <summary style="cursor: pointer; color: #667eea; font-size: 13px; font-weight: 600;">View Parameters</summary>
+              <pre style="background: #2c313c; color: #abb2bf; padding: 10px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin-top: 10px;">${JSON.stringify(func.parameters, null, 2)}</pre>
+            </details>
+          ` : ''}
+        </div>
+      `;
+      }).join('');
+    }
+
+    async function addFunction() {
+      const name = document.getElementById('newFunctionName').value.trim();
+      const description = document.getElementById('newFunctionDescription').value.trim();
+      const parametersText = document.getElementById('newFunctionParameters').value.trim();
+
+      // Validation
+      if (!name) {
+        alert('❌ Function name is required');
+        return;
+      }
+
+      if (!description) {
+        alert('❌ Function description is required');
+        return;
+      }
+
+      // Parse parameters JSON
+      let parameters;
+      if (parametersText) {
+        try {
+          parameters = JSON.parse(parametersText);
+        } catch (error) {
+          alert('❌ Invalid JSON in parameters. Please check your syntax.');
+          return;
+        }
+      }
+
+      // Create new function object
+      const newFunction = {
+        type: 'function',
+        function: {
+          name: name,
+          description: description,
+          parameters: parameters || {
+            type: 'object',
+            properties: {},
+            required: []
+          }
+        }
+      };
+
+      // Add to tools array
+      const updatedTools = [...(config.tools || []), newFunction];
+
+      try {
+        // Save to database
+        const response = await fetch(`${API_BASE}/api/student-config-update`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN,
+            tools: updatedTools
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ Function added successfully!');
+          config.tools = updatedTools;
+          renderFunctions();
+          clearFunctionForm();
+        } else {
+          alert('❌ Failed to add function: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Error: ' + error.message);
+      }
+    }
+
+    async function deleteFunction(index) {
+      if (!confirm('Are you sure you want to delete this function?')) {
+        return;
+      }
+
+      const updatedTools = [...(config.tools || [])];
+      updatedTools.splice(index, 1);
+
+      try {
+        const response = await fetch(`${API_BASE}/api/student-config-update`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN,
+            tools: updatedTools
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ Function deleted successfully!');
+          config.tools = updatedTools;
+          renderFunctions();
+        } else {
+          alert('❌ Failed to delete function: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Error: ' + error.message);
+      }
+    }
+
+    function editFunction(index) {
+      const tool = config.tools[index];
+      if (!tool || !tool.function) return;
+
+      // Populate form with existing values
+      document.getElementById('newFunctionName').value = tool.function.name || '';
+      document.getElementById('newFunctionDescription').value = tool.function.description || '';
+      document.getElementById('newFunctionParameters').value = JSON.stringify(tool.function.parameters, null, 2);
+
+      // Delete the old one (will be re-added when they save)
+      deleteFunction(index);
+
+      // Scroll to form
+      document.querySelector('#functions .setting-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function clearFunctionForm() {
+      document.getElementById('newFunctionName').value = '';
+      document.getElementById('newFunctionDescription').value = '';
+      document.getElementById('newFunctionParameters').value = '';
     }
 
     loadConfig();
