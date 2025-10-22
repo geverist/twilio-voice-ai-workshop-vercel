@@ -94,6 +94,93 @@ export default async function handler(req, res) {
       }
     }
 
+    // Special case: testOpenAI doesn't need Twilio credentials
+    if (action === 'testOpenAI') {
+      const { message, openaiApiKey, systemPrompt, demoMode } = params;
+
+      if (!message) {
+        return res.status(400).json({
+          success: false,
+          error: 'Message is required for OpenAI test'
+        });
+      }
+
+      // Demo mode simulation
+      if (demoMode === true) {
+        // Simulate AI response without calling OpenAI
+        const demoResponses = [
+          "Hello! This is a simulated AI response in demo mode.",
+          "I'm functioning perfectly! This is demo mode, so no actual API calls are made.",
+          "That's a great question! In a real scenario, I'd be powered by OpenAI.",
+          "Demo mode allows you to test the workshop flow without using API credits.",
+          "Everything looks good! This response is simulated for demo purposes."
+        ];
+
+        const randomResponse = demoResponses[Math.floor(Math.random() * demoResponses.length)];
+
+        return res.status(200).json({
+          success: true,
+          response: randomResponse,
+          model: 'demo-mode',
+          note: 'This is a simulated response (demo mode)'
+        });
+      }
+
+      // Real OpenAI API call
+      if (!openaiApiKey) {
+        return res.status(400).json({
+          success: false,
+          error: 'OpenAI API key is required'
+        });
+      }
+
+      try {
+        // Make request to OpenAI API
+        const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: systemPrompt || 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.'
+              },
+              {
+                role: 'user',
+                content: message
+              }
+            ],
+            max_tokens: 150
+          })
+        });
+
+        if (!openaiResponse.ok) {
+          const errorData = await openaiResponse.json();
+          throw new Error(errorData.error?.message || `OpenAI API error: ${openaiResponse.status}`);
+        }
+
+        const openaiData = await openaiResponse.json();
+        const aiResponse = openaiData.choices[0]?.message?.content || 'No response generated';
+
+        return res.status(200).json({
+          success: true,
+          response: aiResponse,
+          model: openaiData.model,
+          usage: openaiData.usage
+        });
+      } catch (openaiError) {
+        console.error('OpenAI API Error:', openaiError);
+        return res.status(500).json({
+          success: false,
+          error: openaiError.message
+        });
+      }
+    }
+
     // Validate required params for other actions
     if (!action || !accountSid || !authToken) {
       return res.status(400).json({
@@ -502,94 +589,6 @@ export default async function handler(req, res) {
           success: true,
           setup: setupStatus
         };
-        break;
-
-      case 'testOpenAI':
-        // Test OpenAI integration for WebSocket handler
-        // This simulates the WebSocket → OpenAI flow without needing actual WebSocket deployment
-        const { message, openaiApiKey, demoMode } = params;
-
-        if (!message) {
-          return res.status(400).json({
-            success: false,
-            error: 'Message is required for OpenAI test'
-          });
-        }
-
-        // Demo mode simulation
-        if (demoMode === true) {
-          // Simulate AI response without calling OpenAI
-          const demoResponses = [
-            "Hello! This is a simulated AI response in demo mode.",
-            "I'm functioning perfectly! This is demo mode, so no actual API calls are made.",
-            "That's a great question! In a real scenario, I'd be powered by OpenAI.",
-            "Demo mode allows you to test the workshop flow without using API credits.",
-            "Everything looks good! This response is simulated for demo purposes."
-          ];
-
-          const randomResponse = demoResponses[Math.floor(Math.random() * demoResponses.length)];
-
-          return res.status(200).json({
-            success: true,
-            response: randomResponse,
-            model: 'demo-mode',
-            note: 'This is a simulated response (demo mode)'
-          });
-        }
-
-        // Real OpenAI API call
-        if (!openaiApiKey) {
-          return res.status(400).json({
-            success: false,
-            error: 'OpenAI API key is required'
-          });
-        }
-
-        try {
-          // Make request to OpenAI API
-          const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${openaiApiKey}`
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [
-                {
-                  role: 'system',
-                  content: 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.'
-                },
-                {
-                  role: 'user',
-                  content: message
-                }
-              ],
-              max_tokens: 150
-            })
-          });
-
-          if (!openaiResponse.ok) {
-            const errorData = await openaiResponse.json();
-            throw new Error(errorData.error?.message || `OpenAI API error: ${openaiResponse.status}`);
-          }
-
-          const openaiData = await openaiResponse.json();
-          const aiResponse = openaiData.choices[0]?.message?.content || 'No response generated';
-
-          result = {
-            success: true,
-            response: aiResponse,
-            model: openaiData.model,
-            usage: openaiData.usage
-          };
-        } catch (openaiError) {
-          console.error('OpenAI API Error:', openaiError);
-          return res.status(500).json({
-            success: false,
-            error: openaiError.message
-          });
-        }
         break;
 
       case 'updatePhoneNumber':
