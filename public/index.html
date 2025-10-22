@@ -4106,7 +4106,28 @@
         btn.textContent = '⚡ Enabling...';
         showStatus('step3Status', 'info', '🧠 Creating Conversational Intelligence service...');
 
-        // Call API to create CI service
+        // Demo mode: Simulate CI service creation
+        if (studentDemoMode || twilioCredentials?.demoMode) {
+          await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
+
+          // Generate a fake CI service SID
+          ciServiceSid = `IS${Math.random().toString(36).substring(2, 15)}demo`;
+          localStorage.setItem('ciServiceSid', ciServiceSid);
+          saveProgressToStorage();
+
+          console.log('✅ Conversational Intelligence enabled (Demo Mode):', ciServiceSid);
+          showStatus('step3Status', 'success',
+            `✅ Conversational Intelligence enabled! (Demo Mode)<br>` +
+            `<div style="margin-top: 10px; font-size: 13px;">Service ID: <code>${ciServiceSid}</code></div>` +
+            `<div style="margin-top: 8px; font-size: 13px;">📝 Demo mode: Call analytics are simulated for learning purposes.</div>`
+          );
+
+          // Refresh services display to show enabled state
+          await loadServices();
+          return;
+        }
+
+        // Real mode: Call API to create CI service
         const response = await fetch('/api/tutorial-proxy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
