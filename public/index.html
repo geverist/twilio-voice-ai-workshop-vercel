@@ -4342,7 +4342,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
             <div class="code-header">
               <span>📝 ${isOutbound ? 'IVR' : 'Inbound'} TwiML Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success next-action" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode4()">✓ Validate</button>
+                <button class="btn btn-success ${step4CodeValidated ? '' : 'next-action'}" style="padding: 6px 12px; font-size: 13px; ${step4CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode4()" ${step4CodeValidated ? 'disabled' : ''}>✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code4')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode4()">Reset</button>
               </div>
@@ -8833,9 +8833,6 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
                     </div>
                   </div>
                 </div>
-                <div style="font-size: 13px; color: #666; line-height: 1.6;">
-                  📝 <strong>Note:</strong> Railway/Render will auto-deploy from GitHub. Check your dashboard for deployment status.
-                </div>
               </div>
             `);
 
@@ -9046,6 +9043,16 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
           showStatus(statusId, 'success', '✅ WebSocket handler deployed successfully!');
           console.log('✅ Step 5 deployed, step5Deployed =', step5Deployed);
+
+          // Move next-action from commit button to Next button on Step 5
+          const commitBtn = document.getElementById('commitStep5Btn');
+          if (commitBtn) commitBtn.classList.remove('next-action');
+
+          const nextBtn = document.getElementById('nextBtn7');
+          if (nextBtn) {
+            nextBtn.disabled = false;
+            nextBtn.classList.add('next-action');
+          }
 
           // Re-render step content to show test section (with small delay to ensure state is set)
           setTimeout(() => {
@@ -9774,7 +9781,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             <div class="code-header">
               <span>📝 ConversationRelay TwiML Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success next-action" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode8()">✓ Validate</button>
+                <button class="btn btn-success ${step6CodeValidated ? '' : 'next-action'}" style="padding: 6px 12px; font-size: 13px; ${step6CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode8()" ${step6CodeValidated ? 'disabled' : ''}>✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code8')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode8()">Reset</button>
               </div>
@@ -9820,7 +9827,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     url: wsHandlerUrl,
 
     // Optional: Initial greeting message
-    welcomeGreeting: 'Hello! I am your AI assistant. How can I help you today?',
+    welcomeGreeting: '${generatedContent?.ivrGreeting || "Hello! I am your AI assistant. How can I help you today?"}',
 
     // Voice Configuration
     voice: '9XfYMbJVZqPHaQtYnTAO',  // Cody - Energetic Upbeat Educator
@@ -10063,7 +10070,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           <div class="console-line">      url="${wsHandlerUrl}"</div>
           <div class="console-line">      voice="${voice}"</div>
           <div class="console-line">      ttsProvider="${getConversationRelayTTSProvider(ttsProvider)}"</div>
-          <div class="console-line">      welcomeGreeting="Hello! I am your AI assistant. How can I help you today?"</div>
+          <div class="console-line">      welcomeGreeting="${generatedContent?.ivrGreeting || 'Hello! I am your AI assistant. How can I help you today?'}"</div>
           <div class="console-line">    /&gt;</div>
           <div class="console-line">  &lt;/Connect&gt;</div>
           <div class="console-line">&lt;/Response&gt;</div>
@@ -10169,7 +10176,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     url: wsHandlerUrl,
     voice: '${getConversationRelayVoice(getDefaultVoice())}',
     ttsProvider: '${getConversationRelayTTSProvider(ttsProvider)}',
-    welcomeGreeting: 'Hello! I am your AI assistant. How can I help you today?',
+    welcomeGreeting: '${generatedContent?.ivrGreeting || "Hello! I am your AI assistant. How can I help you today?"}',
     dtmfDetection: true
   });
 
@@ -10263,7 +10270,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
     // Update ConversationRelay code based on settings
     function updateConversationRelayCode() {
-      const welcomeGreeting = document.getElementById('crWelcomeGreeting')?.value || 'Hello! I am your AI assistant. How can I help you today?';
+      const welcomeGreeting = document.getElementById('crWelcomeGreeting')?.value || generatedContent?.ivrGreeting || 'Hello! I am your AI assistant. How can I help you today?';
       const language = document.getElementById('crLanguage')?.value || 'en-US';
       const transcriptionProvider = document.getElementById('crTranscriptionProvider')?.value || 'deepgram';
       const interruptible = document.getElementById('crInterruptible')?.value || 'speech';
@@ -10498,7 +10505,7 @@ ${hintsLine}${intelligenceLine}
             <div class="code-header">
               <span>📝 WebSocket Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success next-action" style="padding: 6px 12px; font-size: 13px;" onclick="validateCode7()">✓ Validate</button>
+                <button class="btn btn-success ${step5CodeValidated ? '' : 'next-action'}" style="padding: 6px 12px; font-size: 13px; ${step5CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode7()" ${step5CodeValidated ? 'disabled' : ''}>✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code7')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode7()">Reset</button>
               </div>
@@ -13751,7 +13758,7 @@ twilio serverless:deploy
     url: wsHandlerUrl,
 
     // Optional: Initial greeting message
-    welcomeGreeting: 'Hello! I am your AI assistant. How can I help you today?',
+    welcomeGreeting: '${generatedContent?.ivrGreeting || "Hello! I am your AI assistant. How can I help you today?"}',
 
     // Voice Configuration
     voice: '9XfYMbJVZqPHaQtYnTAO',  // Cody - Energetic Upbeat Educator
