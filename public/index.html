@@ -8736,10 +8736,28 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
             // Show deployment info
             showStatus(statusId, 'success', `
-              ✅ Deployment complete!<br><br>
-              <strong>Commit:</strong> <a href="${commitData.commitUrl}" target="_blank">View on GitHub</a><br>
-              <strong>WebSocket URL:</strong> <code>${commitData.deployedUrl}</code><br><br>
-              <small>📝 Note: Railway/Render will auto-deploy from GitHub. Check your dashboard for deployment status.</small>
+              <div style="text-align: left;">
+                <div style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #155724;">
+                  ✅ Deployment complete!
+                </div>
+                <div style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                  <div style="margin-bottom: 10px;">
+                    <strong style="color: #155724;">Commit:</strong>
+                    <a href="${commitData.commitUrl}" target="_blank" style="color: #1a73e8; text-decoration: none; margin-left: 8px;">
+                      View on GitHub →
+                    </a>
+                  </div>
+                  <div>
+                    <strong style="color: #155724;">WebSocket URL:</strong>
+                    <div style="background: rgba(0,0,0,0.1); padding: 10px; border-radius: 4px; margin-top: 8px; font-family: monospace; font-size: 12px; word-break: break-all; color: #333;">
+                      ${commitData.deployedUrl}
+                    </div>
+                  </div>
+                </div>
+                <div style="font-size: 13px; color: #666; line-height: 1.6;">
+                  📝 <strong>Note:</strong> Railway/Render will auto-deploy from GitHub. Check your dashboard for deployment status.
+                </div>
+              </div>
             `);
 
           } catch (error) {
