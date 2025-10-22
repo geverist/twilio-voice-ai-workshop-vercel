@@ -76,6 +76,7 @@ export default async function handler(req, res) {
         student_email TEXT NOT NULL,
         student_name TEXT,
         exercises JSONB DEFAULT '{}',
+        bug_reports JSONB DEFAULT '[]',
         started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         total_time_spent INTEGER DEFAULT 0,
@@ -86,7 +87,7 @@ export default async function handler(req, res) {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       )
     `;
-    migrationSteps.push('✅ Created workshop_sessions table with session_token as primary key');
+    migrationSteps.push('✅ Created workshop_sessions table with session_token as primary key and bug_reports column');
 
     // Step 3: Migrate data from old table if it exists
     try {

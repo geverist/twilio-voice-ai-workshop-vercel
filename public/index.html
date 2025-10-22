@@ -1153,8 +1153,17 @@
     let step6CodeTested = false;
     let step6Deployed = false;
     let conversationRelayCreated = false;
+
+    // Progressive reveal flags for Step 7 (Prompt Engineering)
+    let systemPromptSaved = false;
     let promptEngineeringComplete = false;
+
+    // Progressive reveal flags for Step 8 (Tools & Functions)
+    let step8CodeValidated = false;
+    let step8Deployed = false;
     let toolsConfigured = false;
+
+    // Progressive reveal flags for Step 9 (Final Deployment)
     let projectDeployed = false;
     let aiCallTested = false;
 
@@ -1239,13 +1248,24 @@
         deployedServiceSid,
         ttsProvider,
         conversationRelayVoice,
+        // Deployment flags
         step4Committed,
         step4Deployed,
+        step4CodeValidated,  // ✅ ADDED
         step5Committed,
         step5Deployed,
+        step5CodeValidated,  // ✅ ADDED
         step6Committed,
         step6Deployed,
+        step6CodeValidated,  // ✅ ADDED
+        step7Committed,      // ✅ ADDED (was missing!)
+        step7Deployed,       // ✅ ADDED (was missing!)
+        systemPromptSaved,   // ✅ ADDED
         step8Committed,
+        step8Deployed,       // ✅ ADDED
+        step8CodeValidated,  // ✅ ADDED
+        toolsConfigured,     // ✅ ADDED
+        projectDeployed,     // ✅ ADDED
         deployedEnvironmentSid,
         deployedBuildSid,
         studentRepoName,
@@ -1279,15 +1299,15 @@
       try {
         // Determine completion status for each step based on validation flags
         const stepCompletionStatus = {
-          1: twilioConnected && openaiConnected, // Step 1: Connect accounts
-          2: callDirectionChosen, // Step 2: Choose use case
-          3: selectedPhoneNumber && servicesReady, // Step 3: Provision services
-          4: step4CodeValidated && step4Deployed, // Step 4: Basic TwiML
-          5: step5CodeValidated && step5Deployed, // Step 5: WebSocket handler
-          6: step6CodeValidated && step6Deployed, // Step 6: ConversationRelay
-          7: false, // Step 7: AI Tools (add when implemented)
-          8: step8Committed, // Step 8: Test full call
-          9: false // Step 9: Multichannel (add when implemented)
+          1: twilioConnected && openaiConnected,                    // Step 1: Connect accounts
+          2: callDirectionChosen && useCaseDescription?.trim(),     // Step 2: Choose use case + description (✅ FIXED)
+          3: selectedPhoneNumber && servicesReady,                  // Step 3: Provision services
+          4: step4CodeValidated && step4Deployed,                   // Step 4: Basic TwiML
+          5: step5CodeValidated && step5Deployed,                   // Step 5: WebSocket handler
+          6: step6CodeValidated && step6Deployed,                   // Step 6: ConversationRelay
+          7: systemPromptSaved && step7Deployed,                    // Step 7: Custom AI Prompt (✅ FIXED)
+          8: step8CodeValidated && step8Deployed,                   // Step 8: Tools & Functions (✅ FIXED)
+          9: projectDeployed                                        // Step 9: Final Deployment (✅ FIXED)
         };
 
         // Map steps to exercise IDs
@@ -1600,11 +1620,21 @@
       conversationRelayVoice = progress.conversationRelayVoice || null;
       step4Committed = progress.step4Committed || false;
       step4Deployed = progress.step4Deployed || false;
+      step4CodeValidated = progress.step4CodeValidated || false;  // ✅ ADDED
       step5Committed = progress.step5Committed || false;
       step5Deployed = progress.step5Deployed || false;
+      step5CodeValidated = progress.step5CodeValidated || false;  // ✅ ADDED
       step6Committed = progress.step6Committed || false;
       step6Deployed = progress.step6Deployed || false;
+      step6CodeValidated = progress.step6CodeValidated || false;  // ✅ ADDED
+      step7Committed = progress.step7Committed || false;          // ✅ ADDED
+      step7Deployed = progress.step7Deployed || false;            // ✅ ADDED
+      systemPromptSaved = progress.systemPromptSaved || false;    // ✅ ADDED
       step8Committed = progress.step8Committed || false;
+      step8Deployed = progress.step8Deployed || false;            // ✅ ADDED
+      step8CodeValidated = progress.step8CodeValidated || false;  // ✅ ADDED
+      toolsConfigured = progress.toolsConfigured || false;        // ✅ ADDED
+      projectDeployed = progress.projectDeployed || false;        // ✅ ADDED
       deployedEnvironmentSid = progress.deployedEnvironmentSid || null;
       deployedBuildSid = progress.deployedBuildSid || null;
       studentRepoName = progress.studentRepoName || null;
@@ -1693,16 +1723,54 @@
         if (nextBtn4) nextBtn4.disabled = false;
       }
 
-      // Step 6: Enable next button if WebSocket is built
+      // Step 5: Enable next button if WebSocket is built  (✅ ADDED)
       if (websocketBuilt) {
+        const nextBtn5 = document.getElementById('nextBtn5');
+        if (nextBtn5) {
+          nextBtn5.disabled = false;
+          if (currentStep === 4) {
+            nextBtn5.classList.add('next-action');
+          }
+        }
+      }
+
+      // Step 6: Enable next button if ConversationRelay is created
+      if (conversationRelayCreated) {
         const nextBtn6 = document.getElementById('nextBtn6');
         if (nextBtn6) nextBtn6.disabled = false;
       }
 
-      // Step 8: Enable next button if ConversationRelay is created
-      if (conversationRelayCreated) {
+      // Step 7: Enable next button if system prompt is saved  (✅ ADDED)
+      if (systemPromptSaved) {
+        const nextBtn7 = document.getElementById('nextBtn7');
+        if (nextBtn7) {
+          nextBtn7.disabled = false;
+          if (currentStep === 6) {
+            nextBtn7.classList.add('next-action');
+          }
+        }
+      }
+
+      // Step 8: Enable next button if tools are configured  (✅ ADDED)
+      if (toolsConfigured) {
         const nextBtn8 = document.getElementById('nextBtn8');
-        if (nextBtn8) nextBtn8.disabled = false;
+        if (nextBtn8) {
+          nextBtn8.disabled = false;
+          if (currentStep === 7) {
+            nextBtn8.classList.add('next-action');
+          }
+        }
+      }
+
+      // Step 9: Enable next button if project is deployed  (✅ ADDED)
+      if (projectDeployed) {
+        const nextBtn9 = document.getElementById('nextBtn9');
+        if (nextBtn9) {
+          nextBtn9.disabled = false;
+          if (currentStep === 8) {
+            nextBtn9.classList.add('next-action');
+          }
+        }
       }
     }
 
@@ -12751,6 +12819,22 @@ app.get('/health', (req, res) => {
             return { canProceed: false, message: 'Please create and validate your ConversationRelay TwiML!' };
           }
           break;
+
+        case 6: // Step 7: Custom AI Prompt
+          if (!systemPromptSaved && !studentDemoMode) {
+            return { canProceed: false, message: 'Please save your custom AI prompt before proceeding!' };
+          }
+          break;
+
+        case 7: // Step 8: Tools & Functions
+          if (!toolsConfigured && !studentDemoMode) {
+            return { canProceed: false, message: 'Please validate and configure your tools before proceeding!' };
+          }
+          break;
+
+        case 8: // Step 9: Final Deployment
+          // No prerequisite - this is the final deployment step
+          break;
       }
 
       return { canProceed: true };
@@ -14209,13 +14293,12 @@ app.get('/health', (req, res) => {
     // Check for OAuth callback on page load
     window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const session = urlParams.get('session');
+      const oauthSession = urlParams.get('session');
       const authSuccess = urlParams.get('auth');
 
-      if (session && authSuccess === 'success') {
-        // Store session token
-        sessionStorage.setItem('twilioSession', session);
-        sessionToken = session;
+      if (oauthSession && authSuccess === 'success') {
+        // Store OAuth session token (separate from workshop sessionToken)
+        sessionStorage.setItem('twilioOAuthSession', oauthSession);
 
         // Clean URL
         window.history.replaceState({}, '', window.location.pathname);
@@ -14223,9 +14306,9 @@ app.get('/health', (req, res) => {
         // Check auth status
         checkOAuthStatus();
       } else {
-        // Check for existing session
-        sessionToken = sessionStorage.getItem('twilioSession');
-        if (sessionToken) {
+        // Check for existing OAuth session
+        const existingOAuthSession = sessionStorage.getItem('twilioOAuthSession');
+        if (existingOAuthSession) {
           checkOAuthStatus();
         }
       }
@@ -14263,12 +14346,17 @@ app.get('/health', (req, res) => {
     // Check OAuth authentication status
     async function checkOAuthStatus() {
       try {
+        const oauthSession = sessionStorage.getItem('twilioOAuthSession');
+        if (!oauthSession) {
+          return; // No OAuth session to check
+        }
+
         const response = await fetch('/tutorial-oauth-login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'checkAuthStatus',
-            sessionToken: sessionToken
+            sessionToken: oauthSession  // Use OAuth session, not workshop session
           })
         });
 
@@ -14283,7 +14371,7 @@ app.get('/health', (req, res) => {
           // Mark as connected
           twilioConnected = true;
           twilioCredentials = {
-            sessionToken: sessionToken,
+            oauthSession: oauthSession,  // Store OAuth session separately
             accountFriendlyName: data.accountInfo?.friendlyName
           };
 
@@ -14291,40 +14379,37 @@ app.get('/health', (req, res) => {
           checkStep1Complete();
 
         } else {
-          // Clear invalid session
-          sessionStorage.removeItem('twilioSession');
-          localStorage.removeItem('sessionToken');
-          sessionToken = null;
+          // Clear invalid OAuth session
+          sessionStorage.removeItem('twilioOAuthSession');
           document.getElementById('oauthStatus').style.display = 'none';
         }
 
       } catch (error) {
         console.error('Auth check error:', error);
-        sessionStorage.removeItem('twilioSession');
-        localStorage.removeItem('sessionToken');
-        sessionToken = null;
+        sessionStorage.removeItem('twilioOAuthSession');
       }
     }
 
     // Logout from OAuth
     async function logoutOAuth() {
       try {
-        await fetch('/tutorial-oauth-login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'logout',
-            sessionToken: sessionToken
-          })
-        });
+        const oauthSession = sessionStorage.getItem('twilioOAuthSession');
+        if (oauthSession) {
+          await fetch('/tutorial-oauth-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'logout',
+              sessionToken: oauthSession  // Use OAuth session
+            })
+          });
+        }
 
       } catch (error) {
         console.error('Logout error:', error);
       } finally {
-        // Clear local session
-        sessionStorage.removeItem('twilioSession');
-        localStorage.removeItem('sessionToken');
-        sessionToken = null;
+        // Clear OAuth session (NOT workshop session)
+        sessionStorage.removeItem('twilioOAuthSession');
         twilioConnected = false;
         twilioCredentials = null;
 
@@ -15938,11 +16023,11 @@ app.get('/health', (req, res) => {
     async function deploySharedWebSocket() {
       const btn = document.getElementById('deployCodespaceBtn');
 
-      // Ensure valid session token
+      // Validate session token exists (should already be generated in init())
       if (!sessionToken || sessionToken === 'null' || sessionToken === 'undefined') {
-        sessionToken = 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('sessionToken', sessionToken);
-        console.log('Generated session token in deploySharedWebSocket:', sessionToken);
+        console.error('⚠️ Session token missing in deploySharedWebSocket! This should not happen.');
+        showStatus('codespaceDeployStatus', 'error', '❌ Session error. Please refresh the page.');
+        return;
       }
 
       // Demo mode simulation
