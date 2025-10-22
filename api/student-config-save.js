@@ -8,11 +8,11 @@
 import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
 // import { applyRateLimit } from './_lib/ratelimit.js'; // Temporarily disabled - causing function crashes
-import {
-  validateRequired,
-  validateString,
-  handleValidationError
-} from './_lib/validation.js';
+// import {
+//   validateRequired,
+//   validateString,
+//   handleValidationError
+// } from './_lib/validation.js'; // Temporarily disabled - causing function crashes
 
 // Create postgres connection
 const sql = process.env.POSTGRES_URL ? postgres(process.env.POSTGRES_URL, {
@@ -67,16 +67,19 @@ export default async function handler(req, res) {
       railwayUrl
     } = req.body;
 
-    // Input validation
-    try {
-      validateRequired(req.body, ['sessionToken']);
-      validateString(sessionToken, 'sessionToken', { minLength: 10, maxLength: 200 });
+    // Input validation (simplified - validation library disabled)
+    if (!sessionToken || sessionToken.length < 10 || sessionToken.length > 200) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid sessionToken: must be between 10 and 200 characters'
+      });
+    }
 
-      if (systemPrompt) {
-        validateString(systemPrompt, 'systemPrompt', { minLength: 1, maxLength: 5000 });
-      }
-    } catch (validationError) {
-      return handleValidationError(validationError, res);
+    if (systemPrompt && systemPrompt.length > 5000) {
+      return res.status(400).json({
+        success: false,
+        error: 'systemPrompt too long: maximum 5000 characters'
+      });
     }
 
     console.log(`💾 Saving config for session: ${sessionToken.substring(0, 8)}...`);
