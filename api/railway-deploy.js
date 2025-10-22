@@ -50,31 +50,29 @@ export default async function handler(req, res) {
 
     console.log(`Deploying ${repoFullName} to Railway...`);
 
-    // Step 1: Create Railway project
-    const project = await createRailwayProject(railwayToken, repoFullName);
+    // Step 1: Create Railway project with environment
+    const { project, environment } = await createRailwayProject(railwayToken, repoFullName);
     console.log(`✓ Created Railway project: ${project.id}`);
 
-    // Step 2: Connect GitHub repository
-    await connectGitHubRepo(railwayToken, project.id, repoFullName);
-    console.log(`✓ Connected GitHub repository`);
-
-    // Step 3: Set environment variables
+    // Step 2: Create service with GitHub repo and environment variables
     const envVars = {};
     if (openaiApiKey) {
       envVars.OPENAI_API_KEY = openaiApiKey;
     }
 
-    await setEnvironmentVariables(railwayToken, project.id, envVars);
-    console.log(`✓ Set environment variables`);
-
-    // Step 4: Trigger initial deployment
-    const deployment = await triggerDeployment(railwayToken, project.id);
-    console.log(`✓ Deployment triggered: ${deployment.id}`);
+    const service = await createServiceWithRepo(
+      railwayToken,
+      project.id,
+      environment.id,
+      repoFullName,
+      envVars
+    );
+    console.log(`✓ Created service with GitHub repo: ${service.id}`);
 
     return res.status(200).json({
       success: true,
       projectId: project.id,
-      deploymentId: deployment.id,
+      serviceId: service.id,
       message: 'Railway deployment initiated. Checking status...'
     });
 
@@ -88,7 +86,7 @@ export default async function handler(req, res) {
 }
 
 /**
- * Create a Railway project using GraphQL API
+ * Create a Railway project and get the default environment
  */
 async function createRailwayProject(token, repoFullName) {
   const projectName = repoFullName.split('/')[1]; // Extract repo name
@@ -105,6 +103,14 @@ async function createRailwayProject(token, repoFullName) {
           projectCreate(input: { name: $name }) {
             id
             name
+            environments {
+              edges {
+                node {
+                  id
+                  name
+                }
+              }
+            }
           }
         }
       `,
@@ -125,15 +131,16 @@ async function createRailwayProject(token, repoFullName) {
     throw new Error(`GraphQL error: ${JSON.stringify(data.errors)}`);
   }
 
-  return data.data.projectCreate;
+  const project = data.data.projectCreate;
+  const environment = project.environments.edges[0].node; // Get default "production" environment
+
+  return { project, environment };
 }
 
 /**
- * Connect GitHub repository to Railway project
+ * Create a service with GitHub repo in one call
  */
-async function connectGitHubRepo(token, projectId, repoFullName) {
-  const [owner, repo] = repoFullName.split('/');
-
+async function createServiceWithRepo(token, projectId, environmentId, repoFullName, envVars) {
   const response = await fetch('https://backboard.railway.app/graphql/v2', {
     method: 'POST',
     headers: {
@@ -142,27 +149,37 @@ async function connectGitHubRepo(token, projectId, repoFullName) {
     },
     body: JSON.stringify({
       query: `
-        mutation ServiceConnect($projectId: String!, $repo: String!) {
-          serviceConnect(input: {
+        mutation ServiceCreate(
+          $projectId: String!,
+          $environmentId: String!,
+          $repo: String!,
+          $variables: EnvironmentVariables
+        ) {
+          serviceCreate(input: {
             projectId: $projectId,
+            environmentId: $environmentId,
             source: {
               repo: $repo
-            }
+            },
+            variables: $variables
           }) {
             id
+            name
           }
         }
       `,
       variables: {
         projectId: projectId,
-        repo: repoFullName
+        environmentId: environmentId,
+        repo: repoFullName,
+        variables: envVars
       }
     })
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Failed to connect GitHub repo: ${errorText}`);
+    throw new Error(`Failed to create service: ${errorText}`);
   }
 
   const data = await response.json();
@@ -171,81 +188,5 @@ async function connectGitHubRepo(token, projectId, repoFullName) {
     throw new Error(`GraphQL error: ${JSON.stringify(data.errors)}`);
   }
 
-  return data.data.serviceConnect;
-}
-
-/**
- * Set environment variables for Railway service
- */
-async function setEnvironmentVariables(token, projectId, envVars) {
-  // Get the service ID first
-  const serviceResponse = await fetch('https://backboard.railway.app/graphql/v2', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      query: `
-        query Project($id: String!) {
-          project(id: $id) {
-            services {
-              edges {
-                node {
-                  id
-                }
-              }
-            }
-          }
-        }
-      `,
-      variables: {
-        id: projectId
-      }
-    })
-  });
-
-  const serviceData = await serviceResponse.json();
-  const serviceId = serviceData.data.project.services.edges[0].node.id;
-
-  // Set each environment variable
-  for (const [key, value] of Object.entries(envVars)) {
-    const response = await fetch('https://backboard.railway.app/graphql/v2', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        query: `
-          mutation VariableUpsert($serviceId: String!, $name: String!, $value: String!) {
-            variableUpsert(input: {
-              serviceId: $serviceId,
-              name: $name,
-              value: $value
-            })
-          }
-        `,
-        variables: {
-          serviceId: serviceId,
-          name: key,
-          value: value
-        }
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to set environment variable ${key}: ${errorText}`);
-    }
-  }
-}
-
-/**
- * Trigger a deployment
- */
-async function triggerDeployment(token, projectId) {
-  // Railway automatically deploys when you connect a repo
-  // This function is a placeholder for future manual trigger needs
-  return { id: 'auto-deployment' };
+  return data.data.serviceCreate;
 }
