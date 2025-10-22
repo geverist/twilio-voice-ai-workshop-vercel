@@ -1125,8 +1125,8 @@
 
     // State
     let currentStep = 0;
-    let twilioConnected = false;
-    let openaiConnected = false;
+    let setState("twilioConnected", false);
+    let setState("openaiConnected", false);
     let callDirectionChosen = false;
     let callDirection = ''; // 'outbound' or 'inbound'
     let useCaseDescription = ''; // User's custom use case description
@@ -1750,8 +1750,8 @@
 
       // In demo mode, auto-connect all accounts with demo credentials
       if (isDemoMode) {
-        twilioConnected = true;
-        openaiConnected = true;
+        setState("twilioConnected", true);
+        setState("openaiConnected", true);
         githubToken = 'demo_token';
         githubUsername = 'demo_user';
         twilioCredentials = {
@@ -2064,8 +2064,8 @@
       currentStep = 0;
       studentDemoMode = false;
       studentName = '';
-      twilioConnected = false;
-      openaiConnected = false;
+      setState("twilioConnected", false);
+      setState("openaiConnected", false);
       githubToken = null;
       githubUsername = null;
       twilioCredentials = null;
@@ -2340,7 +2340,7 @@
         // Auto-populate credentials from setup wizard
         if (setupData.credentials) {
           twilioCredentials = setupData.credentials;
-          twilioConnected = true;
+          setState("twilioConnected", true);
           selectedPhoneNumber = setupData.phoneNumber;
 
           // Show success message
@@ -3016,7 +3016,7 @@
                     📝 Using demo API key - AI responses are simulated.
                   </p>
                 ` : ''}
-                <button class="btn" style="padding: 8px 16px; font-size: 13px; background: white; color: #666; border: 1px solid #ddd;" onclick="openaiConnected = false; openaiApiKey = null; renderStepContent();">
+                <button class="btn" style="padding: 8px 16px; font-size: 13px; background: white; color: #666; border: 1px solid #ddd;" onclick="setState("openaiConnected", false); openaiApiKey = null; renderStepContent();">
                   🔄 Change API Key
                 </button>
               </div>
@@ -3108,7 +3108,7 @@
 
         if (data.success) {
           twilioCredentials = { accountSid, authToken };
-          twilioConnected = true;
+          setState("twilioConnected", true);
 
           status.innerHTML = `<span class="live-indicator"></span> Connected: ${data.account.friendlyName}`;
           status.style.background = '#d4edda';
@@ -3181,7 +3181,7 @@
 
         if (data.success) {
           twilioCredentials = { accountSid, authToken: apiKeySecret, apiKey: apiKeySid };
-          twilioConnected = true;
+          setState("twilioConnected", true);
 
           status.innerHTML = `<span class="live-indicator"></span> Connected with API Key: ${data.account.friendlyName}`;
           status.style.background = '#d4edda';
@@ -3218,7 +3218,7 @@
         authToken: 'demo_token',
         demoMode: true
       };
-      twilioConnected = true;
+      setState("twilioConnected", true);
 
       // Show demo mode banner
       updateDemoModeBanner();
@@ -3247,7 +3247,7 @@
         status.style.color = '#856404';
 
         openaiApiKey = apiKey;
-        openaiConnected = true;
+        setState("openaiConnected", true);
 
         showStatus('step1Status', 'success', '✅ OpenAI Demo Mode activated! API calls will be simulated.');
         saveProgressToStorage();
@@ -3290,7 +3290,7 @@
 
       // Store API key after format validation
       openaiApiKey = apiKey;
-      openaiConnected = true;
+      setState("openaiConnected", true);
 
       status.innerHTML = '<span class="live-indicator"></span> Connected';
       status.style.background = '#d4edda';
@@ -14564,7 +14564,7 @@ app.get('/health', (req, res) => {
             data.accountInfo ? data.accountInfo.friendlyName : 'Connected Account';
 
           // Mark as connected
-          twilioConnected = true;
+          setState("twilioConnected", true);
           twilioCredentials = {
             oauthSession: oauthSession,  // Store OAuth session separately
             accountFriendlyName: data.accountInfo?.friendlyName
@@ -14605,7 +14605,7 @@ app.get('/health', (req, res) => {
       } finally {
         // Clear OAuth session (NOT workshop session)
         sessionStorage.removeItem('twilioOAuthSession');
-        twilioConnected = false;
+        setState("twilioConnected", false);
         twilioCredentials = null;
 
         // Hide auth status
@@ -14634,8 +14634,8 @@ app.get('/health', (req, res) => {
       if (confirm('Exit Demo Mode?\n\nThis will reset all progress and return you to Step 1. Are you sure?')) {
         // Clear all connection state
         twilioCredentials = null;
-        twilioConnected = false;
-        openaiConnected = false;
+        setState("twilioConnected", false);
+        setState("openaiConnected", false);
         openaiApiKey = null;
         githubToken = null;
         githubUsername = null;
