@@ -1739,6 +1739,12 @@
         if (nextBtn4) nextBtn4.disabled = false;
       }
 
+      // Step 4: Add next-action to validate button if not yet validated and on step 4
+      if (currentStep === 3 && !step4CodeValidated) {
+        const validateBtn4 = document.querySelector('[onclick="validateCode4()"]');
+        if (validateBtn4) validateBtn4.classList.add('next-action');
+      }
+
       // Step 5: Enable next button if WebSocket is built  (✅ ADDED)
       if (websocketBuilt) {
         const nextBtn5 = document.getElementById('nextBtn5');
@@ -1750,10 +1756,22 @@
         }
       }
 
+      // Step 5: Add next-action to validate button if not yet validated and on step 5
+      if (currentStep === 4 && !step5CodeValidated) {
+        const validateBtn5 = document.querySelector('[onclick="validateCode7()"]');
+        if (validateBtn5) validateBtn5.classList.add('next-action');
+      }
+
       // Step 6: Enable next button if ConversationRelay is created
       if (conversationRelayCreated) {
         const nextBtn6 = document.getElementById('nextBtn6');
         if (nextBtn6) nextBtn6.disabled = false;
+      }
+
+      // Step 6: Add next-action to validate button if not yet validated and on step 6
+      if (currentStep === 5 && !step6CodeValidated) {
+        const validateBtn6 = document.querySelector('[onclick="validateCode8()"]');
+        if (validateBtn6) validateBtn6.classList.add('next-action');
       }
 
       // Step 7: Enable next button if system prompt is saved  (✅ ADDED)
@@ -1776,6 +1794,12 @@
             nextBtn8.classList.add('next-action');
           }
         }
+      }
+
+      // Step 8: Add next-action to validate button if not yet validated and on step 8
+      if (currentStep === 7 && !toolsConfigured) {
+        const validateBtn8 = document.querySelector('[onclick="validateCode9()"]');
+        if (validateBtn8) validateBtn8.classList.add('next-action');
       }
 
       // Step 9: Enable next button if project is deployed  (✅ ADDED)
