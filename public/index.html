@@ -1549,21 +1549,25 @@
     }
 
     function restoreButtonStates() {
-      // Step 1: Enable next button if Twilio is connected
-      if (twilioConnected) {
+      // Step 1: Enable next button if both Twilio and OpenAI are connected
+      if (currentStep === 0 && twilioConnected && openaiConnected) {
         const nextBtn1 = document.getElementById('nextBtn1');
         if (nextBtn1) {
           nextBtn1.disabled = false;
-          showStatus('step1Status', 'success', '🎉 Twilio connected! Click Next to continue.');
+          nextBtn1.classList.add('next-action');
+          showStatus('step1Status', 'success', '🎉 All accounts connected! Click Next to continue.');
         }
       }
 
-      // Step 2: Enable next button if call direction is chosen
+      // Step 2: Enable next button if call direction is chosen (only add next-action if on Step 2)
       if (callDirectionChosen) {
         const nextBtn2 = document.getElementById('nextBtn2');
         if (nextBtn2) {
           nextBtn2.disabled = false;
-          nextBtn2.classList.add('next-action');
+          // Only add next-action if we're currently on Step 2
+          if (currentStep === 1) {
+            nextBtn2.classList.add('next-action');
+          }
           const directionText = callDirection === 'outbound' ? 'outbound calls (you call them)' : 'inbound calls (they call you)';
           showStatus('step2Status', 'success', `✅ Great! You'll build a bot for ${directionText}.`);
         }
