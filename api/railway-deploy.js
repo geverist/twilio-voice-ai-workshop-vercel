@@ -1,8 +1,8 @@
 /**
  * Railway Deployment API
  *
- * Creates a Railway deployment from the student's GitHub repository.
- * Uses Railway's "Deploy from GitHub" template system.
+ * Generates a Railway deployment URL for the student's GitHub repository.
+ * Railway handles OAuth and deployment automatically.
  */
 
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { repoFullName, sessionToken } = req.body;
+    const { repoFullName, githubUsername, repoName } = req.body;
 
     // Input validation
     try {
@@ -43,53 +43,37 @@ export default async function handler(req, res) {
         maxLength: 200,
         pattern: /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+$/
       });
-
-      if (sessionToken) {
-        validateString(sessionToken, 'sessionToken', { minLength: 10, maxLength: 100 });
-      }
     } catch (validationError) {
       return handleValidationError(validationError, res);
     }
 
-    console.log(`Creating Railway deployment for ${repoFullName}...`);
+    console.log(`Creating Railway deployment URL for ${repoFullName}...`);
 
-    // Railway's "New Project from GitHub Repo" URL
-    // This opens Railway's deployment flow in a new window
-    // Student authenticates with GitHub OAuth (handled by Railway)
-    // Railway auto-deploys and student returns with the URL
+    // Railway "Deploy from GitHub" URL format
+    // This opens Railway with the repo pre-selected for deployment
+    const railwayDeployUrl = `https://railway.app/new/github?repo=${encodeURIComponent(repoFullName)}`;
 
-    const githubRepoUrl = `https://github.com/${repoFullName}`;
-
-    // Railway's direct deploy URL format
-    // Opens Railway with the repo pre-selected for deployment
-    const railwayDeployUrl = `https://railway.app/new?plugins=gh:${repoFullName}`;
-
-    // Backup: Manual project creation URL
-    const railwayNewProjectUrl = `https://railway.app/new`;
+    // Alternative: Template-based deployment (if we configure a template)
+    // const railwayTemplateUrl = `https://railway.app/template/${templateId}`;
 
     return res.status(200).json({
       success: true,
-      message: 'Railway deployment ready',
       deployUrl: railwayDeployUrl,
-      manualUrl: railwayNewProjectUrl,
-      repoUrl: githubRepoUrl,
       repoFullName: repoFullName,
-      flow: {
-        step1: 'Opens Railway in new window',
-        step2: 'Authenticates with GitHub (OAuth)',
-        step3: 'Deploys repository automatically',
-        step4: 'Student copies WebSocket URL',
-        step5: 'Returns to workshop and continues'
-      },
-      expectedDeploymentTime: '60-90 seconds',
-      note: 'Student will be prompted to create free Railway account if first time'
+      message: 'Railway deployment URL generated',
+      instructions: {
+        step1: 'Click the Deploy URL to open Railway',
+        step2: 'Authenticate with GitHub (if not already)',
+        step3: 'Railway will auto-deploy your repository',
+        step4: 'Copy the deployment URL when ready'
+      }
     });
 
   } catch (error) {
-    console.error('Railway deployment error:', error);
+    console.error('Railway deployment URL error:', error);
     return res.status(500).json({
       success: false,
-      error: error.message || 'Failed to create Railway deployment'
+      error: error.message || 'Failed to generate Railway deployment URL'
     });
   }
 }
