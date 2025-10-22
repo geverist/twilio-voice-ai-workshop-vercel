@@ -14880,7 +14880,6 @@ twilio serverless:deploy
                   console.error('WebSocket server health check failed after timeout');
                 }
               } // End of catch(wsError)
-            } // End of if (state === 'Available')
 
           } else if (state === 'Starting' || state === 'Created' || state === 'Provisioning') {
             // Still starting, continue polling
