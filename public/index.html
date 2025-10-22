@@ -5661,6 +5661,7 @@ Expected: ${scenario.expected}</div>`;
         try {
           showStatus('promptEngineeringStatus', 'info', '💾 Saving your AI configuration...');
 
+          // Save to database
           const response = await fetch('/api/student-config-save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -5684,6 +5685,30 @@ Expected: ${scenario.expected}</div>`;
             showStatus('promptEngineeringStatus', 'warning', '⚠️ Config saved locally, but server sync failed. Your WebSocket will still work!');
           } else {
             console.log('✅ Student config saved to database');
+          }
+
+          // Also update their GitHub repo with the system prompt
+          if (githubToken && githubUsername && studentRepoName) {
+            showStatus('promptEngineeringStatus', 'info', '📦 Updating your GitHub code...');
+
+            const updateResponse = await fetch('/api/github-update-prompt', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                githubToken: githubToken,
+                githubUsername: githubUsername,
+                repoName: studentRepoName,
+                systemPrompt: customSystemPrompt
+              })
+            });
+
+            const updateData = await updateResponse.json();
+
+            if (updateData.success) {
+              console.log('✅ GitHub repo updated with system prompt');
+            } else {
+              console.warn('⚠️ GitHub update failed:', updateData.error);
+            }
           }
         } catch (error) {
           console.error('Error saving config:', error);
