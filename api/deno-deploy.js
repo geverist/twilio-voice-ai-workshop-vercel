@@ -201,10 +201,13 @@ async function fetchGitHubRepoFiles(token, repoFullName) {
     if (blobResponse.ok) {
       const blobData = await blobResponse.json();
 
-      // Deno supports base64 or utf-8 encoding
+      // GitHub returns base64 with newlines - need to clean it
+      // Deno expects clean base64 without newlines
+      const cleanBase64 = blobData.content.replace(/\n/g, '');
+
       assets[item.path] = {
         kind: 'file',
-        content: blobData.content, // GitHub returns base64
+        content: cleanBase64,
         encoding: 'base64'
       };
     }
