@@ -1727,12 +1727,12 @@
 
       // Save name and email if provided (both are optional now)
       if (name) {
-        studentName = name;
+        setState("studentName", name);
         localStorage.setItem('studentName', name);
       }
 
       if (email) {
-        studentEmail = email;
+        setState("studentEmail", email);
         localStorage.setItem('studentEmail', email);
       }
 
@@ -2063,7 +2063,7 @@
       // Reset all state variables to initial values
       currentStep = 0;
       studentDemoMode = false;
-      studentName = '';
+      setState("studentName", '');
       setState("twilioConnected", false);
       setState("openaiConnected", false);
       githubToken = null;
@@ -2283,7 +2283,7 @@
       // Generate or restore session token (used for identifying student across workshop)
       if (!sessionToken || sessionToken === 'null' || sessionToken === 'undefined') {
         // Generate a unique session token
-        sessionToken = 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+        setState("sessionToken", 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
         localStorage.setItem('sessionToken', sessionToken);
         console.log('Generated new session token:', sessionToken);
       }
