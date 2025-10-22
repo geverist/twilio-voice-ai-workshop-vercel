@@ -42,7 +42,9 @@ export default async function handler(req, res) {
       timestamp,
       pageUrl,
       callDirection,
-      deploymentStatus
+      deploymentStatus,
+      sessionToken,
+      studentEmail
     } = req.body;
 
     // Validate required fields
@@ -57,6 +59,8 @@ export default async function handler(req, res) {
     console.log('==================== WORKSHOP BUG REPORT ====================');
     console.log('Timestamp:', timestamp);
     console.log('User:', userName || 'Anonymous');
+    console.log('Email:', studentEmail || 'Not provided');
+    console.log('Session:', sessionToken ? sessionToken.substring(0, 16) + '...' : 'Not provided');
     console.log('Step:', step);
     console.log('Page URL:', pageUrl);
     console.log('Call Direction:', callDirection);
@@ -166,6 +170,8 @@ export default async function handler(req, res) {
   <div class="content">
     <div class="meta">
       <strong>⏰ Timestamp:</strong> ${new Date(timestamp).toLocaleString()}<br>
+      ${studentEmail ? `<strong>📧 Student Email:</strong> ${studentEmail}<br>` : ''}
+      ${sessionToken ? `<strong>🔑 Session:</strong> ${sessionToken.substring(0, 20)}...<br>` : ''}
       <strong>📍 Step:</strong> ${step}<br>
       <strong>🔗 Page URL:</strong> <a href="${pageUrl}">${pageUrl}</a><br>
       <strong>📞 Call Direction:</strong> ${callDirection}
@@ -213,6 +219,8 @@ export default async function handler(req, res) {
 🐛 WORKSHOP BUG REPORT
 
 Submitted by: ${userName || 'Anonymous Student'}
+${studentEmail ? `Email: ${studentEmail}` : ''}
+${sessionToken ? `Session: ${sessionToken.substring(0, 20)}...` : ''}
 Timestamp: ${new Date(timestamp).toLocaleString()}
 Step: ${step}
 Page URL: ${pageUrl}
