@@ -1314,12 +1314,79 @@
 
     // Sync current state to database
     async function syncToDatabase() {
-      if (!sessionToken) return;
+      if (!sessionToken) {
+        console.log('⚠️ No sessionToken - skipping database sync');
+        return;
+      }
 
-      console.log('🔄 Syncing state to database...');
+      console.log('🔄 Syncing state to database for session:', sessionToken);
 
-      // Use existing saveStudentProgress function
-      await saveStudentProgress();
+      try {
+        const payload = {
+          sessionToken: sessionToken,
+          studentEmail: studentEmail,
+          studentName: studentName,
+
+          // Step states
+          currentStep: currentStep,
+          twilioConnected: twilioConnected,
+          openaiConnected: openaiConnected,
+          callDirection: callDirection,
+          useCaseDescription: useCaseDescription,
+          selectedPhoneNumber: selectedPhoneNumber,
+          servicesReady: servicesReady,
+
+          // Step 4 state
+          step4CodeValidated: step4CodeValidated,
+          step4Committed: step4Committed,
+          step4Deployed: step4Deployed,
+
+          // Step 5 state
+          step5CodeValidated: step5CodeValidated,
+          step5Committed: step5Committed,
+          step5Deployed: step5Deployed,
+
+          // Step 6 state
+          step6CodeValidated: step6CodeValidated,
+          step6Committed: step6Committed,
+          step6Deployed: step6Deployed,
+
+          // Step 7 state
+          systemPromptSaved: systemPromptSaved,
+          step7Committed: step7Committed,
+          step7Deployed: step7Deployed,
+
+          // Step 8 state
+          toolsConfigured: toolsConfigured,
+          step8CodeValidated: step8CodeValidated,
+          step8Committed: step8Committed,
+          step8Deployed: step8Deployed,
+
+          // Step 9 state
+          projectDeployed: projectDeployed,
+
+          // Configuration data
+          openaiApiKey: openaiApiKey,
+          ttsProvider: ttsProvider,
+          conversationRelayVoice: conversationRelayVoice
+        };
+
+        const response = await fetch('/api/student-config-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log('✅ State synced to database for session:', sessionToken);
+        } else {
+          console.warn('⚠️ Database sync failed:', data.error);
+        }
+      } catch (error) {
+        console.error('❌ Database sync error:', error);
+      }
     }
 
     // Step completion conditions
