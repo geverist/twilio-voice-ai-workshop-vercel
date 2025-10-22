@@ -14646,6 +14646,7 @@ twilio serverless:deploy
       const maxAttempts = 40; // 40 attempts = up to 3.3 minutes max (extra time for server startup)
       let attempts = 0;
       let healthCheckAttempts = 0;
+      let portFixAttempted = false; // Track if we've tried fixing the port
 
       const poll = async () => {
         attempts++;
@@ -14760,6 +14761,47 @@ twilio serverless:deploy
                 return; // Exit polling
               } catch (wsError) {
                 console.log(`WebSocket test failed:`, wsError.message);
+
+                // Auto-fix attempt: If WebSocket fails and we haven't tried fixing yet
+                if (!portFixAttempted && healthCheckAttempts >= 3) {
+                  portFixAttempted = true;
+                  console.log('🔧 Attempting automatic port fix...');
+
+                  showStatus('codespaceDeployStatus', 'info',
+                    `🔧 WebSocket connection failed. Attempting automatic fix...<br>` +
+                    `<span style="font-size: 12px; opacity: 0.8;">Setting port 3000 to public visibility...</span>`
+                  );
+
+                  try {
+                    const fixResponse = await fetch('/api/github-fix-codespace-port', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        accessToken: githubToken,
+                        codespaceName: codespaceName
+                      })
+                    });
+
+                    const fixData = await fixResponse.json();
+
+                    if (fixData.success) {
+                      console.log('✅ Port fix applied successfully');
+                      showStatus('codespaceDeployStatus', 'success',
+                        `✅ Port visibility fixed! Testing connection again...<br>` +
+                        `<span style="font-size: 12px; opacity: 0.8;">Waiting 15 seconds for changes to take effect...</span>`
+                      );
+
+                      // Wait 15 seconds for port changes to propagate, then continue polling
+                      await new Promise(resolve => setTimeout(resolve, 15000));
+                      setTimeout(poll, 2000);
+                      return;
+                    } else {
+                      console.log('⚠️ Port fix failed:', fixData.error);
+                    }
+                  } catch (fixError) {
+                    console.log('⚠️ Port fix error:', fixError.message);
+                  }
+                }
               }
             }
 
@@ -14780,18 +14822,21 @@ twilio serverless:deploy
               }
 
               showStatus('codespaceDeployStatus', 'error',
-                `❌ WebSocket server is not reachable after 3 minutes.<br><br>` +
-                `<strong>The Codespace is running, but the WebSocket server isn't responding.</strong><br><br>` +
-                `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px;">` +
-                `<strong>Troubleshooting steps:</strong><br>` +
-                `1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc1ff;">Open the Codespace →</a><br>` +
-                `2. Check the terminal for errors<br>` +
-                `3. Look for <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 3px;">npm start</code> output<br>` +
-                `4. Verify server is running on port 3000<br>` +
-                `5. Run manually: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 3px;">bash .devcontainer/startup.sh</code><br>` +
-                `6. Wait 30 seconds, then click "Retry Launch" above<br>` +
-                `</div><br>` +
-                `<span style="font-size: 12px; opacity: 0.8;">Testing URL: ${codespaceUrl}</span>`
+                `❌ WebSocket connection is not working.<br><br>` +
+                `<strong>Don't worry - this is fixable!</strong><br><br>` +
+                `<button class="btn btn-primary" onclick="fixCodespaceConnection()" style="width: 100%; padding: 15px; font-size: 16px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); margin-bottom: 15px;">` +
+                `🔧 Fix Connection (One Click)` +
+                `</button>` +
+                `<details style="margin-top: 10px;">` +
+                `<summary style="cursor: pointer; color: rgba(255,255,255,0.7); font-size: 13px;">Advanced troubleshooting</summary>` +
+                `<div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 12px;">` +
+                `<strong>Manual steps:</strong><br>` +
+                `1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc1ff;">Open Codespace →</a><br>` +
+                `2. Go to PORTS tab (bottom panel)<br>` +
+                `3. Find port 3000, right-click → Port Visibility → Public<br>` +
+                `4. Come back and click "Fix Connection" above<br>` +
+                `</div>` +
+                `</details>`
               );
 
               // Do NOT set step5Deployed or websocketBuilt - block progression
@@ -14905,6 +14950,51 @@ twilio serverless:deploy
       setTimeout(() => {
         deployToCodespaces();
       }, 500);
+    }
+
+    /**
+     * Fix Codespace WebSocket Connection
+     * Simple one-click fix for students
+     */
+    async function fixCodespaceConnection() {
+      showStatus('codespaceDeployStatus', 'info', '🔧 Fixing WebSocket connection...');
+
+      try {
+        // Call the fix API
+        const fixResponse = await fetch('/api/github-fix-codespace-port', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: githubToken,
+            codespaceName: codespaceName
+          })
+        });
+
+        const fixData = await fixResponse.json();
+
+        if (fixData.success) {
+          showStatus('codespaceDeployStatus', 'success',
+            `✅ Connection fix applied!<br><br>` +
+            `<span style="font-size: 14px;">Testing connection in 10 seconds...</span>`
+          );
+
+          // Wait 10 seconds, then restart polling
+          await new Promise(resolve => setTimeout(resolve, 10000));
+
+          showStatus('codespaceDeployStatus', 'info', '🔍 Testing WebSocket connection...');
+
+          // Restart polling from the beginning
+          await pollCodespaceStatus();
+        } else {
+          throw new Error(fixData.error || 'Fix failed');
+        }
+      } catch (error) {
+        console.error('Fix connection error:', error);
+        showStatus('codespaceDeployStatus', 'error',
+          `❌ Automatic fix failed: ${error.message}<br><br>` +
+          `Please try the manual steps in "Advanced troubleshooting" above.`
+        );
+      }
     }
 
     // Initialize on load
