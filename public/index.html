@@ -12531,6 +12531,25 @@ app.get('/health', (req, res) => {
       }
     }
 
+    /**
+     * Navigate directly to a specific step (for skip buttons)
+     * @param {number} targetStep - The step index to navigate to (0-based)
+     */
+    function navigateToStep(targetStep) {
+      if (targetStep < 0 || targetStep >= steps.length) {
+        console.error('Invalid step number:', targetStep);
+        return;
+      }
+
+      currentStep = targetStep;
+      renderProgressSteps();
+      renderStepContent();
+      window.scrollTo(0, 0);
+      saveProgressToStorage();
+
+      console.log(`📍 Navigated to step ${targetStep}: ${steps[targetStep].title}`);
+    }
+
     function showStatus(elementId, type, message) {
       const element = document.getElementById(elementId);
       if (!element) {
