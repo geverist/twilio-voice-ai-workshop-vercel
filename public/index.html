@@ -2220,7 +2220,7 @@
           container.innerHTML = renderStep4_BasicTwiML();
           break;
         case 4:
-          container.innerHTML = renderStep5_WebSocket();
+          container.innerHTML = renderStep_WebSocket();
           // Auto-connect to WebSocket test when entering Step 5
           setTimeout(() => {
             if ((codespaceUrl || websocketUrl) && !isConnected) {
@@ -2229,7 +2229,7 @@
           }, 500);
           break;
         case 5:
-          container.innerHTML = renderStep6_ConversationRelay();
+          container.innerHTML = renderStep_ConversationRelay();
           // Initialize dropdowns after rendering
           setTimeout(() => {
             const ttsSelect = document.getElementById('ttsProvider');
@@ -2251,13 +2251,13 @@
               };
             }
           }
-          container.innerHTML = renderStep7_PromptEngineering();
+          container.innerHTML = renderStep_PromptEngineering();
           break;
         case 7:
-          container.innerHTML = renderStep8_Tooling();
+          container.innerHTML = renderStep_Tooling();
           break;
         case 8:
-          container.innerHTML = renderStep9_Deploy();
+          container.innerHTML = renderStep_Deploy();
           break;
       }
 
@@ -5262,7 +5262,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
     // STEP 7: PROMPT ENGINEERING - Master AI Prompting
     // =========================================================================
 
-    function renderStep7_PromptEngineering() {
+    function renderStep_PromptEngineering() {
       return `
         <div class="step-content active">
           <div class="step-header">
@@ -6237,7 +6237,7 @@ Expected: ${scenario.expected}</div>`;
     // STEP 8: TOOLING & KNOWLEDGE BASE - Add Functions and Context
     // =========================================================================
 
-    function renderStep8_Tooling() {
+    function renderStep_Tooling() {
       return `
         <div class="step-content active">
           <div class="step-header">
@@ -7349,7 +7349,7 @@ case 'send_whatsapp':
       return cards.join('');
     }
 
-    function renderStep9_Deploy() {
+    function renderStep_Deploy() {
       return `
         <div class="step-content active">
           <div class="step-header">
@@ -8520,7 +8520,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     // STEP 6: DEPLOY - Deploy to User's Twilio Account
     // =========================================================================
 
-    function renderStep6_Deploy() {
+    function renderStep_ToolingDeploy_OLD() {
       const isOutbound = callDirection === 'outbound';
       const code = document.getElementById('code4')?.value || '';
 
@@ -9563,7 +9563,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     // STEP 5: TEST BASIC CALL - Test Without AI
     // =========================================================================
 
-    function renderStep5_TestBasic() {
+    function renderStep_PromptEngineering_OLD() {
       const isOutbound = callDirection === 'outbound';
 
       return `
@@ -9812,7 +9812,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     // STEP 6 (case 5): CONVERSATIONRELAY - Upgrade to AI
     // =========================================================================
 
-    function renderStep6_ConversationRelay() {
+    function renderStep_ConversationRelay() {
       // Use the deployed service domain if available, otherwise fallback to current host
       if (!websocketUrl && deployedServiceSid) {
         // websocketUrl should already be set from deployment, but if not, we can't proceed
@@ -10612,7 +10612,7 @@ ${hintsLine}${intelligenceLine}
     // STEP 5: WEBSOCKET - Build WebSocket Handler
     // =========================================================================
 
-    function renderStep5_WebSocket() {
+    function renderStep_WebSocket() {
       return `
         <div class="step-content active">
           <div class="step-header">
@@ -12395,7 +12395,7 @@ app.get('/health', (req, res) => {
 
     // =========================================================================
     // Dead code removed: Old renderStep5() and renderStep6() functions
-    // The active functions are renderStep5_WebSocket() and renderStep6_ConversationRelay()
+    // The active functions are renderStep_WebSocket() and renderStep_ConversationRelay()
     // =========================================================================
 
     async function makeTestCall() {
