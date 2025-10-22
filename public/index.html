@@ -8914,6 +8914,19 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
           showStatus(statusId, 'success', '✅ Tools configured successfully!');
           console.log('✅ Step 8 deployed, toolsConfigured =', toolsConfigured);
+
+          // Move next-action effect from Commit button to Save & Continue button
+          const commitBtn = document.getElementById('commitStep8Btn');
+          if (commitBtn) {
+            commitBtn.classList.remove('next-action');
+          }
+
+          // Add next-action to Save & Continue button (nextBtn10)
+          const nextBtn10 = document.getElementById('nextBtn10');
+          if (nextBtn10) {
+            nextBtn10.disabled = false;
+            nextBtn10.classList.add('next-action');
+          }
         }
 
         functionsDeployed = true;
@@ -9942,11 +9955,14 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           validateBtn.style.opacity = '0.5';
         }
 
+        // Add next-action to Commit button
+        const commitBtn = document.getElementById('commitStep8Btn');
+        if (commitBtn) {
+          commitBtn.classList.add('next-action');
+        }
+
         // Reset code change flag
         code9Changed = false;
-
-        // Note: Step 8 is optional, so we don't move to a commit button
-        // Students can use this code in their own projects
       } else {
         const missing = [];
         if (!checks.hasOpenAI) missing.push('OpenAI import/initialization');
