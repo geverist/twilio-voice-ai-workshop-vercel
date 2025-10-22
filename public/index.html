@@ -13972,7 +13972,7 @@ twilio serverless:deploy
               <div style="display: flex; align-items: center; gap: 15px;">
                 <div style="color: #4caf50; font-size: 1.2rem; cursor: pointer;" onclick="selectRepository('${repo.name}')">→</div>
                 <button
-                  onclick="event.stopPropagation(); deleteRepository('${repo.name}', '${repo.owner}')"
+                  onclick="event.stopPropagation(); deleteRepository('${repo.name}')"
                   style="background: #f44336; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                   onmouseover="this.style.background='#d32f2f'; this.style.transform='scale(1.1)'"
                   onmouseout="this.style.background='#f44336'; this.style.transform='scale(1)'"
@@ -14051,7 +14051,7 @@ twilio serverless:deploy
           resolve();
         };
 
-        window.deleteRepository = async (repoName, repoOwner) => {
+        window.deleteRepository = async (repoName) => {
           // Show confirmation dialog
           const confirmed = confirm(
             `Delete "${repoName}"?\n\n` +
@@ -14065,7 +14065,10 @@ twilio serverless:deploy
           }
 
           try {
-            const repoFullName = `${repoOwner}/${repoName}`;
+            // Use githubUsername (from authenticated session) as the repo owner
+            const repoFullName = `${githubUsername}/${repoName}`;
+
+            console.log(`Deleting repository: ${repoFullName}`);
 
             // Call GitHub API to delete the repository
             const deleteResponse = await fetch('/api/github-delete-repo', {
@@ -14089,6 +14092,7 @@ twilio serverless:deploy
               throw new Error(deleteData.error || 'Failed to delete repository');
             }
           } catch (error) {
+            console.error('Delete error:', error);
             alert(`❌ Failed to delete repository: ${error.message}`);
           }
         };
