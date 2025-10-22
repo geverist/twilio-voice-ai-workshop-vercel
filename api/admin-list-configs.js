@@ -60,29 +60,90 @@ export default async function handler(req, res) {
       });
     }
 
-    // Get all student configs with detailed information
-    const result = await sql`
-      SELECT
-        session_token,
-        student_name,
-        selected_phone_number,
-        selected_voice,
-        tts_provider,
-        CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
-        CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
-        CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
-        created_at,
-        updated_at
-      FROM student_configs
-      ORDER BY created_at DESC
+    // Check if normalized tables exist
+    const checkNormalized = await sql`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_name IN ('students', 'sessions')
     `;
+
+    let students = [];
+    let sessions = [];
+
+    if (checkNormalized.length === 2) {
+      // Use normalized structure
+      students = await sql`
+        SELECT
+          student_email,
+          student_name,
+          created_at,
+          updated_at
+        FROM students
+        ORDER BY created_at DESC
+      `;
+
+      sessions = await sql`
+        SELECT
+          session_token,
+          student_email,
+          selected_phone_number,
+          selected_voice,
+          tts_provider,
+          CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
+          CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
+          CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
+          created_at,
+          updated_at
+        FROM sessions
+        ORDER BY created_at DESC
+      `;
+    } else {
+      // Fallback to old structure
+      const result = await sql`
+        SELECT
+          session_token,
+          student_email,
+          student_name,
+          selected_phone_number,
+          selected_voice,
+          tts_provider,
+          CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
+          CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
+          CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
+          created_at,
+          updated_at
+        FROM workshop_students
+        ORDER BY created_at DESC
+      `;
+
+      // Extract unique students from denormalized data
+      const uniqueStudents = {};
+      result.forEach(row => {
+        if (!uniqueStudents[row.student_email]) {
+          uniqueStudents[row.student_email] = {
+            student_email: row.student_email,
+            student_name: row.student_name,
+            created_at: row.created_at,
+            updated_at: row.updated_at
+          };
+        }
+      });
+      students = Object.values(uniqueStudents);
+      sessions = result;
+    }
 
     return res.status(200).json({
       success: true,
-      count: result.length,
-      sessions: result.map(session => ({
+      students: students.map(student => ({
+        studentEmail: student.student_email,
+        studentName: student.student_name || 'Unnamed',
+        createdAt: student.created_at,
+        updatedAt: student.updated_at
+      })),
+      sessions: sessions.map(session => ({
         sessionToken: session.session_token,
-        studentName: session.student_name || 'Unnamed',
+        studentEmail: session.student_email,
+        studentName: students.find(s => s.student_email === session.student_email)?.student_name || 'Unnamed',
         phoneNumber: session.selected_phone_number,
         voice: session.selected_voice,
         ttsProvider: session.tts_provider,

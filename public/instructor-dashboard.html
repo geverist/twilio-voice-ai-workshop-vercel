@@ -460,9 +460,17 @@
               <div class="hint">Optional - additional information included in the email</div>
             </div>
 
-            <button type="submit" class="button" id="sendButton">
-              Send Invitation
-            </button>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+              <button type="submit" class="button" id="sendButton" style="flex: 1; min-width: 200px;">
+                📧 Send Invitation
+              </button>
+              <button type="button" class="button secondary" onclick="generateAndCopyLink()" style="flex: 1; min-width: 200px;">
+                🔗 Copy Workshop Link
+              </button>
+            </div>
+            <div class="hint" style="margin-top: 15px;">
+              <strong>📋 Copy Link:</strong> Generate a personalized workshop link to share via Slack, Teams, or any other channel
+            </div>
           </form>
         </div>
       </div>
@@ -590,14 +598,17 @@ student2@example.com,Jane Smith</pre>
                     <span style="font-weight: 600;">Select All (<span id="sessionCount">0</span> sessions)</span>
                   </label>
                 </div>
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                   <button class="button secondary" onclick="deleteSelectedKeys()" id="deleteKeysBtn" disabled>
                     🔑 Delete API Keys Only
                   </button>
                   <button class="button" onclick="deleteSelectedSessions()" id="deleteSessionsBtn" disabled style="background: #dc3545;">
-                    🗑️ Delete Complete Sessions
+                    🗑️ Delete Selected
                   </button>
                 </div>
+              </div>
+              <div style="font-size: 0.85rem; color: #666; margin-top: 10px; padding: 10px; background: #e7f3ff; border-radius: 6px;">
+                💡 <strong>Tip:</strong> Check a student to select all their sessions, or expand and select individual sessions. Use the expand arrow (▶) to see session details.
               </div>
             </div>
 
@@ -1184,8 +1195,10 @@ student2@example.com,Jane Smith</pre>
     // CLEANUP TAB - Session Management
     // =============================================
 
+    let cleanupStudents = [];
     let cleanupSessions = [];
     let selectedSessionTokens = new Set();
+    let selectedStudentEmails = new Set();
 
     async function loadCleanupSessions() {
       const password = document.getElementById('cleanupAdminPassword').value;
@@ -1211,8 +1224,14 @@ student2@example.com,Jane Smith</pre>
           return;
         }
 
+        cleanupStudents = data.students || [];
         cleanupSessions = data.sessions || [];
         selectedSessionTokens.clear();
+        selectedStudentEmails.clear();
+
+        // Auto-expand all students on first load
+        expandedStudents.clear();
+        cleanupStudents.forEach(student => expandedStudents.add(student.studentEmail));
 
         // Show sessions container
         document.getElementById('cleanupSessionsContainer').style.display = 'block';
@@ -1221,7 +1240,8 @@ student2@example.com,Jane Smith</pre>
         // Render sessions
         renderCleanupSessions();
 
-        showAlert('success', `✅ Loaded ${cleanupSessions.length} sessions`);
+        const studentCount = cleanupStudents.length;
+        showAlert('success', `✅ Loaded ${studentCount} student${studentCount !== 1 ? 's' : ''} with ${cleanupSessions.length} session${cleanupSessions.length !== 1 ? 's' : ''}`);
 
       } catch (error) {
         console.error('Load sessions error:', error);
@@ -1229,59 +1249,179 @@ student2@example.com,Jane Smith</pre>
       }
     }
 
+    // Track expanded students
+    let expandedStudents = new Set();
+
     function renderCleanupSessions() {
       const listContainer = document.getElementById('sessionsList');
 
-      if (cleanupSessions.length === 0) {
+      if (cleanupStudents.length === 0 && cleanupSessions.length === 0) {
         listContainer.innerHTML = `
           <div class="invitation-item">
             <div class="invitation-info">
-              <div class="email" style="color: #999;">No sessions found in database</div>
+              <div class="email" style="color: #999;">No students or sessions found in database</div>
             </div>
           </div>
         `;
         return;
       }
 
-      listContainer.innerHTML = cleanupSessions.map(session => {
-        const isSelected = selectedSessionTokens.has(session.sessionToken);
-        const createdDate = new Date(session.createdAt).toLocaleString();
-        const updatedDate = new Date(session.updatedAt).toLocaleString();
+      // Group sessions by student email
+      const studentGroups = {};
+
+      // Initialize all students (including orphans with no sessions)
+      cleanupStudents.forEach(student => {
+        studentGroups[student.studentEmail] = [];
+      });
+
+      // Add sessions to their student groups
+      cleanupSessions.forEach(session => {
+        const email = session.studentEmail || 'unknown@example.com';
+        if (!studentGroups[email]) {
+          studentGroups[email] = [];
+        }
+        studentGroups[email].push(session);
+      });
+
+      // Render hierarchical view
+      listContainer.innerHTML = Object.entries(studentGroups).map(([email, sessions]) => {
+        const isExpanded = expandedStudents.has(email);
+        const student = cleanupStudents.find(s => s.studentEmail === email);
+        const studentName = student?.studentName || (sessions[0]?.studentName) || 'Unnamed Student';
+        const totalSessions = sessions.length;
+
+        // For orphaned students with no sessions
+        const isOrphan = totalSessions === 0;
+        const studentSessionTokens = sessions.map(s => s.sessionToken);
+        const allSelected = isOrphan ? selectedStudentEmails.has(email) : studentSessionTokens.every(token => selectedSessionTokens.has(token));
+        const someSelected = !isOrphan && studentSessionTokens.some(token => selectedSessionTokens.has(token)) && !allSelected;
 
         return `
-          <div class="invitation-item" style="flex-direction: column; align-items: stretch; padding: 20px; background: ${isSelected ? '#fff3cd' : 'white'};">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-              <div style="display: flex; align-items: flex-start; gap: 15px; flex: 1;">
+          <!-- Student Row -->
+          <div class="invitation-item" style="flex-direction: column; align-items: stretch; padding: 15px 20px; background: ${allSelected ? '#fff3cd' : (someSelected ? '#fffbf0' : 'white')}; border-bottom: 2px solid #dee2e6;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
                 <input
                   type="checkbox"
-                  ${isSelected ? 'checked' : ''}
-                  onchange="toggleSessionSelect('${session.sessionToken}')"
-                  style="margin-top: 5px; cursor: pointer; width: 18px; height: 18px;"
+                  ${allSelected ? 'checked' : ''}
+                  ${someSelected ? 'indeterminate' : ''}
+                  onchange="toggleStudentSelect('${email}')"
+                  style="cursor: pointer; width: 20px; height: 20px;"
+                  ${someSelected ? 'ref="indeterminate"' : ''}
                 />
+                <button
+                  onclick="toggleStudentExpand('${email}')"
+                  style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 5px; color: ${isOrphan ? '#ccc' : '#666'}; ${isOrphan ? 'cursor: default;' : ''}"
+                  title="${isOrphan ? 'No sessions' : (isExpanded ? 'Collapse' : 'Expand') + ' sessions'}"
+                  ${isOrphan ? 'disabled' : ''}
+                >
+                  ${isOrphan ? '○' : (isExpanded ? '▼' : '▶')}
+                </button>
                 <div class="invitation-info" style="flex: 1;">
-                  <div class="name" style="font-size: 1.1rem;">${session.studentName}</div>
-                  <div class="email" style="margin-top: 5px;">Session: ${session.sessionToken.substring(0, 40)}...</div>
-                  <div style="margin-top: 10px; font-size: 0.9rem; color: #666;">
-                    <div>📞 Phone: ${session.phoneNumber || 'Not set'}</div>
-                    <div>🎙️ Voice: ${session.voice || 'Not set'} (${session.ttsProvider || 'N/A'})</div>
-                    <div style="margin-top: 5px;">
-                      ${session.hasApiKey ? '<span style="background: #fff3cd; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem;">🔑 Has API Key</span>' : '<span style="color: #999;">No API Key</span>'}
-                      ${session.hasSystemPrompt ? '<span style="background: #e3f2fd; padding: 3px 8px; border-radius: 4px; margin-left: 5px; font-size: 0.85rem;">📝 Has Prompt</span>' : ''}
-                      ${session.hasTools ? '<span style="background: #e8f5e9; padding: 3px 8px; border-radius: 4px; margin-left: 5px; font-size: 0.85rem;">🔧 Has Tools</span>' : ''}
-                    </div>
+                  <div class="name" style="font-size: 1.2rem; font-weight: 700; color: ${isOrphan ? '#999' : '#0d122b'};">
+                    👤 ${studentName}${isOrphan ? ' <span style="color: #dc3545; font-size: 0.9rem; font-weight: 500;">(No Sessions)</span>' : ''}
+                  </div>
+                  <div class="email" style="margin-top: 5px; color: #666;">
+                    📧 ${email}
                   </div>
                 </div>
               </div>
-              <div style="text-align: right; font-size: 0.85rem; color: #666;">
-                <div>Created: ${createdDate}</div>
-                <div style="margin-top: 3px;">Updated: ${updatedDate}</div>
+              <div style="text-align: right;">
+                <div style="font-size: 1.5rem; font-weight: bold; color: ${isOrphan ? '#dc3545' : '#F22F46'};">${totalSessions}</div>
+                <div style="font-size: 0.85rem; color: #666;">${totalSessions === 1 ? 'session' : 'sessions'}</div>
               </div>
             </div>
+          </div>
+
+          <!-- Sessions List (expandable) -->
+          <div id="student-sessions-${email.replace(/[^a-zA-Z0-9]/g, '_')}" style="display: ${isExpanded ? 'block' : 'none'};">
+            ${sessions.map(session => {
+              const isSelected = selectedSessionTokens.has(session.sessionToken);
+              const createdDate = new Date(session.createdAt).toLocaleString();
+              const updatedDate = new Date(session.updatedAt).toLocaleString();
+
+              return `
+                <div class="invitation-item" style="flex-direction: column; align-items: stretch; padding: 15px 20px 15px 80px; background: ${isSelected ? '#fff3cd' : '#f8f9fa'}; border-left: 4px solid ${isSelected ? '#ffc107' : '#e0e0e0'};">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="display: flex; align-items: flex-start; gap: 15px; flex: 1;">
+                      <input
+                        type="checkbox"
+                        ${isSelected ? 'checked' : ''}
+                        onchange="toggleSessionSelect('${session.sessionToken}')"
+                        style="margin-top: 5px; cursor: pointer; width: 18px; height: 18px;"
+                      />
+                      <div class="invitation-info" style="flex: 1;">
+                        <div class="name" style="font-size: 1rem; font-weight: 600;">📋 Session</div>
+                        <div class="email" style="margin-top: 5px; font-size: 0.85rem; color: #666; font-family: monospace;">
+                          ${session.sessionToken.substring(0, 50)}...
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: #666;">
+                          <div>📞 Phone: ${session.phoneNumber || 'Not set'}</div>
+                          <div>🎙️ Voice: ${session.voice || 'Not set'} (${session.ttsProvider || 'N/A'})</div>
+                          <div style="margin-top: 5px;">
+                            ${session.hasApiKey ? '<span style="background: #fff3cd; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem;">🔑 Has API Key</span>' : '<span style="color: #999;">No API Key</span>'}
+                            ${session.hasSystemPrompt ? '<span style="background: #e3f2fd; padding: 3px 8px; border-radius: 4px; margin-left: 5px; font-size: 0.85rem;">📝 Has Prompt</span>' : ''}
+                            ${session.hasTools ? '<span style="background: #e8f5e9; padding: 3px 8px; border-radius: 4px; margin-left: 5px; font-size: 0.85rem;">🔧 Has Tools</span>' : ''}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="text-align: right; font-size: 0.85rem; color: #666;">
+                      <div>Created: ${createdDate}</div>
+                      <div style="margin-top: 3px;">Updated: ${updatedDate}</div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         `;
       }).join('');
 
+      // Set indeterminate state for checkboxes
+      document.querySelectorAll('input[ref="indeterminate"]').forEach(checkbox => {
+        checkbox.indeterminate = true;
+      });
+
       updateButtonStates();
+    }
+
+    function toggleStudentExpand(email) {
+      if (expandedStudents.has(email)) {
+        expandedStudents.delete(email);
+      } else {
+        expandedStudents.add(email);
+      }
+      renderCleanupSessions();
+    }
+
+    function toggleStudentSelect(email) {
+      // Get all sessions for this student
+      const studentSessions = cleanupSessions.filter(s => (s.studentEmail || 'unknown@example.com') === email);
+      const studentSessionTokens = studentSessions.map(s => s.sessionToken);
+
+      // Check if this is an orphaned student (no sessions)
+      if (studentSessionTokens.length === 0) {
+        // Toggle the student record itself
+        if (selectedStudentEmails.has(email)) {
+          selectedStudentEmails.delete(email);
+        } else {
+          selectedStudentEmails.add(email);
+        }
+      } else {
+        // Check if all sessions are selected
+        const allSelected = studentSessionTokens.every(token => selectedSessionTokens.has(token));
+
+        if (allSelected) {
+          // Deselect all sessions
+          studentSessionTokens.forEach(token => selectedSessionTokens.delete(token));
+        } else {
+          // Select all sessions
+          studentSessionTokens.forEach(token => selectedSessionTokens.add(token));
+        }
+      }
+
+      renderCleanupSessions();
     }
 
     function toggleSessionSelect(sessionToken) {
@@ -1408,6 +1548,128 @@ student2@example.com,Jane Smith</pre>
 
       } catch (error) {
         console.error('Delete sessions error:', error);
+        showAlert('error', `❌ Error: ${error.message}`);
+      }
+    }
+
+    // =============================================
+    // GENERATE AND COPY WORKSHOP LINK
+    // =============================================
+
+    function generateAndCopyLink() {
+      const studentEmail = document.getElementById('studentEmail').value;
+      const studentName = document.getElementById('studentName').value;
+
+      if (!studentEmail) {
+        showAlert('error', '❌ Please enter a student email address');
+        return;
+      }
+
+      // Get the current window location (works for any deployment URL)
+      const workshopUrl = window.location.origin;
+
+      // Build URL with query parameters
+      let link = `${workshopUrl}/?email=${encodeURIComponent(studentEmail)}`;
+      if (studentName) {
+        link += `&name=${encodeURIComponent(studentName)}`;
+      }
+
+      // Copy to clipboard
+      navigator.clipboard.writeText(link).then(() => {
+        showAlert('success', `✅ Workshop link copied to clipboard!${studentName ? ` (for ${studentName})` : ''}`);
+      }).catch(err => {
+        // Fallback for browsers that don't support clipboard API
+        const textarea = document.createElement('textarea');
+        textarea.value = link;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showAlert('success', `✅ Workshop link copied to clipboard!${studentName ? ` (for ${studentName})` : ''}`);
+      });
+    }
+
+    // =============================================
+    // DELETE ALL SESSIONS FOR STUDENT
+    // =============================================
+
+    async function deleteAllStudentSessions() {
+      const studentEmail = document.getElementById('deleteStudentEmail').value;
+
+      if (!studentEmail) {
+        showAlert('error', '❌ Please enter a student email address');
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(studentEmail)) {
+        showAlert('error', '❌ Please enter a valid email address');
+        return;
+      }
+
+      const confirmDelete = confirm(
+        `⚠️ DELETE ALL SESSIONS for ${studentEmail}?\n\n` +
+        'This will PERMANENTLY DELETE:\n' +
+        '• ALL workshop sessions for this student\n' +
+        '• Student names and configurations\n' +
+        '• API keys and system prompts\n' +
+        '• Tool configurations\n' +
+        '• Phone numbers and all settings\n\n' +
+        'This includes sessions from ALL workshop runs.\n' +
+        'This action CANNOT be undone.\n\n' +
+        'Type the student email to confirm.'
+      );
+
+      if (!confirmDelete) return;
+
+      // Second confirmation - ask them to type the email
+      const confirmEmail = prompt(
+        `⚠️ FINAL CONFIRMATION\n\nTo delete ALL sessions for ${studentEmail}, please type the email address exactly:`
+      );
+
+      if (confirmEmail !== studentEmail) {
+        showAlert('error', '❌ Email did not match. Deletion cancelled.');
+        return;
+      }
+
+      const password = document.getElementById('cleanupAdminPassword').value;
+
+      if (!password) {
+        showAlert('error', '❌ Please enter the admin password first');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin-delete-student', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminPassword: password,
+            deleteType: 'student',
+            studentEmail: studentEmail
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          showAlert('error', `❌ ${data.error || 'Failed to delete student sessions'}`);
+          return;
+        }
+
+        showAlert('success', `✅ ${data.message}`);
+
+        // Clear the input
+        document.getElementById('deleteStudentEmail').value = '';
+
+        // Reload sessions list
+        await loadCleanupSessions();
+
+      } catch (error) {
+        console.error('Delete student sessions error:', error);
         showAlert('error', `❌ Error: ${error.message}`);
       }
     }

@@ -1184,9 +1184,24 @@
     let githubToken = null;
     let githubUsername = null;
     let studentRepoName = null; // Student's GitHub repository name
-    let studentName = localStorage.getItem('studentName') || '';
-    let studentEmail = localStorage.getItem('studentEmail') || '';
+
+    // Check URL parameters for pre-populated email and name (from invitation link)
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailParam = urlParams.get('email');
+    const nameParam = urlParams.get('name');
+
+    // Use URL params if present, otherwise fall back to localStorage
+    let studentName = nameParam || localStorage.getItem('studentName') || '';
+    let studentEmail = emailParam || localStorage.getItem('studentEmail') || '';
     let studentDemoMode = localStorage.getItem('studentDemoMode') === 'true';
+
+    // If URL params were provided, save them to localStorage
+    if (emailParam) {
+      localStorage.setItem('studentEmail', emailParam);
+    }
+    if (nameParam) {
+      localStorage.setItem('studentName', nameParam);
+    }
 
     // Codespaces variables
     let codespaceUrl = ''; // WebSocket URL (wss://...)
@@ -1451,6 +1466,7 @@
             <input
               type="text"
               id="studentName"
+              value="${studentName}"
               placeholder="e.g., Alex Johnson"
               style="width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;"
               onfocus="this.style.borderColor='#F22F46'"

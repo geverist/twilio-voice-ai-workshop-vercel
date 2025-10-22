@@ -151,10 +151,10 @@ export default async function handler(req, res) {
     </div>` : ''}
 
     <h2>🚀 Get Started Now</h2>
-    <p>Click the button below to access the interactive setup wizard:</p>
+    <p>Click the button below to access the workshop with your information pre-filled:</p>
 
     <center>
-      <a href="${workshopUrl}/setup-wizard.html" class="button">Launch Setup Wizard →</a>
+      <a href="${workshopUrl}/?email=${encodeURIComponent(studentEmail)}${studentName ? `&name=${encodeURIComponent(studentName)}` : ''}" class="button">Start Workshop →</a>
     </center>
 
     <h2>📋 Before the Workshop</h2>
@@ -216,7 +216,7 @@ Welcome to the Twilio Voice AI Workshop! You've been invited to learn how to bui
 ${workshopDate ? `Workshop Date: ${workshopDate}\n` : ''}
 
 GET STARTED:
-Access the setup wizard: ${workshopUrl}/setup-wizard.html
+Access the workshop: ${workshopUrl}/?email=${encodeURIComponent(studentEmail)}${studentName ? `&name=${encodeURIComponent(studentName)}` : ''}
 
 BEFORE THE WORKSHOP:
 1. Create a Twilio Account: https://www.twilio.com/try-twilio (free trial includes $15 credit)
