@@ -109,7 +109,8 @@ export default async function handler(req, res) {
     console.log(`✅ Config saved for session: ${sessionToken.substring(0, 8)}...`);
 
     // Generate WebSocket URL
-    const websocketUrl = `wss://${process.env.RAILWAY_WEBSOCKET_DOMAIN}/ws/${sessionToken}`;
+    const domain = (process.env.RAILWAY_WEBSOCKET_DOMAIN || '').trim();
+    const websocketUrl = `wss://${domain}/ws/${sessionToken}`;
 
     return res.status(200).json({
       success: true,
