@@ -9810,7 +9810,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
               <div>
                 <!-- Welcome Greeting -->
                 <div class="form-group" style="margin-bottom: 20px;">
-                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600;">
+                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600; cursor: help;" title="The initial greeting message that callers hear when the AI answers. This sets the tone for the conversation and should clearly state who or what the AI assistant is.">
                     👋 Welcome Greeting
                   </label>
                   <input
@@ -9825,7 +9825,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
                 <!-- Language -->
                 <div class="form-group" style="margin-bottom: 20px;">
-                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600;">
+                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600; cursor: help;" title="Sets the language for speech recognition and TTS. Choose a specific language for best accuracy, or use 'multi' to automatically detect the caller's language. Language auto-detection adds slight latency but supports multilingual callers.">
                     🌍 Language
                   </label>
                   <select
@@ -9847,7 +9847,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
                 <!-- Transcription Provider -->
                 <div class="form-group" style="margin-bottom: 20px;">
-                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600;">
+                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600; cursor: help;" title="Choose which Speech-to-Text (STT) engine transcribes caller speech. Deepgram offers faster processing and better accuracy for conversational AI. Google Cloud STT provides excellent accuracy for specific use cases. Both are included with Twilio at no additional cost.">
                     🎤 Transcription Provider
                   </label>
                   <select
@@ -9865,7 +9865,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
               <div>
                 <!-- Interruptible -->
                 <div class="form-group" style="margin-bottom: 20px;">
-                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600;">
+                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600; cursor: help;" title="Controls whether callers can interrupt the AI while it's speaking. 'speech' allows natural conversation flow where callers can speak over the AI. 'any' also allows keypad interruptions. 'dtmf' only allows keypad interruptions. 'none' makes the AI finish speaking before listening.">
                     🔇 Interruption Control
                   </label>
                   <select
@@ -9882,7 +9882,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
                 <!-- DTMF Detection -->
                 <div class="form-group" style="margin-bottom: 20px;">
-                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600;">
+                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600; cursor: help;" title="Dual-Tone Multi-Frequency (DTMF) detection allows your AI to recognize phone keypad presses (0-9, *, #). Enable this for IVR-style interactions like 'Press 1 for sales' or collecting numeric input like account numbers. Your WebSocket handler receives dtmf events when keys are pressed.">
                     🔢 DTMF Detection
                   </label>
                   <select
@@ -9897,7 +9897,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
                 <!-- Speech Hints -->
                 <div class="form-group" style="margin-bottom: 20px;">
-                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600;">
+                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600; cursor: help;" title="Provide domain-specific words or phrases to improve speech recognition accuracy. Useful for brand names, technical jargon, product names, or industry terms that might be misheard. Enter as comma-separated list. Example: 'Twilio,ConversationRelay,API,WebSocket' helps the STT engine correctly recognize these technical terms.">
                     💡 Speech Recognition Hints
                   </label>
                   <input
