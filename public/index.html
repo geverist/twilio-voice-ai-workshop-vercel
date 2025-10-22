@@ -4730,6 +4730,36 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
       return 'Polly.Joanna'; // Amazon Polly default
     }
 
+    function getVoiceName(voiceId) {
+      if (!voiceId) return 'Default';
+
+      // ElevenLabs voice ID to name mapping
+      const elevenlabsVoices = {
+        '9XfYMbJVZqPHaQtYnTAO': 'Cody - Energetic Upbeat Educator',
+        '4CrZuIW9am7gYAxgo2Af': 'Shelley - Clear and confident British female',
+        '8N2ng9i2uiUWqstgmWlH': 'Beth - Gentle and nurturing',
+        '90ipbRoKi4CpHXvKVtl0': 'Anika - Customer Care Agent',
+        '9PvnT6XRzlljoaDG6Knu': 'Ranbir - Warm & Friendly',
+        'EXAVITQu4vr4xnSDxMaL': 'Bella - Calm and Professional',
+        '7S3KNdLDL7aRgBVRQb1z': 'Nathaniel - Deep Rich Mature British',
+        '6dcFFb31LVaCdYevmTAx': 'Jerry - Presenter, Announcer, Event',
+        'iKqE7GcKIGSXOrp5q2Y3': 'Atlas - Business Explainer',
+        'vOFq2yBGlsvTiMHEVmKr': 'Luna - Youthful Friendly'
+      };
+
+      if (elevenlabsVoices[voiceId]) {
+        return elevenlabsVoices[voiceId];
+      }
+
+      // Strip Polly. prefix from Amazon voices
+      if (voiceId.startsWith('Polly.')) {
+        return voiceId.replace('Polly.', '');
+      }
+
+      // Return as-is for Google and other providers
+      return voiceId;
+    }
+
     function getVoiceOptions() {
       if (ttsProvider === 'elevenlabs') {
         return `
@@ -9963,7 +9993,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
                   <li>AI greeting: "${document.getElementById('crWelcomeGreeting')?.value || 'Hello! I am your AI assistant. How can I help you today?'}"</li>
                   <li>Your AI will act as: <strong>${useCaseDescription ? useCaseDescription.substring(0, 80) + (useCaseDescription.length > 80 ? '...' : '') : 'a helpful assistant'}</strong></li>
                   <li>Natural conversation powered by OpenAI</li>
-                  <li>Voice selected: <strong>${getDefaultVoice()}</strong> (${getTTSProviderName()})</li>
+                  <li>Voice selected: <strong>${getVoiceName(getDefaultVoice())}</strong> (${getTTSProviderName()})</li>
                   <li>Real-time bidirectional streaming via ConversationRelay</li>
                 </ul>
               </div>
