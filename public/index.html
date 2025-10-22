@@ -11024,15 +11024,6 @@ app.get('/health', (req, res) => {
                   <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 5px;">WebSocket URL:</div>
                   <code style="color: white; font-size: 14px; word-break: break-all;">${codespaceUrl}</code>
                 </div>
-                ${!step5Committed ? `
-                  <button
-                    class="btn btn-success next-action"
-                    id="deployCodespaceBtn5"
-                    onclick="commitStep(5)"
-                    style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); width: 100%;">
-                    💾 Save WebSocket Handler Code
-                  </button>
-                ` : ''}
                 <div id="commitStep5Status" style="margin-top: 15px; color: white;"></div>
                 <div id="codespaceDeployStatus5" style="margin-top: 15px; color: white;"></div>
               </div>
