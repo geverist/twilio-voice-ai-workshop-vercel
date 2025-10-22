@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Endpoint Tests</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #0066cc;
+      padding-bottom: 10px;
+    }
+    .test-suite {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-suite h2 {
+      color: #0066cc;
+      margin-top: 0;
+    }
+    .test-case {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 4px solid #ccc;
+      background: #fafafa;
+    }
+    .test-case.pass {
+      border-left-color: #28a745;
+      background: #f0fff4;
+    }
+    .test-case.fail {
+      border-left-color: #dc3545;
+      background: #fff5f5;
+    }
+    .test-case.running {
+      border-left-color: #ffc107;
+      background: #fffbf0;
+    }
+    .test-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .test-result {
+      font-size: 0.9em;
+      color: #666;
+    }
+    .test-error {
+      color: #dc3545;
+      font-family: monospace;
+      font-size: 0.85em;
+      margin-top: 5px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 4px;
+    }
+    .summary {
+      background: #0066cc;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .summary-item {
+      text-align: center;
+    }
+    .summary-number {
+      font-size: 2em;
+      font-weight: bold;
+    }
+    .summary-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+    .run-tests-btn {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1.1em;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 20px 0;
+    }
+    .run-tests-btn:hover {
+      background: #0052a3;
+    }
+    .run-tests-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .warning {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 API Endpoint Tests</h1>
+
+  <div class="warning">
+    ⚠️ <strong>Note:</strong> These tests make real API calls to the backend. Some tests may modify data.
+    Tests requiring authentication will be skipped if credentials are not available.
+  </div>
+
+  <button class="run-tests-btn" onclick="runAllTests()">Run All Tests</button>
+  <button class="run-tests-btn" onclick="showTextSummary()" style="background: #6c757d; margin-left: 10px;">📋 Copy Text Summary</button>
+
+  <div class="summary" id="summary">
+    <div class="summary-item">
+      <div class="summary-number" id="total-tests">0</div>
+      <div class="summary-label">Total Tests</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-number" id="passed-tests">0</div>
+      <div class="summary-label">Passed</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-number" id="failed-tests">0</div>
+      <div class="summary-label">Failed</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-number" id="skipped-tests">0</div>
+      <div class="summary-label">Skipped</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-number" id="time-elapsed">0ms</div>
+      <div class="summary-label">Time</div>
+    </div>
+  </div>
+
+  <div id="test-results"></div>
+
+  <script>
+    // =========================================================================
+    // TEST FRAMEWORK
+    // =========================================================================
+
+    let testResults = [];
+    let currentSuite = null;
+
+    function describe(suiteName, fn) {
+      currentSuite = {
+        name: suiteName,
+        tests: []
+      };
+      fn();
+      return currentSuite;
+    }
+
+    function it(testName, fn) {
+      if (!currentSuite) {
+        throw new Error('Test must be inside a describe block');
+      }
+      currentSuite.tests.push({
+        name: testName,
+        fn: fn,
+        status: 'pending'
+      });
+    }
+
+    function expect(actual) {
+      return {
+        toBe(expected) {
+          if (actual !== expected) {
+            throw new Error(`Expected ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toEqual(expected) {
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Expected ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toBeTruthy() {
+          if (!actual) {
+            throw new Error(`Expected truthy value but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toBeFalsy() {
+          if (actual) {
+            throw new Error(`Expected falsy value but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toContain(substring) {
+          if (typeof actual !== 'string' || !actual.includes(substring)) {
+            throw new Error(`Expected "${actual}" to contain "${substring}"`);
+          }
+        },
+        toHaveProperty(prop) {
+          if (!actual || !actual.hasOwnProperty(prop)) {
+            throw new Error(`Expected object to have property "${prop}"`);
+          }
+        },
+        toBeGreaterThan(expected) {
+          if (actual <= expected) {
+            throw new Error(`Expected ${actual} to be greater than ${expected}`);
+          }
+        },
+        toMatch(pattern) {
+          if (!pattern.test(actual)) {
+            throw new Error(`Expected "${actual}" to match pattern ${pattern}`);
+          }
+        }
+      };
+    }
+
+    async function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // =========================================================================
+    // API HELPER FUNCTIONS
+    // =========================================================================
+
+    async function apiCall(endpoint, options = {}) {
+      const response = await fetch(endpoint, {
+        method: options.method || 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers
+        },
+        body: options.body ? JSON.stringify(options.body) : undefined
+      });
+
+      const data = await response.json();
+      return { response, data, status: response.status };
+    }
+
+    function generateTestSessionToken() {
+      return 'test_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+    }
+
+    // =========================================================================
+    // TEST SUITES
+    // =========================================================================
+
+    const testSuites = [];
+
+    // Test Suite 1: student-config-save endpoint
+    testSuites.push(describe('/api/student-config-save', () => {
+
+      it('should accept valid student config', async () => {
+        const sessionToken = generateTestSessionToken();
+        const { data, status } = await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: sessionToken,
+            studentEmail: 'test@example.com',
+            studentName: 'Test Student',
+            currentStep: 0,
+            twilioConnected: false,
+            openaiConnected: false
+          }
+        });
+
+        expect(status).toBe(200);
+        expect(data.success).toBeTruthy();
+      });
+
+      it('should reject missing sessionToken', async () => {
+        const { data, status } = await apiCall('/api/student-config-save', {
+          body: {
+            studentEmail: 'test@example.com',
+            studentName: 'Test Student'
+          }
+        });
+
+        expect(status).toBe(400);
+        expect(data.success).toBeFalsy();
+      });
+
+      it('should reject sessionToken too short', async () => {
+        const { data, status } = await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: 'short',
+            studentEmail: 'test@example.com'
+          }
+        });
+
+        expect(status).toBe(400);
+        expect(data.success).toBeFalsy();
+        expect(data.error).toContain('sessionToken');
+      });
+
+      it('should reject sessionToken too long', async () => {
+        const { data, status } = await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: 'x'.repeat(201),
+            studentEmail: 'test@example.com'
+          }
+        });
+
+        expect(status).toBe(400);
+        expect(data.success).toBeFalsy();
+      });
+
+      it('should reject system prompt too long', async () => {
+        const sessionToken = generateTestSessionToken();
+        const { data, status } = await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: sessionToken,
+            systemPrompt: 'x'.repeat(5001)
+          }
+        });
+
+        expect(status).toBe(400);
+        expect(data.success).toBeFalsy();
+        expect(data.error).toContain('systemPrompt');
+      });
+
+      it('should return websocket URL on success', async () => {
+        const sessionToken = generateTestSessionToken();
+        const { data } = await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: sessionToken,
+            studentEmail: 'test@example.com'
+          }
+        });
+
+        expect(data.success).toBeTruthy();
+        expect(data.websocketUrl).toBeTruthy();
+        expect(data.websocketUrl).toContain('wss://');
+      });
+
+      it('should handle boolean state fields', async () => {
+        const sessionToken = generateTestSessionToken();
+        const { data, status } = await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: sessionToken,
+            twilioConnected: true,
+            openaiConnected: false,
+            step4CodeValidated: true,
+            step4Deployed: false
+          }
+        });
+
+        expect(status).toBe(200);
+        expect(data.success).toBeTruthy();
+      });
+
+      it('should handle null values gracefully', async () => {
+        const sessionToken = generateTestSessionToken();
+        const { data, status } = await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: sessionToken,
+            studentEmail: null,
+            studentName: null,
+            openaiApiKey: null
+          }
+        });
+
+        expect(status).toBe(200);
+        expect(data.success).toBeTruthy();
+      });
+
+    }));
+
+    // Test Suite 2: student-config-get endpoint
+    testSuites.push(describe('/api/student-config-get', () => {
+
+      it('should retrieve saved config', async () => {
+        const sessionToken = generateTestSessionToken();
+
+        // First save
+        await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: sessionToken,
+            studentEmail: 'retrieve-test@example.com',
+            studentName: 'Retrieve Test',
+            currentStep: 3
+          }
+        });
+
+        // Then retrieve
+        const { data, status } = await apiCall('/api/student-config-get', {
+          method: 'POST',
+          body: { sessionToken: sessionToken }
+        });
+
+        expect(status).toBe(200);
+        expect(data.success).toBeTruthy();
+        expect(data.config).toBeTruthy();
+        expect(data.config.studentEmail).toBe('retrieve-test@example.com');
+      });
+
+      it('should return 404 for non-existent session', async () => {
+        const { data, status } = await apiCall('/api/student-config-get', {
+          method: 'POST',
+          body: { sessionToken: 'nonexistent_session_12345' }
+        });
+
+        expect(status).toBe(404);
+        expect(data.success).toBeFalsy();
+      });
+
+      it('should reject missing sessionToken', async () => {
+        const { data, status } = await apiCall('/api/student-config-get', {
+          method: 'POST',
+          body: {}
+        });
+
+        expect(status).toBe(400);
+        expect(data.success).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 3: auth-session endpoint
+    testSuites.push(describe('/api/auth-session', () => {
+
+      it('should create new session with email and name', async () => {
+        const { data, status } = await apiCall('/api/auth-session', {
+          body: {
+            email: 'newuser@example.com',
+            name: 'New User',
+            action: 'login'
+          }
+        });
+
+        expect(status).toBe(200);
+        expect(data.success).toBeTruthy();
+        expect(data.sessionToken).toBeTruthy();
+        expect(data.sessionToken).toMatch(/^ws_/);
+      });
+
+      it('should reject missing email', async () => {
+        const { data, status } = await apiCall('/api/auth-session', {
+          body: {
+            name: 'Test User',
+            action: 'login'
+          }
+        });
+
+        expect(status).toBe(400);
+        expect(data.success).toBeFalsy();
+      });
+
+      it('should reject invalid email format', async () => {
+        const { data, status } = await apiCall('/api/auth-session', {
+          body: {
+            email: 'invalid-email',
+            name: 'Test User',
+            action: 'login'
+          }
+        });
+
+        expect(status).toBe(400);
+        expect(data.success).toBeFalsy();
+      });
+
+      it('should reject missing name', async () => {
+        const { data, status } = await apiCall('/api/auth-session', {
+          body: {
+            email: 'test@example.com',
+            action: 'login'
+          }
+        });
+
+        expect(status).toBe(400);
+        expect(data.success).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 4: CORS and Method Validation
+    testSuites.push(describe('CORS and HTTP Methods', () => {
+
+      it('should reject GET requests to POST-only endpoints', async () => {
+        const response = await fetch('/api/student-config-save', {
+          method: 'GET'
+        });
+
+        expect(response.status).toBe(405);
+      });
+
+      it('should include CORS headers', async () => {
+        const response = await fetch('/api/student-config-save', {
+          method: 'OPTIONS'
+        });
+
+        expect(response.headers.get('Access-Control-Allow-Origin')).toBeTruthy();
+      });
+
+    }));
+
+    // Test Suite 5: Data Sanitization
+    testSuites.push(describe('Data Sanitization', () => {
+
+      it('should handle SQL injection attempts safely', async () => {
+        const sessionToken = generateTestSessionToken();
+        const { data, status } = await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: sessionToken,
+            studentName: "'; DROP TABLE students; --",
+            studentEmail: 'test@example.com'
+          }
+        });
+
+        // Should either succeed (safely escaped) or fail gracefully
+        expect(status).toBe(200);
+        expect(data.success).toBeTruthy();
+      });
+
+      it('should handle XSS attempts in student name', async () => {
+        const sessionToken = generateTestSessionToken();
+        const { data, status } = await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: sessionToken,
+            studentName: '<script>alert("xss")</script>',
+            studentEmail: 'test@example.com'
+          }
+        });
+
+        expect(status).toBe(200);
+        expect(data.success).toBeTruthy();
+      });
+
+      it('should handle very long strings gracefully', async () => {
+        const sessionToken = generateTestSessionToken();
+        const { data, status } = await apiCall('/api/student-config-save', {
+          body: {
+            sessionToken: sessionToken,
+            useCaseDescription: 'a'.repeat(10000)
+          }
+        });
+
+        // Should handle long text (within reason)
+        expect(status).toBe(200);
+      });
+
+    }));
+
+    // =========================================================================
+    // TEST RUNNER
+    // =========================================================================
+
+    async function runAllTests() {
+      const startTime = Date.now();
+      testResults = [];
+
+      const resultsDiv = document.getElementById('test-results');
+      resultsDiv.innerHTML = '';
+
+      let totalTests = 0;
+      let passedTests = 0;
+      let failedTests = 0;
+      let skippedTests = 0;
+
+      for (const suite of testSuites) {
+        const suiteDiv = document.createElement('div');
+        suiteDiv.className = 'test-suite';
+        suiteDiv.innerHTML = `<h2>${suite.name}</h2>`;
+        resultsDiv.appendChild(suiteDiv);
+
+        for (const test of suite.tests) {
+          totalTests++;
+
+          const testDiv = document.createElement('div');
+          testDiv.className = 'test-case running';
+          testDiv.innerHTML = `
+            <div class="test-name">${test.name}</div>
+            <div class="test-result">Running...</div>
+          `;
+          suiteDiv.appendChild(testDiv);
+
+          try {
+            await test.fn();
+            testDiv.className = 'test-case pass';
+            testDiv.querySelector('.test-result').textContent = '✅ PASS';
+            passedTests++;
+            test.status = 'pass';
+            test.suite = suite.name;
+          } catch (error) {
+            testDiv.className = 'test-case fail';
+            testDiv.querySelector('.test-result').innerHTML = `
+              ❌ FAIL
+              <div class="test-error">${error.message}</div>
+            `;
+            failedTests++;
+            test.status = 'fail';
+            test.error = error.message;
+            test.suite = suite.name;
+          }
+
+          testResults.push(test);
+        }
+      }
+
+      const endTime = Date.now();
+      const elapsed = endTime - startTime;
+
+      document.getElementById('total-tests').textContent = totalTests;
+      document.getElementById('passed-tests').textContent = passedTests;
+      document.getElementById('failed-tests').textContent = failedTests;
+      document.getElementById('skipped-tests').textContent = skippedTests;
+      document.getElementById('time-elapsed').textContent = `${elapsed}ms`;
+
+      // Update summary color
+      const summaryDiv = document.getElementById('summary');
+      if (failedTests === 0) {
+        summaryDiv.style.background = '#28a745';
+      } else {
+        summaryDiv.style.background = '#dc3545';
+      }
+    }
+
+    // Generate text summary for copying/pasting
+    function showTextSummary() {
+      if (testResults.length === 0) {
+        alert('Please run tests first!');
+        return;
+      }
+
+      const totalTests = testResults.length;
+      const passedTests = testResults.filter(t => t.status === 'pass').length;
+      const failedTests = testResults.filter(t => t.status === 'fail').length;
+
+      let summary = '🧪 API ENDPOINT TEST RESULTS\n';
+      summary += '='.repeat(60) + '\n\n';
+      summary += `Total Tests:  ${totalTests}\n`;
+      summary += `Passed:       ${passedTests} ✅\n`;
+      summary += `Failed:       ${failedTests} ❌\n\n`;
+
+      if (failedTests > 0) {
+        summary += '❌ FAILED TESTS:\n';
+        summary += '-'.repeat(60) + '\n\n';
+
+        const suiteMap = {};
+        testResults.forEach(test => {
+          if (test.status === 'fail') {
+            if (!suiteMap[test.suite]) {
+              suiteMap[test.suite] = [];
+            }
+            suiteMap[test.suite].push(test);
+          }
+        });
+
+        Object.keys(suiteMap).forEach(suiteName => {
+          summary += `${suiteName}:\n`;
+          suiteMap[suiteName].forEach(test => {
+            summary += `  ❌ ${test.name}\n`;
+            summary += `     ${test.error}\n\n`;
+          });
+        });
+      } else {
+        summary += '✅ ALL TESTS PASSED!\n';
+      }
+
+      summary += '='.repeat(60);
+
+      // Show in a textarea modal for easy copying
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999;';
+
+      const content = document.createElement('div');
+      content.style.cssText = 'background: white; padding: 30px; border-radius: 8px; max-width: 800px; width: 90%;';
+
+      const title = document.createElement('h2');
+      title.textContent = 'Test Results Summary';
+      title.style.marginTop = '0';
+
+      const textarea = document.createElement('textarea');
+      textarea.value = summary;
+      textarea.style.cssText = 'width: 100%; height: 400px; font-family: monospace; font-size: 0.9em; padding: 15px; border: 1px solid #ccc; border-radius: 4px; margin: 15px 0;';
+      textarea.readOnly = true;
+
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = '📋 Copy to Clipboard';
+      copyBtn.style.cssText = 'background: #0066cc; color: white; border: none; padding: 12px 24px; font-size: 1em; border-radius: 4px; cursor: pointer; margin-right: 10px;';
+      copyBtn.onclick = () => {
+        textarea.select();
+        document.execCommand('copy');
+        copyBtn.textContent = '✅ Copied!';
+        setTimeout(() => { copyBtn.textContent = '📋 Copy to Clipboard'; }, 2000);
+      };
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Close';
+      closeBtn.style.cssText = 'background: #6c757d; color: white; border: none; padding: 12px 24px; font-size: 1em; border-radius: 4px; cursor: pointer;';
+      closeBtn.onclick = () => document.body.removeChild(modal);
+
+      content.appendChild(title);
+      content.appendChild(textarea);
+      content.appendChild(copyBtn);
+      content.appendChild(closeBtn);
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+
+      textarea.select();
+    }
+
+    // Auto-run tests on page load
+    window.addEventListener('load', () => {
+      setTimeout(() => runAllTests(), 500);
+    });
+  </script>
+</body>
+</html>
