@@ -66,7 +66,8 @@ export default async function handler(req, res) {
               last_activity as "lastActivity",
               total_time_spent as "totalTimeSpent",
               completion_rate as "completionRate",
-              repo_created as "repoCreated"
+              repo_created as "repoCreated",
+              demo_mode as "demoMode"
             FROM workshop_students
             ORDER BY last_activity DESC
             LIMIT 100
@@ -105,7 +106,8 @@ export default async function handler(req, res) {
             last_activity as "lastActivity",
             total_time_spent as "totalTimeSpent",
             completion_rate as "completionRate",
-            repo_created as "repoCreated"
+            repo_created as "repoCreated",
+            demo_mode as "demoMode"
           FROM workshop_students
           WHERE student_email = ${studentId}
         `;
@@ -151,7 +153,8 @@ export default async function handler(req, res) {
         timeSpent,
         attempts,
         totalExercises,
-        repoCreated
+        repoCreated,
+        demoMode
       } = req.body;
 
       if (!studentId || !exerciseId) {
@@ -188,7 +191,7 @@ export default async function handler(req, res) {
 
           await sql`
             INSERT INTO workshop_students
-            (student_email, student_name, exercises, started_at, last_activity, total_time_spent, completion_rate, repo_created)
+            (student_email, student_name, exercises, started_at, last_activity, total_time_spent, completion_rate, repo_created, demo_mode)
             VALUES (
               ${studentId},
               ${studentName || studentId},
@@ -197,7 +200,8 @@ export default async function handler(req, res) {
               ${timestamp},
               ${timeSpent || 0},
               ${totalExercises ? Math.round((completed ? 1 : 0) / totalExercises * 100) : 0},
-              ${repoCreated || false}
+              ${repoCreated || false},
+              ${demoMode || false}
             )
           `;
 
@@ -250,7 +254,8 @@ export default async function handler(req, res) {
             last_activity = ${timestamp},
             total_time_spent = ${newTotalTimeSpent},
             completion_rate = ${newCompletionRate},
-            repo_created = ${repoCreated !== undefined ? repoCreated : student.repo_created}
+            repo_created = ${repoCreated !== undefined ? repoCreated : student.repo_created},
+            demo_mode = ${demoMode !== undefined ? demoMode : student.demo_mode}
           WHERE student_email = ${studentId}
         `;
 
