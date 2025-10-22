@@ -70,7 +70,7 @@ export default async function handler(req, res) {
         tts_provider,
         CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
         CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
-        CASE WHEN tools_config IS NOT NULL THEN true ELSE false END as has_tools,
+        CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
         created_at,
         updated_at
       FROM student_configs
