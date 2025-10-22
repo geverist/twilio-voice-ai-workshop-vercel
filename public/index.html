@@ -7740,7 +7740,7 @@ case 'send_whatsapp':
 
     /**
      * Opens the personalized admin panel
-     * Saves all configuration to database first, then opens admin panel
+     * Saves all configuration to database first, pushes to GitHub if available, then opens admin panel
      */
     async function openAdminPanel() {
       try {
@@ -7748,6 +7748,17 @@ case 'send_whatsapp':
 
         // First, ensure all configuration is saved to database
         await saveAllConfigToDatabase();
+
+        // If GitHub repo exists, push admin panel HTML to it
+        if (githubToken && githubUsername && studentRepoName) {
+          console.log('📤 Pushing admin panel to GitHub repo...');
+          try {
+            await pushAdminPanelToGitHub();
+          } catch (pushError) {
+            console.warn('⚠️ Failed to push admin panel to GitHub:', pushError);
+            // Continue anyway - they can still use the hosted version
+          }
+        }
 
         // Open admin panel with session token
         const url = `/admin-panel-dynamic.html?session=${sessionToken}`;
@@ -7757,6 +7768,36 @@ case 'send_whatsapp':
       } catch (error) {
         console.error('❌ Failed to open admin panel:', error);
         alert('Failed to open admin panel: ' + error.message);
+      }
+    }
+
+    /**
+     * Pushes the personalized admin panel HTML to student's GitHub repository
+     */
+    async function pushAdminPanelToGitHub() {
+      try {
+        const response = await fetch('/api/github-push-admin-panel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: githubToken,
+            githubUsername: githubUsername,
+            repoName: studentRepoName,
+            sessionToken: sessionToken
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to push admin panel');
+        }
+
+        console.log('✅ Admin panel pushed to GitHub:', data.fileUrl);
+        return data;
+      } catch (error) {
+        console.error('❌ Push to GitHub failed:', error);
+        throw error;
       }
     }
 
