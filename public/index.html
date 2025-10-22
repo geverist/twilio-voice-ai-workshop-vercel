@@ -7750,11 +7750,17 @@ case 'send_whatsapp':
                   `}
 
                   ${call.sid ? `
-                    <div style="margin-top: 10px;">
+                    <div style="margin-top: 10px; display: flex; gap: 15px; flex-wrap: wrap;">
                       <a href="https://console.twilio.com/us1/monitor/logs/calls/${call.sid}" target="_blank"
                          style="color: #1a73e8; text-decoration: none; font-size: 12px; font-weight: bold;">
                         📊 View Full Details in Console →
                       </a>
+                      ${call.recordingUrl ? `
+                        <a href="${call.recordingUrl}" target="_blank"
+                           style="color: #e5c07b; text-decoration: none; font-size: 12px; font-weight: bold;">
+                          🎙️ Listen to Recording →
+                        </a>
+                      ` : ''}
                     </div>
                   ` : ''}
                 </div>
