@@ -64,11 +64,35 @@ Return your response as valid JSON only, with no markdown formatting or code blo
 Call direction: ${callDirection}
 
 Generate the following customized content (return as JSON):
-1. "systemPrompt": A detailed system prompt for OpenAI that fits their use case (2-3 paragraphs, specific instructions)
+
+1. "systemPrompt": A system prompt following this EXACT format and structure (customize for their use case):
+
+You are a helpful assistant for [their specific use case].
+
+# Voice Conversation Guidelines
+- Keep responses BRIEF (1-2 sentences max)
+- Be conversational and natural
+- Avoid lists, bullet points, or structured formatting
+- Don't say "as an AI" or mention you're artificial
+- If you don't know something, say so briefly
+- Respond quickly - every second matters in voice
+- Use casual language, contractions, and natural speech patterns
+
+# Response Style
+- Short and direct
+- Friendly but professional
+- Natural and human-like
+
+# Example Interactions
+[Include 2 examples specific to their use case showing GOOD (brief) vs BAD (too long) responses]
+
+Remember: In voice conversations, brevity is key. Keep it natural and conversational.
+
 2. "ivrGreeting": A friendly greeting message for the ${callDirection} call (1-2 sentences)
 3. "exampleQuestions": Array of 3-4 example questions/scenarios users might encounter with this bot
 4. "suggestedVoice": Recommended voice type (professional, friendly, authoritative, etc.)
 
+IMPORTANT: The systemPrompt MUST follow the voice best practices format above. Keep responses brief and conversational.
 Return ONLY valid JSON with these keys, no markdown or explanations.`
           }
         ],
