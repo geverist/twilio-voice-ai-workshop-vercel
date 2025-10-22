@@ -1019,19 +1019,19 @@ student2@example.com,Jane Smith</pre>
     // Render exercise completion statistics
     function renderExerciseStats() {
       const exerciseNames = [
-        'Exercise 1: Echo Bot',
-        'Exercise 2: Question Counter',
-        'Exercise 3: Context-Aware Responses',
-        'Exercise 4: Conversation History',
-        'Exercise 5: Add OpenAI',
-        'Exercise 6: Response Timing',
-        'Exercise 7: Error Handling',
-        'Exercise 8: Tool Calling',
-        'Exercise 9: Handle Interruptions'
+        'Step 1: Connect Accounts',
+        'Step 2: Choose Use Case',
+        'Step 3: Provision Services',
+        'Step 4: Basic TwiML',
+        'Step 5: WebSocket Handler',
+        'Step 6: ConversationRelay',
+        'Step 7: AI Tools',
+        'Step 8: Test Call',
+        'Step 9: Multichannel'
       ];
 
       const exerciseStats = exerciseNames.map((name, index) => {
-        const exerciseId = `exercise-${index + 1}`;
+        const exerciseId = `step-${index + 1}-${name.split(': ')[1].toLowerCase().replace(/\s+/g, '-')}`;
         const completedCount = studentProgressData.filter(student =>
           student.exercises && student.exercises[exerciseId] && student.exercises[exerciseId].completed
         ).length;
@@ -1063,15 +1063,15 @@ student2@example.com,Jane Smith</pre>
 
       const exercises = student.exercises || {};
       const exerciseNames = [
-        'Exercise 1: Echo Bot',
-        'Exercise 2: Question Counter',
-        'Exercise 3: Context-Aware Responses',
-        'Exercise 4: Conversation History',
-        'Exercise 5: Add OpenAI',
-        'Exercise 6: Response Timing',
-        'Exercise 7: Error Handling',
-        'Exercise 8: Tool Calling',
-        'Exercise 9: Handle Interruptions'
+        'Step 1: Connect Accounts',
+        'Step 2: Choose Use Case',
+        'Step 3: Provision Services',
+        'Step 4: Basic TwiML',
+        'Step 5: WebSocket Handler',
+        'Step 6: ConversationRelay',
+        'Step 7: AI Tools',
+        'Step 8: Test Call',
+        'Step 9: Multichannel'
       ];
 
       const detailHTML = `
@@ -1081,7 +1081,7 @@ student2@example.com,Jane Smith</pre>
 
           <h3 style="margin-bottom: 15px;">Exercise Progress:</h3>
           ${exerciseNames.map((name, index) => {
-            const exerciseId = `exercise-${index + 1}`;
+            const exerciseId = `step-${index + 1}-${name.split(': ')[1].toLowerCase().replace(/\s+/g, '-')}`;
             const ex = exercises[exerciseId] || {};
             const completed = ex.completed || false;
             const timeSpent = Math.round((ex.timeSpent || 0) / 60);
