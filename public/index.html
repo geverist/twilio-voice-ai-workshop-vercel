@@ -6731,7 +6731,7 @@ case 'send_whatsapp':
             ${isOutbound ? 'Monitor outbound campaigns and success rates' : 'Track incoming call volume and wait times'}
           </p>
           <div style="display: flex; flex-direction: column; gap: 8px;">
-            <button onclick="window.open('https://console.twilio.com/us1/monitor/logs/calls', '_blank')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
+            <button onclick="window.open('https://console.twilio.com/us1/monitor/logs/voice', '_blank')" class="btn" style="width: 100%; background: white; color: #667eea; padding: 8px 12px; font-size: 13px;">
               View Call Logs
             </button>
             <button onclick="alert('Feature coming soon: Real-time call dashboard')" class="btn" style="width: 100%; background: rgba(255,255,255,0.3); color: white; padding: 8px 12px; font-size: 13px;">
@@ -12128,7 +12128,7 @@ app.get('/health', (req, res) => {
               <h4 style="margin: 0 0 10px 0; color: #0066cc;">🚀 Next Steps</h4>
               <ul style="margin: 10px 0 0 20px; line-height: 1.8;">
                 <li>Test your voice handler by calling ${selectedPhoneNumber || 'your configured number'}</li>
-                <li>Monitor calls in the <a href="https://console.twilio.com/us1/monitor/logs/calls" target="_blank">Twilio Console</a></li>
+                <li>Monitor calls in the <a href="https://console.twilio.com/us1/monitor/logs/voice" target="_blank">Twilio Console</a></li>
                 <li>View function logs in the <a href="https://console.twilio.com/us1/develop/functions/services/${deployedServiceSid || ''}" target="_blank">Functions Editor</a></li>
                 <li>Customize your AI prompts and add more tools</li>
                 <li>Review the <a href="https://www.twilio.com/docs/voice/conversationrelay" target="_blank">ConversationRelay Documentation</a></li>
@@ -13603,7 +13603,7 @@ twilio serverless:deploy
 
     function openTwilioConsole(section) {
       const urls = {
-        calls: 'https://console.twilio.com/us1/monitor/logs/calls',
+        calls: 'https://console.twilio.com/us1/monitor/logs/voice',
         functions: `https://console.twilio.com/us1/develop/functions/editor/${twilioCredentials?.accountSid || ''}`,
         debugger: 'https://console.twilio.com/us1/monitor/debugger'
       };
