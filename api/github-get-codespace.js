@@ -132,16 +132,33 @@ export default async function handler(req, res) {
 
           if (port3000 && port3000.forwarded_url) {
             httpUrl = port3000.forwarded_url;
-            // Convert https:// to wss:// for WebSocket
             websocketUrl = port3000.forwarded_url.replace(/^https:\/\//, 'wss://');
+
+            // Verify the URL is actually reachable by testing HTTP endpoint
+            try {
+              const testResponse = await fetch(httpUrl + '/health', {
+                method: 'GET',
+                signal: AbortSignal.timeout(3000) // 3 second timeout
+              });
+
+              if (!testResponse.ok) {
+                console.warn(`Port forwarding URL ${httpUrl} returned ${testResponse.status}, will try fallback`);
+                httpUrl = null;
+                websocketUrl = null;
+              }
+            } catch (testError) {
+              console.warn(`Port forwarding URL ${httpUrl} not reachable, will try fallback`);
+              httpUrl = null;
+              websocketUrl = null;
+            }
           }
         }
       } catch (portError) {
         console.warn('Could not fetch Codespace ports:', portError.message);
       }
 
-      // Fallback: construct URL using the standard GitHub Codespaces domain
-      // Format: {codespace-name}-{port}.github.dev
+      // Fallback: construct URL using GitHub Codespaces domain
+      // Try both .github.dev (newer) and .app.github.dev (older)
       if (!websocketUrl) {
         websocketUrl = `wss://${codespaceData.name}-3000.github.dev`;
         httpUrl = `https://${codespaceData.name}-3000.github.dev`;
