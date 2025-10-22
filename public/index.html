@@ -1835,7 +1835,7 @@
     // Initialize
     function init() {
       // Generate or restore session token (used for identifying student across workshop)
-      if (!sessionToken) {
+      if (!sessionToken || sessionToken === 'null' || sessionToken === 'undefined') {
         // Generate a unique session token
         sessionToken = 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
         localStorage.setItem('sessionToken', sessionToken);
