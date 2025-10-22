@@ -3111,6 +3111,21 @@
         useCaseDescription = textarea.value.trim();
         saveProgressToStorage();
         console.log('📝 Use case updated:', useCaseDescription);
+
+        // Enable next button if BOTH use case and direction are selected
+        const nextBtn = document.getElementById('nextBtn2');
+        if (nextBtn) {
+          if (useCaseDescription && callDirectionChosen) {
+            nextBtn.disabled = false;
+            nextBtn.classList.add('next-action'); // Add glow effect
+            console.log('✅ Next button enabled (use case + direction selected)');
+          } else if (!useCaseDescription) {
+            // Disable if use case is empty (even if direction was selected)
+            nextBtn.disabled = true;
+            nextBtn.classList.remove('next-action');
+            console.log('⚠️ Next button disabled (use case empty)');
+          }
+        }
       }
     }
 
@@ -12136,7 +12151,10 @@ app.get('/health', (req, res) => {
           }
           break;
 
-        case 1: // Step 2: Direction
+        case 1: // Step 2: Direction & Use Case
+          if (!useCaseDescription || !useCaseDescription.trim()) {
+            return { canProceed: false, message: 'Please describe your use case first!' };
+          }
           if (!callDirectionChosen) {
             return { canProceed: false, message: 'Please choose a call direction (Inbound or Outbound)!' };
           }
