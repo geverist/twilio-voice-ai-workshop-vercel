@@ -1184,6 +1184,10 @@
     let codespaceName = ''; // Codespace identifier
     let isConnected = false; // WebSocket test connection status
 
+    // Railway variables
+    let railwayToken = null; // Railway API token
+    let railwayProjectId = null; // Railway project ID
+
     // Session token for identifying student across requests (works for both live and demo mode)
     let sessionToken = localStorage.getItem('sessionToken') || null;
     let ttsProvider = 'amazon-polly'; // Default TTS provider
@@ -1247,6 +1251,8 @@
         codespaceUrl,
         codespaceWebUrl,
         codespaceName,
+        railwayToken,
+        railwayProjectId,
         timestamp: new Date().toISOString(),
         completedSteps: steps.slice(0, currentStep).map(s => s.title)
       };
@@ -1502,6 +1508,8 @@
       codespaceUrl = progress.codespaceUrl || '';
       codespaceWebUrl = progress.codespaceWebUrl || '';
       codespaceName = progress.codespaceName || '';
+      railwayToken = progress.railwayToken || null;
+      railwayProjectId = progress.railwayProjectId || null;
 
       // Close modal
       if (window.resumeModal) {
@@ -2355,16 +2363,31 @@
               </div>
             ` : `
               <div style="margin-bottom: 15px;">
-                <button
-                  class="btn btn-primary next-action"
-                  id="deployCodespaceBtn"
-                  onclick="deployToDeno()"
-                  style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #1a7f37; border: none; font-weight: bold;">
-                  🚀 Deploy WebSocket Server
-                </button>
-                <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
-                  Instant deployment • Your code runs on Deno's edge network
-                </p>
+                ${!railwayToken ? `
+                  <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.3);">
+                    <h5 style="margin: 0 0 15px 0; color: white;">🚂 Railway Setup (One-Time)</h5>
+                    <p style="color: rgba(255,255,255,0.85); font-size: 14px; line-height: 1.6; margin: 0 0 15px 0;">
+                      Railway will host your WebSocket server reliably. You'll need to create a free account and copy one token - this takes about 30 seconds.
+                    </p>
+                    <button
+                      class="btn btn-primary next-action"
+                      onclick="promptForRailwayToken()"
+                      style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #1a7f37; border: none; font-weight: bold;">
+                      🎫 Get Railway Token
+                    </button>
+                  </div>
+                ` : `
+                  <button
+                    class="btn btn-primary next-action"
+                    id="deployCodespaceBtn"
+                    onclick="deployToRailway()"
+                    style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #1a7f37; border: none; font-weight: bold;">
+                    🚀 Deploy WebSocket Server
+                  </button>
+                  <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
+                    Deploying to Railway • Reliable WebSocket hosting
+                  </p>
+                `}
                 <div id="codespacesUsageInfo" style="margin-top: 10px; text-align: center;"></div>
               </div>
             `}
@@ -15089,10 +15112,99 @@ twilio serverless:deploy
     }
 
     /**
-     * Deploy WebSocket Server to Deno Deploy
-     * Uses Deno Subhosting API to deploy student code programmatically
+     * Prompt user to get Railway token
      */
-    async function deployToDeno() {
+    function promptForRailwayToken() {
+      const modal = `
+        <div id="railwayTokenModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+          <div style="background: white; padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+            <h3 style="margin: 0 0 20px 0; color: #333;">🚂 Get Your Railway Token</h3>
+
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0066cc;">
+              <strong style="color: #333;">📝 Quick Steps:</strong>
+              <ol style="margin: 10px 0 0 20px; padding: 0; color: #666; line-height: 1.8;">
+                <li>Click the button below to open Railway</li>
+                <li>Sign up (it's free - no credit card required)</li>
+                <li>Go to Account Settings → Tokens</li>
+                <li>Click "Create Token" and copy it</li>
+                <li>Paste it below</li>
+              </ol>
+            </div>
+
+            <button
+              onclick="window.open('https://railway.app/account/tokens', '_blank')"
+              style="width: 100%; padding: 15px; background: #0066cc; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-bottom: 20px;">
+              🌐 Open Railway Tokens Page
+            </button>
+
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Railway Token:</label>
+              <input
+                type="password"
+                id="railwayTokenInput"
+                placeholder="Paste your Railway token here..."
+                style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; font-family: monospace; box-sizing: border-box;"
+              />
+              <p style="margin: 8px 0 0 0; font-size: 12px; color: #666;">
+                🔒 This token is only stored in your browser and used to deploy your server
+              </p>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <button
+                onclick="saveRailwayToken()"
+                style="flex: 1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">
+                ✅ Save Token
+              </button>
+              <button
+                onclick="closeRailwayTokenModal()"
+                style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer;">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modal);
+      setTimeout(() => {
+        document.getElementById('railwayTokenInput').focus();
+      }, 100);
+    }
+
+    function closeRailwayTokenModal() {
+      const modal = document.getElementById('railwayTokenModal');
+      if (modal) modal.remove();
+    }
+
+    function saveRailwayToken() {
+      const input = document.getElementById('railwayTokenInput');
+      const token = input.value.trim();
+
+      if (!token) {
+        alert('Please enter a Railway token');
+        return;
+      }
+
+      if (token.length < 20) {
+        alert('Token seems too short - please copy the full token from Railway');
+        return;
+      }
+
+      railwayToken = token;
+      saveProgressToStorage();
+      closeRailwayTokenModal();
+      renderStepContent();
+
+      // Show success message
+      showStatus('codespaceDeployStatus', 'success', '✅ Railway token saved! Now click "Deploy WebSocket Server" to deploy.');
+    }
+
+    /**
+     * Deploy WebSocket Server to Railway
+     * Uses Railway's GraphQL API to deploy student code from GitHub
+     */
+    async function deployToRailway() {
       const btn = document.getElementById('deployCodespaceBtn');
 
       // Demo mode simulation
@@ -15103,7 +15215,7 @@ twilio serverless:deploy
         showStatus('codespaceDeployStatus', 'info', '📦 Demo: Deploying WebSocket server...');
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        websocketUrl = 'wss://demo-workshop-server.deno.dev';
+        websocketUrl = 'wss://demo-workshop-server.up.railway.app';
         codespaceUrl = websocketUrl;
         step5Deployed = true;
         websocketBuilt = true;
@@ -15127,23 +15239,26 @@ twilio serverless:deploy
         return;
       }
 
+      if (!railwayToken) {
+        showStatus('codespaceDeployStatus', 'error', '❌ Please get your Railway token first');
+        return;
+      }
+
       try {
         btn.disabled = true;
         btn.textContent = '🚀 Deploying...';
 
         const repoFullName = `${githubUsername}/${studentRepoName}`;
 
-        showStatus('codespaceDeployStatus', 'info', '📦 Fetching your code from GitHub...');
+        showStatus('codespaceDeployStatus', 'info', '🚂 Creating Railway project...');
 
-        // Call Deno Deploy API with student's OpenAI key
-        const response = await fetch('/api/deno-deploy', {
+        // Call Railway Deploy API
+        const response = await fetch('/api/railway-deploy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            githubToken: githubToken,
+            railwayToken: railwayToken,
             repoFullName: repoFullName,
-            githubUsername: githubUsername,
-            studentName: studentName || githubUsername,
             openaiApiKey: openaiApiKey
           })
         });
@@ -15154,47 +15269,82 @@ twilio serverless:deploy
           throw new Error(data.error || 'Deployment failed');
         }
 
-        // Deployment is built and ready, now test WebSocket
-        showStatus('codespaceDeployStatus', 'info', '🔍 Testing WebSocket connection...');
+        railwayProjectId = data.projectId;
 
-        // Test WebSocket connection
-        const wsTestResult = await testWebSocketConnection(data.websocketUrl);
+        // Poll for deployment status
+        showStatus('codespaceDeployStatus', 'info', '📦 Building your WebSocket server...');
 
-        if (!wsTestResult.success) {
-          throw new Error(`WebSocket test failed: ${wsTestResult.error}`);
+        let deploymentReady = false;
+        let attempts = 0;
+        const maxAttempts = 60; // 2 minutes with 2-second intervals
+
+        while (!deploymentReady && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          attempts++;
+
+          const statusResponse = await fetch('/api/railway-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              railwayToken: railwayToken,
+              projectId: railwayProjectId
+            })
+          });
+
+          const statusData = await statusResponse.json();
+
+          if (statusData.status === 'ready') {
+            deploymentReady = true;
+            websocketUrl = statusData.websocketUrl;
+            codespaceUrl = statusData.deploymentUrl;
+
+            // Test WebSocket connection
+            showStatus('codespaceDeployStatus', 'info', '🔍 Testing WebSocket connection...');
+            const wsTestResult = await testWebSocketConnection(websocketUrl);
+
+            if (!wsTestResult.success) {
+              throw new Error(`WebSocket test failed: ${wsTestResult.error}`);
+            }
+
+            step5Deployed = true;
+            websocketBuilt = true;
+
+            saveProgressToStorage();
+            updateProgressBar();
+
+            showStatus('codespaceDeployStatus', 'success',
+              `✅ WebSocket server deployed and verified!<br>` +
+              `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${websocketUrl}</div>` +
+              `<div style="margin-top: 10px; font-size: 13px; opacity: 0.8;">✓ WebSocket connection test passed - server is ready to handle calls!</div>`
+            );
+
+            btn.disabled = false;
+            btn.textContent = '✅ Server Deployed';
+
+            celebrate('🎉 Your WebSocket server is live!', 'normal');
+            renderStepContent();
+
+            setTimeout(() => {
+              const connectTwilioBtn = document.querySelector('[onclick*="connectTwilio"]');
+              if (connectTwilioBtn && !twilioConnected) {
+                connectTwilioBtn.classList.add('next-action');
+              }
+            }, 500);
+
+          } else if (statusData.status === 'failed') {
+            throw new Error(statusData.error || 'Deployment failed');
+          } else {
+            // Still deploying
+            showStatus('codespaceDeployStatus', 'info', `📦 ${statusData.message || 'Building...'} (${attempts * 2}s)`);
+          }
         }
 
-        websocketUrl = data.websocketUrl;
-        codespaceUrl = data.websocketUrl;
-        denoProjectId = data.projectId;
-        denoDeploymentId = data.deploymentId;
-        step5Deployed = true;
-        websocketBuilt = true;
-
-        saveProgressToStorage();
-        updateProgressBar();
-
-        showStatus('codespaceDeployStatus', 'success',
-          `✅ WebSocket server deployed and verified!<br>` +
-          `<div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">${websocketUrl}</div>` +
-          `<div style="margin-top: 10px; font-size: 13px; opacity: 0.8;">✓ WebSocket connection test passed - server is ready to handle calls!</div>`
-        );
-
-        btn.disabled = false;
-        btn.textContent = '✅ Server Deployed';
-
-        celebrate('🎉 Your WebSocket server is live!', 'normal');
-        renderStepContent();
-
-        setTimeout(() => {
-          const connectTwilioBtn = document.querySelector('[onclick*="connectTwilio"]');
-          if (connectTwilioBtn && !twilioConnected) {
-            connectTwilioBtn.classList.add('next-action');
-          }
-        }, 500);
+        if (!deploymentReady) {
+          throw new Error('Deployment timed out after 2 minutes');
+        }
 
       } catch (error) {
-        console.error('Deno Deploy error:', error);
+        console.error('Railway Deploy error:', error);
         showStatus('codespaceDeployStatus', 'error', `❌ Deployment failed: ${error.message}`);
         btn.disabled = false;
         btn.textContent = '🔄 Retry Deployment';
