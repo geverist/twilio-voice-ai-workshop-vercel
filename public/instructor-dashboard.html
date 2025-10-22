@@ -620,7 +620,7 @@ student2@example.com,Jane Smith</pre>
             </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" id="adminPasswordField">
             <label for="cleanupAdminPassword">Admin Password *</label>
             <input
               type="password"
@@ -1288,16 +1288,21 @@ student2@example.com,Jane Smith</pre>
 
     function updateAdminLoginButton() {
       const btn = document.getElementById('adminLoginBtn');
+      const passwordField = document.getElementById('adminPasswordField');
       const cachedPassword = sessionStorage.getItem('adminPassword');
 
       if (cachedPassword) {
         btn.textContent = '✅ Logged In';
         btn.classList.add('logged-in');
         btn.title = 'Click to logout';
+        // Hide password field when logged in
+        if (passwordField) passwordField.style.display = 'none';
       } else {
         btn.textContent = '🔓 Admin Login';
         btn.classList.remove('logged-in');
         btn.title = 'Click to enter admin password';
+        // Show password field when logged out
+        if (passwordField) passwordField.style.display = 'block';
       }
     }
 
