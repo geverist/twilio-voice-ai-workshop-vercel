@@ -5602,17 +5602,34 @@ ${prompt}`;
           // Parse the JSON response from OpenAI
           let scoreData;
           try {
-            // Extract JSON from response (in case it's wrapped in markdown code blocks)
+            // Extract JSON from response (in case it's wrapped in markdown code blocks or has extra text)
             let jsonText = data.response.trim();
+
+            // Remove markdown code blocks
             if (jsonText.startsWith('```json')) {
               jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
             } else if (jsonText.startsWith('```')) {
               jsonText = jsonText.replace(/```\n?/g, '').trim();
             }
+
+            // Try to extract JSON object if there's surrounding text
+            const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              jsonText = jsonMatch[0];
+            }
+
             scoreData = JSON.parse(jsonText);
+
+            // Validate that required fields exist
+            if (!scoreData.score || !scoreData.grade || !scoreData.strengths || !scoreData.improvements || !scoreData.summary) {
+              throw new Error('Missing required fields in response');
+            }
           } catch (parseError) {
             console.error('Failed to parse OpenAI response:', data.response);
-            throw new Error('Failed to parse scoring response');
+            console.error('Parse error:', parseError);
+            showStatus('systemPromptStatus', 'error', '❌ Scoring failed: Unable to parse AI response. Please try again.');
+            scoreDisplay.style.display = 'none';
+            return;
           }
 
           // Determine color based on score
