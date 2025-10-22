@@ -11630,7 +11630,7 @@ app.get('/health', (req, res) => {
       if (allPassed) {
         showStatus('step7Status', 'success', '✅ Code validation passed! Click the deploy button below to deploy your WebSocket handler.');
         step5CodeValidated = true;
-
+        saveProgressToStorage();
         updateProgressBar();
 
         // Hide placeholder and show deploy section
