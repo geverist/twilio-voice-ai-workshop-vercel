@@ -14842,17 +14842,16 @@ twilio serverless:deploy
                   }
                 }
               }
-            }
 
-            // Health check failed - server may still be starting
-            // Continue polling for a bit longer
-            if (attempts < maxAttempts) {
-              showStatus('codespaceDeployStatus', 'info',
-                `⏳ Waiting for WebSocket server to start... (${healthCheckDuration}s)<br>` +
-                `<span style="font-size: 12px; opacity: 0.8;">The server auto-starts on Codespace launch. This can take up to 2 minutes.</span>`
-              );
-              setTimeout(poll, 5000);
-            } else {
+              // Health check failed - server may still be starting
+              // Continue polling for a bit longer
+              if (attempts < maxAttempts) {
+                showStatus('codespaceDeployStatus', 'info',
+                  `⏳ Waiting for WebSocket server to start... (${healthCheckDuration}s)<br>` +
+                  `<span style="font-size: 12px; opacity: 0.8;">The server auto-starts on Codespace launch. This can take up to 2 minutes.</span>`
+                );
+                setTimeout(poll, 5000);
+              } else {
               // Timeout - DO NOT allow progression, server must be reachable
               const btn = document.getElementById('deployCodespaceBtn5');
               if (btn) {
@@ -14878,9 +14877,10 @@ twilio serverless:deploy
                 `</details>`
               );
 
-              // Do NOT set step5Deployed or websocketBuilt - block progression
-              console.error('WebSocket server health check failed after timeout');
-            }
+                // Do NOT set step5Deployed or websocketBuilt - block progression
+                console.error('WebSocket server health check failed after timeout');
+              }
+            } // End of try-catch for WebSocket testing
 
           } else if (state === 'Starting' || state === 'Created' || state === 'Provisioning') {
             // Still starting, continue polling
