@@ -13958,19 +13958,26 @@ twilio serverless:deploy
         `;
 
         const repoList = repos.map((repo, index) => `
-          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 2px solid transparent; transition: all 0.2s; position: relative;"
                onmouseover="this.style.borderColor='#4caf50'; this.style.background='#e8f5e9';"
-               onmouseout="this.style.borderColor='transparent'; this.style.background='#f8f9fa';"
-               onclick="selectRepository('${repo.name}')">
+               onmouseout="this.style.borderColor='transparent'; this.style.background='#f8f9fa';">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <div>
+              <div style="flex: 1; cursor: pointer;" onclick="selectRepository('${repo.name}')">
                 <strong style="color: #0d122b; font-size: 1.05rem;">${repo.name}</strong>
                 ${repo.description ? `<p style="color: #666; margin: 5px 0 0 0; font-size: 0.9rem;">${repo.description}</p>` : ''}
                 <p style="color: #999; margin: 5px 0 0 0; font-size: 0.85rem;">
                   Updated: ${new Date(repo.updatedAt).toLocaleDateString()}
                 </p>
               </div>
-              <div style="color: #4caf50; font-size: 1.2rem;">→</div>
+              <div style="display: flex; align-items: center; gap: 15px;">
+                <div style="color: #4caf50; font-size: 1.2rem; cursor: pointer;" onclick="selectRepository('${repo.name}')">→</div>
+                <button
+                  onclick="event.stopPropagation(); deleteRepository('${repo.name}', '${repo.owner}')"
+                  style="background: #f44336; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                  onmouseover="this.style.background='#d32f2f'; this.style.transform='scale(1.1)'"
+                  onmouseout="this.style.background='#f44336'; this.style.transform='scale(1)'"
+                  title="Delete this repository">×</button>
+              </div>
             </div>
           </div>
         `).join('');
@@ -14040,7 +14047,50 @@ twilio serverless:deploy
           delete window.selectRepository;
           delete window.createNewRepositoryFromModal;
           delete window.closeRepoSelectionModal;
+          delete window.deleteRepository;
           resolve();
+        };
+
+        window.deleteRepository = async (repoName, repoOwner) => {
+          // Show confirmation dialog
+          const confirmed = confirm(
+            `Delete "${repoName}"?\n\n` +
+            `This will permanently delete the repository from your GitHub account.\n` +
+            `This action cannot be undone!\n\n` +
+            `Are you sure you want to delete this repository?`
+          );
+
+          if (!confirmed) {
+            return;
+          }
+
+          try {
+            const repoFullName = `${repoOwner}/${repoName}`;
+
+            // Call GitHub API to delete the repository
+            const deleteResponse = await fetch('/api/github-delete-repo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                accessToken: githubToken,
+                repoFullName: repoFullName
+              })
+            });
+
+            const deleteData = await deleteResponse.json();
+
+            if (deleteData.success) {
+              alert(`✅ Repository "${repoName}" deleted successfully!`);
+
+              // Refresh the modal to show updated repo list
+              closeRepoSelectionModal();
+              await cloneRepository(); // This will show the modal again with updated list
+            } else {
+              throw new Error(deleteData.error || 'Failed to delete repository');
+            }
+          } catch (error) {
+            alert(`❌ Failed to delete repository: ${error.message}`);
+          }
         };
       });
     }
