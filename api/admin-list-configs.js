@@ -88,6 +88,9 @@ export default async function handler(req, res) {
         // Sessions table exists but doesn't have the right structure
         // Fall through to check workshop_students instead
         console.warn('⚠️ Sessions table exists but missing required columns, checking workshop_students');
+        // Reset students/sessions so we fall through to workshop_students check
+        students = [];
+        sessions = [];
       } else {
         // Use normalized structure
         students = await sql`
