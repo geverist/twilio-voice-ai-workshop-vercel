@@ -1276,61 +1276,56 @@
       }
 
       try {
-        // Calculate which exercises are completed based on step progress
-        const exercises = {};
+        // Determine completion status for each step based on validation flags
+        const stepCompletionStatus = {
+          1: twilioConnected && openaiConnected, // Step 1: Connect accounts
+          2: callDirectionChosen, // Step 2: Choose use case
+          3: selectedPhoneNumber && servicesReady, // Step 3: Provision services
+          4: step4CodeValidated && step4Deployed, // Step 4: Basic TwiML
+          5: step5CodeValidated && step5Deployed, // Step 5: WebSocket handler
+          6: step6CodeValidated && step6Deployed, // Step 6: ConversationRelay
+          7: false, // Step 7: AI Tools (add when implemented)
+          8: step8Committed, // Step 8: Test full call
+          9: false // Step 9: Multichannel (add when implemented)
+        };
 
         // Map steps to exercise IDs
         const stepToExercise = {
-          1: 'connect-accounts',
-          2: 'choose-use-case',
-          3: 'provision-number',
-          4: 'create-basic-twiml',
-          5: 'build-websocket-handler',
-          6: 'create-conversation-relay',
-          7: 'add-ai-tools',
-          8: 'test-full-call',
-          9: 'add-multichannel'
+          1: 'step-1-connect-accounts',
+          2: 'step-2-choose-use-case',
+          3: 'step-3-provision-services',
+          4: 'step-4-basic-twiml',
+          5: 'step-5-websocket-handler',
+          6: 'step-6-conversation-relay',
+          7: 'step-7-ai-tools',
+          8: 'step-8-test-call',
+          9: 'step-9-multichannel'
         };
 
-        // Mark exercises as completed based on currentStep
-        for (let i = 1; i < currentStep; i++) {
-          const exerciseId = stepToExercise[i];
-          if (exerciseId) {
-            exercises[exerciseId] = {
-              completed: true,
-              timestamp: new Date().toISOString()
-            };
+        // Send progress for each completed step
+        for (let stepNum = 1; stepNum <= 9; stepNum++) {
+          const exerciseId = stepToExercise[stepNum];
+          const isCompleted = stepCompletionStatus[stepNum] || false;
+          const isCurrentStep = stepNum === (currentStep + 1); // currentStep is 0-indexed
+
+          // Only send if step is completed OR it's the current step
+          if (isCompleted || isCurrentStep) {
+            await fetch(`${window.location.origin}/api/track-student-progress`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                studentId: studentEmail,
+                studentName: studentName || studentEmail,
+                exerciseId: exerciseId,
+                completed: isCompleted,
+                totalExercises: 9,
+                repoCreated: !!studentRepoName,
+                demoMode: studentDemoMode || false
+              })
+            });
           }
-        }
-
-        // Add current step as in-progress
-        const currentExercise = stepToExercise[currentStep];
-        if (currentExercise && !exercises[currentExercise]) {
-          exercises[currentExercise] = {
-            completed: false,
-            attempts: 1,
-            lastAttempt: new Date().toISOString()
-          };
-        }
-
-        const response = await fetch(`${window.location.origin}/api/track-student-progress`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            studentId: studentEmail,
-            studentName: studentName || studentEmail,
-            exerciseId: currentExercise || 'unknown',
-            completed: false,
-            totalExercises: 9,
-            repoCreated: !!studentRepoName,
-            demoMode: studentDemoMode || false
-          })
-        });
-
-        if (!response.ok) {
-          console.warn('Failed to track student progress:', await response.text());
         }
       } catch (error) {
         console.warn('Error tracking student progress:', error);
@@ -1401,29 +1396,31 @@
           </div>
           <div style="margin-bottom: 25px;">
             <label for="studentEmail" style="display: block; text-align: left; color: #666; font-size: 0.95rem; margin-bottom: 8px; font-weight: 500;">
-              Your Email <span style="color: #999; font-weight: 400;">(optional)</span>
+              Your Email <span style="color: #F22F46; font-weight: 600;">*</span>
             </label>
             <input
               type="email"
               id="studentEmail"
               value="${studentEmail}"
               placeholder="e.g., alex.johnson@company.com"
+              required
               style="width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;"
               onfocus="this.style.borderColor='#F22F46'"
               onblur="this.style.borderColor='#ddd'"
             />
             <p style="color: #999; font-size: 0.85rem; margin-top: 6px; text-align: left;">
-              Optional: Helps instructors track your progress during the workshop
+              Required: Helps instructors track your progress during the workshop
             </p>
           </div>
           <div style="margin-bottom: 25px;">
             <label for="studentName" style="display: block; text-align: left; color: #666; font-size: 0.95rem; margin-bottom: 8px; font-weight: 500;">
-              Your Name <span style="color: #999; font-weight: 400;">(optional)</span>
+              Your Name <span style="color: #F22F46; font-weight: 600;">*</span>
             </label>
             <input
               type="text"
               id="studentName"
               placeholder="e.g., Alex Johnson"
+              required
               style="width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;"
               onfocus="this.style.borderColor='#F22F46'"
               onblur="this.style.borderColor='#ddd'"
@@ -1451,6 +1448,26 @@
       const emailInput = document.getElementById('studentEmail');
       const name = nameInput ? nameInput.value.trim() : '';
       const email = emailInput ? emailInput.value.trim() : '';
+
+      // Validate required fields (except in demo mode where they're optional)
+      if (!isDemoMode) {
+        if (!name) {
+          alert('Please enter your name to continue. This helps instructors track your progress.');
+          nameInput?.focus();
+          return;
+        }
+        if (!email) {
+          alert('Please enter your email to continue. This helps instructors track your progress.');
+          emailInput?.focus();
+          return;
+        }
+        // Basic email validation
+        if (!email.includes('@') || !email.includes('.')) {
+          alert('Please enter a valid email address.');
+          emailInput?.focus();
+          return;
+        }
+      }
 
       if (name) {
         studentName = name;
