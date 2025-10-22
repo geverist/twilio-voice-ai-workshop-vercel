@@ -8768,6 +8768,12 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           // Update phone number with the new voice-handler URL after ConversationRelay deployment
           updatePhoneNumberWebhook();
 
+          // Move next-action effect from Deploy button to Next button
+          const deployBtn = document.getElementById('commitStep6Btn');
+          if (deployBtn) {
+            deployBtn.classList.remove('next-action');
+          }
+
           // Show the test section after deploying ConversationRelay
           const testSection = document.getElementById('step6TestCallSection');
           if (testSection) {
@@ -8777,9 +8783,12 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             }, 500);
           }
 
-          // Enable Next button - voice testing happens in Step 7 after prompt
-          const nextBtn6 = document.getElementById('nextBtn6');
-          if (nextBtn6) nextBtn6.disabled = false;
+          // Enable Next button and add next-action effect
+          const nextBtn8 = document.getElementById('nextBtn8');
+          if (nextBtn8) {
+            nextBtn8.disabled = false;
+            nextBtn8.classList.add('next-action');
+          }
 
           // Show SDK version notice
           showSDKVersionNotice();
@@ -9616,7 +9625,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
                   ✅ What to expect:
                 </p>
                 <ul style="color: rgba(255,255,255,0.9); margin: 0; padding-left: 20px; line-height: 1.8;">
-                  <li>AI greeting: "Hello! I am your AI assistant. How can I help you today?"</li>
+                  <li>AI greeting: "${document.getElementById('crWelcomeGreeting')?.value || 'Hello! I am your AI assistant. How can I help you today?'}"</li>
+                  <li>Your AI will act as: <strong>${useCaseDescription ? useCaseDescription.substring(0, 80) + (useCaseDescription.length > 80 ? '...' : '') : 'a helpful assistant'}</strong></li>
                   <li>Natural conversation powered by OpenAI</li>
                   <li>Voice selected: <strong>${getDefaultVoice()}</strong> (${getTTSProviderName()})</li>
                   <li>Real-time bidirectional streaming via ConversationRelay</li>
