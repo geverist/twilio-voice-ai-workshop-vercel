@@ -101,10 +101,17 @@ export default async function handler(req, res) {
 
     if (!deploymentStatus.ready) {
       const errorMsg = deploymentStatus.error || 'Deployment did not become ready within timeout period';
-      const logs = deploymentStatus.logs && deploymentStatus.logs.length > 0
-        ? `\n\nBuild logs:\n${deploymentStatus.logs.join('\n')}`
-        : '';
-      throw new Error(`${errorMsg}${logs}`);
+
+      // Format build logs properly
+      let logsText = '';
+      if (deploymentStatus.logs && deploymentStatus.logs.length > 0) {
+        const formattedLogs = deploymentStatus.logs.map(log =>
+          typeof log === 'string' ? log : JSON.stringify(log, null, 2)
+        ).join('\n');
+        logsText = `\n\nBuild logs:\n${formattedLogs}`;
+      }
+
+      throw new Error(`${errorMsg}${logsText}`);
     }
 
     // Step 6: Get deployment URL
