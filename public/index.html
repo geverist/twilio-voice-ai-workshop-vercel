@@ -8689,6 +8689,41 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           // Save progress immediately
           saveProgressToStorage();
 
+          // Save student config to database for shared WebSocket server
+          if (!studentDemoMode && !twilioCredentials?.demoMode) {
+            try {
+              console.log('💾 Saving student config to database...');
+
+              const configResponse = await fetch('/api/student-config-save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  sessionToken: sessionToken,
+                  studentName: studentName || githubUsername || 'Student',
+                  openaiApiKey: openaiApiKey,
+                  systemPrompt: customSystemPrompt || 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.',
+                  tools: [], // Tools will be added in Step 8
+                  voiceSettings: {
+                    provider: ttsProvider,
+                    voice: conversationRelayVoice
+                  }
+                })
+              });
+
+              const configData = await configResponse.json();
+
+              if (configData.success) {
+                console.log('✅ Student config saved to database');
+                console.log('   WebSocket URL:', configData.websocketUrl);
+              } else {
+                console.warn('⚠️ Failed to save student config:', configData.error);
+              }
+            } catch (error) {
+              console.error('❌ Error saving student config:', error);
+              // Don't fail deployment if config save fails
+            }
+          }
+
           showStatus(statusId, 'success', '✅ ConversationRelay deployed successfully!');
           console.log('✅ Step 6 deployed, step6Deployed =', step6Deployed);
 
@@ -8736,6 +8771,49 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         if (stepNumber === 8) {
           step8Committed = true;
           toolsConfigured = true;
+
+          // Update student config with tools in database
+          if (!studentDemoMode && !twilioCredentials?.demoMode) {
+            try {
+              console.log('💾 Updating student config with tools...');
+
+              // Extract tools from the code (if any)
+              const tools = []; // TODO: Parse tools from functionCode when Step 8 tools are defined
+
+              const configResponse = await fetch('/api/student-config-save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  sessionToken: sessionToken,
+                  studentName: studentName || githubUsername || 'Student',
+                  openaiApiKey: openaiApiKey,
+                  systemPrompt: customSystemPrompt || 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.',
+                  tools: tools,
+                  voiceSettings: {
+                    provider: ttsProvider,
+                    voice: conversationRelayVoice
+                  }
+                })
+              });
+
+              const configData = await configResponse.json();
+
+              if (configData.success) {
+                console.log('✅ Student config updated with tools');
+              } else {
+                console.warn('⚠️ Failed to update config with tools:', configData.error);
+              }
+            } catch (error) {
+              console.error('❌ Error updating config with tools:', error);
+              // Don't fail deployment if config update fails
+            }
+          }
+
+          // Save progress immediately
+          saveProgressToStorage();
+
+          showStatus(statusId, 'success', '✅ Tools configured successfully!');
+          console.log('✅ Step 8 deployed, toolsConfigured =', toolsConfigured);
         }
 
         functionsDeployed = true;
