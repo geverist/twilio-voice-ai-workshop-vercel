@@ -14,12 +14,6 @@ import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
 //   handleValidationError
 // } from './_lib/validation.js'; // Temporarily disabled - causing function crashes
 
-// Create postgres connection
-const sql = process.env.POSTGRES_URL ? postgres(process.env.POSTGRES_URL, {
-  ssl: 'require',
-  max: 1
-}) : null;
-
 export default async function handler(req, res) {
   // Apply CORS
   applyCORS(req, res);
@@ -40,10 +34,25 @@ export default async function handler(req, res) {
   // }
 
   // Check if Postgres is configured
-  if (!process.env.POSTGRES_URL || !sql) {
+  if (!process.env.POSTGRES_URL) {
     return res.status(500).json({
       success: false,
       error: 'Database not configured. Please set POSTGRES_URL in environment variables.'
+    });
+  }
+
+  // Create postgres connection INSIDE handler to avoid module-level initialization errors
+  let sql;
+  try {
+    sql = postgres(process.env.POSTGRES_URL, {
+      ssl: 'require',
+      max: 1
+    });
+  } catch (error) {
+    console.error('Failed to create postgres connection:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to connect to database'
     });
   }
 
@@ -185,5 +194,10 @@ export default async function handler(req, res) {
       success: false,
       error: error.message || 'Failed to save configuration'
     });
+  } finally {
+    // Close the postgres connection
+    if (sql) {
+      await sql.end();
+    }
   }
 }
