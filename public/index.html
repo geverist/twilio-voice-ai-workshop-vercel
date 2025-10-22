@@ -1235,6 +1235,235 @@
     let currentLanguage = localStorage.getItem('preferredLanguage') || 'javascript';
 
     // =========================================================================
+    // CENTRALIZED STATE MANAGEMENT SYSTEM
+    // =========================================================================
+
+    // State change listeners
+    const stateListeners = {};
+    let syncTimer = null;
+
+    // Get nested property from object using dot notation
+    function getNestedProperty(obj, path) {
+      return path.split('.').reduce((curr, prop) => curr?.[prop], obj);
+    }
+
+    // Set nested property on object using dot notation
+    function setNestedProperty(obj, path, value) {
+      const parts = path.split('.');
+      const last = parts.pop();
+      const target = parts.reduce((curr, prop) => {
+        if (!curr[prop]) curr[prop] = {};
+        return curr[prop];
+      }, obj);
+      target[last] = value;
+    }
+
+    // Get state value
+    function getState(path) {
+      // For now, just access the global variables directly
+      // Later we'll migrate to workshopState object
+      const varName = path.split('.').pop();
+      return window[varName];
+    }
+
+    // Set state value with automatic localStorage and database sync
+    function setState(path, value) {
+      const varName = path.split('.').pop();
+      const oldValue = window[varName];
+
+      // Update the variable
+      window[varName] = value;
+
+      // Save to localStorage immediately
+      saveProgressToStorage();
+
+      // Queue database sync (debounced)
+      queueDatabaseSync();
+
+      // Trigger listeners
+      if (stateListeners[path]) {
+        stateListeners[path].forEach(callback => callback(value, oldValue));
+      }
+
+      // Trigger wildcard listeners
+      if (stateListeners['*']) {
+        stateListeners['*'].forEach(callback => callback(path, value, oldValue));
+      }
+
+      // Check conditions after state change
+      setTimeout(() => checkAllConditions(), 0);
+
+      return value;
+    }
+
+    // Watch for state changes
+    function watchState(path, callback) {
+      if (!stateListeners[path]) {
+        stateListeners[path] = [];
+      }
+      stateListeners[path].push(callback);
+    }
+
+    // Queue database sync with debouncing
+    function queueDatabaseSync() {
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => {
+        syncToDatabase();
+      }, 2000); // Wait 2 seconds after last change
+    }
+
+    // Sync current state to database
+    async function syncToDatabase() {
+      if (!sessionToken) return;
+
+      console.log('🔄 Syncing state to database...');
+
+      // Use existing saveStudentProgress function
+      await saveStudentProgress();
+    }
+
+    // Step completion conditions
+    const STEP_CONDITIONS = {
+      0: () => twilioConnected && openaiConnected,
+      1: () => callDirectionChosen && useCaseDescription?.trim(),
+      2: () => selectedPhoneNumber && servicesReady,
+      3: () => step4CodeValidated && step4Deployed,
+      4: () => step5CodeValidated && step5Deployed,
+      5: () => step6CodeValidated && step6Deployed,
+      6: () => systemPromptSaved,
+      7: () => toolsConfigured && step8Deployed,
+      8: () => projectDeployed
+    };
+
+    // Check if step is complete
+    function checkStepComplete(stepNum) {
+      const condition = STEP_CONDITIONS[stepNum];
+      if (!condition) return false;
+
+      const isComplete = condition();
+
+      if (isComplete) {
+        const nextBtn = document.getElementById(`nextBtn${stepNum + 1}`);
+        if (nextBtn) {
+          nextBtn.disabled = false;
+        }
+      }
+
+      return isComplete;
+    }
+
+    // Check all conditions and update UI
+    function checkAllConditions() {
+      // Check current step completion
+      checkStepComplete(currentStep);
+
+      // Update next-action target
+      updateNextActionTarget();
+    }
+
+    // Update which element should have next-action class
+    function updateNextActionTarget() {
+      // Remove all existing next-actions
+      document.querySelectorAll('.next-action').forEach(el => {
+        el.classList.remove('next-action');
+      });
+
+      // Determine what should have next-action based on current step and state
+      let targetSelector = null;
+
+      switch(currentStep) {
+        case 0: // Step 1: Setup
+          if (!twilioConnected) {
+            targetSelector = '[onclick*="connectTwilio"]';
+          } else if (!openaiConnected) {
+            targetSelector = '[onclick*="connectOpenAI"]';
+          } else {
+            targetSelector = '#nextBtn1';
+          }
+          break;
+
+        case 1: // Step 2: Use Case
+          if (!callDirectionChosen) {
+            targetSelector = '.direction-card';
+          } else if (!useCaseDescription?.trim()) {
+            targetSelector = '#useCaseDescription';
+          } else {
+            targetSelector = '#nextBtn2';
+          }
+          break;
+
+        case 2: // Step 3: Services
+          if (!selectedPhoneNumber) {
+            targetSelector = '.phone-option';
+          } else if (!servicesReady) {
+            targetSelector = '[onclick*="createMessagingService"]';
+          } else {
+            targetSelector = '#nextBtn3';
+          }
+          break;
+
+        case 3: // Step 4: Basic TwiML
+          if (!step4CodeValidated) {
+            targetSelector = '[onclick="validateCode4()"]';
+          } else if (!step4Committed) {
+            targetSelector = '[onclick*="commitStep(4)"]';
+          } else if (!step4Deployed) {
+            targetSelector = '[onclick*="deployFunction"]';
+          } else {
+            targetSelector = '#nextBtn4';
+          }
+          break;
+
+        case 4: // Step 5: WebSocket
+          if (!step5CodeValidated) {
+            targetSelector = '[onclick="validateCode7()"]';
+          } else if (!step5Deployed) {
+            targetSelector = '[onclick*="commitStep(5)"]';
+          } else {
+            targetSelector = '#nextBtn5';
+          }
+          break;
+
+        case 5: // Step 6: ConversationRelay
+          if (!step6CodeValidated) {
+            targetSelector = '[onclick="validateCode8()"]';
+          } else if (!step6Deployed) {
+            targetSelector = '[onclick*="commitStep(6)"]';
+          } else {
+            targetSelector = '#nextBtn6';
+          }
+          break;
+
+        case 6: // Step 7: Prompt Engineering
+          if (!systemPromptSaved) {
+            targetSelector = '[onclick*="savePrompt"]';
+          } else {
+            targetSelector = '#nextBtn7';
+          }
+          break;
+
+        case 7: // Step 8: Tools
+          if (!toolsConfigured) {
+            targetSelector = '[onclick="validateCode9()"]';
+          } else {
+            targetSelector = '#nextBtn8';
+          }
+          break;
+
+        case 8: // Step 9: Deploy
+          targetSelector = '[onclick*="deployProject"]';
+          break;
+      }
+
+      if (targetSelector) {
+        const element = document.querySelector(targetSelector);
+        if (element) {
+          element.classList.add('next-action');
+        }
+      }
+    }
+
+    // =========================================================================
     // PROGRESS PERSISTENCE
     // =========================================================================
 
@@ -2297,6 +2526,9 @@
 
       // Highlight the next action the student should take
       highlightNextAction();
+
+      // NEW: Check all conditions and update next-action (centralized state management)
+      setTimeout(() => checkAllConditions(), 100);
     }
 
     /**
