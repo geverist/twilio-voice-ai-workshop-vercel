@@ -3707,7 +3707,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
           <div class="service-status">
             <span>${hasMessaging ? '✅ Configured' : '❌ Required'}</span>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px;">
-              <button class="btn btn-${hasMessaging ? 'secondary' : 'primary'}" onclick="provisionMessaging()" ${hasMessaging ? 'disabled style="opacity: 0.6;"' : ''}>
+              <button class="btn btn-${hasMessaging ? 'secondary' : 'primary'} ${!hasMessaging && hasPhone ? 'next-action' : ''}" onclick="provisionMessaging()" ${hasMessaging ? 'disabled style="opacity: 0.6;"' : ''}>
                 ${hasMessaging ? '✅ Service Created' : 'Create Service'}
               </button>
               <span style="color: #666;">or</span>
