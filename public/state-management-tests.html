@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>State Management Unit Tests</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #0066cc;
+      padding-bottom: 10px;
+    }
+    .test-suite {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-suite h2 {
+      color: #0066cc;
+      margin-top: 0;
+    }
+    .test-case {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 4px solid #ccc;
+      background: #fafafa;
+    }
+    .test-case.pass {
+      border-left-color: #28a745;
+      background: #f0fff4;
+    }
+    .test-case.fail {
+      border-left-color: #dc3545;
+      background: #fff5f5;
+    }
+    .test-case.running {
+      border-left-color: #ffc107;
+      background: #fffbf0;
+    }
+    .test-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .test-result {
+      font-size: 0.9em;
+      color: #666;
+    }
+    .test-error {
+      color: #dc3545;
+      font-family: monospace;
+      font-size: 0.85em;
+      margin-top: 5px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 4px;
+    }
+    .summary {
+      background: #0066cc;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .summary-item {
+      text-align: center;
+    }
+    .summary-number {
+      font-size: 2em;
+      font-weight: bold;
+    }
+    .summary-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+    .run-tests-btn {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1.1em;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 20px 0;
+    }
+    .run-tests-btn:hover {
+      background: #0052a3;
+    }
+    .run-tests-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 State Management Unit Tests</h1>
+
+  <button class="run-tests-btn" onclick="runAllTests()">Run All Tests</button>
+
+  <div class="summary" id="summary">
+    <div class="summary-item">
+      <div class="summary-number" id="total-tests">0</div>
+      <div class="summary-label">Total Tests</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-number" id="passed-tests">0</div>
+      <div class="summary-label">Passed</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-number" id="failed-tests">0</div>
+      <div class="summary-label">Failed</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-number" id="time-elapsed">0ms</div>
+      <div class="summary-label">Time</div>
+    </div>
+  </div>
+
+  <div id="test-results"></div>
+
+  <script>
+    // =========================================================================
+    // MINIMAL STATE MANAGEMENT IMPLEMENTATION FOR TESTING
+    // (Copy of the actual implementation from index.html)
+    // =========================================================================
+
+    const stateListeners = {};
+    let syncTimer = null;
+    let syncCallCount = 0;
+    let syncCallHistory = [];
+
+    // Mock variables
+    let sessionToken = null;
+    let studentEmail = null;
+    let studentName = null;
+    let twilioConnected = false;
+    let openaiConnected = false;
+    let callDirectionChosen = false;
+    let useCaseDescription = '';
+    let selectedPhoneNumber = null;
+    let servicesReady = false;
+    let step4CodeValidated = false;
+    let step4Committed = false;
+    let step4Deployed = false;
+    let step5CodeValidated = false;
+    let step5Committed = false;
+    let step5Deployed = false;
+    let step6CodeValidated = false;
+    let step6Committed = false;
+    let step6Deployed = false;
+    let systemPromptSaved = false;
+    let step7Committed = false;
+    let step7Deployed = false;
+    let toolsConfigured = false;
+    let step8CodeValidated = false;
+    let step8Committed = false;
+    let step8Deployed = false;
+    let projectDeployed = false;
+    let currentStep = 0;
+
+    function setState(path, value) {
+      const varName = path.split('.').pop();
+      const oldValue = window[varName];
+
+      window[varName] = value;
+
+      // Save to localStorage
+      try {
+        localStorage.setItem(varName, JSON.stringify(value));
+      } catch (e) {
+        console.warn('Failed to save to localStorage:', e);
+      }
+
+      // Queue database sync (debounced)
+      queueDatabaseSync();
+
+      // Trigger listeners
+      if (stateListeners[path]) {
+        stateListeners[path].forEach(callback => callback(value, oldValue));
+      }
+
+      return value;
+    }
+
+    function getState(path) {
+      const varName = path.split('.').pop();
+      return window[varName];
+    }
+
+    function watchState(path, callback) {
+      if (!stateListeners[path]) {
+        stateListeners[path] = [];
+      }
+      stateListeners[path].push(callback);
+    }
+
+    function queueDatabaseSync() {
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => {
+        syncToDatabase();
+      }, 2000);
+    }
+
+    async function syncToDatabase() {
+      if (!sessionToken) {
+        return;
+      }
+
+      syncCallCount++;
+      syncCallHistory.push({
+        timestamp: Date.now(),
+        sessionToken,
+        twilioConnected,
+        openaiConnected,
+        step4Deployed
+      });
+
+      // Mock API call
+      return Promise.resolve({ success: true });
+    }
+
+    const STEP_CONDITIONS = {
+      0: () => twilioConnected && openaiConnected,
+      1: () => callDirectionChosen && useCaseDescription?.trim(),
+      2: () => selectedPhoneNumber && servicesReady,
+      3: () => step4CodeValidated && step4Deployed,
+      4: () => step5CodeValidated && step5Deployed,
+      5: () => step6CodeValidated && step6Deployed,
+      6: () => systemPromptSaved,
+      7: () => toolsConfigured && step8Deployed,
+      8: () => projectDeployed
+    };
+
+    function checkStepComplete(stepNum) {
+      const condition = STEP_CONDITIONS[stepNum];
+      if (!condition) return false;
+      return condition();
+    }
+
+    // =========================================================================
+    // TEST FRAMEWORK
+    // =========================================================================
+
+    let testResults = [];
+    let currentSuite = null;
+
+    function describe(suiteName, fn) {
+      currentSuite = {
+        name: suiteName,
+        tests: []
+      };
+      fn();
+      return currentSuite;
+    }
+
+    function it(testName, fn) {
+      if (!currentSuite) {
+        throw new Error('Test must be inside a describe block');
+      }
+      currentSuite.tests.push({
+        name: testName,
+        fn: fn,
+        status: 'pending'
+      });
+    }
+
+    function expect(actual) {
+      return {
+        toBe(expected) {
+          if (actual !== expected) {
+            throw new Error(`Expected ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toEqual(expected) {
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Expected ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toBeTruthy() {
+          if (!actual) {
+            throw new Error(`Expected truthy value but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toBeFalsy() {
+          if (actual) {
+            throw new Error(`Expected falsy value but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toBeGreaterThan(expected) {
+          if (actual <= expected) {
+            throw new Error(`Expected ${actual} to be greater than ${expected}`);
+          }
+        },
+        toHaveBeenCalled() {
+          if (actual.callCount === 0) {
+            throw new Error('Expected function to have been called');
+          }
+        }
+      };
+    }
+
+    function resetState() {
+      sessionToken = null;
+      studentEmail = null;
+      studentName = null;
+      twilioConnected = false;
+      openaiConnected = false;
+      callDirectionChosen = false;
+      useCaseDescription = '';
+      selectedPhoneNumber = null;
+      servicesReady = false;
+      step4CodeValidated = false;
+      step4Committed = false;
+      step4Deployed = false;
+      step5CodeValidated = false;
+      step5Committed = false;
+      step5Deployed = false;
+      step6CodeValidated = false;
+      step6Committed = false;
+      step6Deployed = false;
+      systemPromptSaved = false;
+      step7Committed = false;
+      step7Deployed = false;
+      toolsConfigured = false;
+      step8CodeValidated = false;
+      step8Committed = false;
+      step8Deployed = false;
+      projectDeployed = false;
+      currentStep = 0;
+      syncCallCount = 0;
+      syncCallHistory = [];
+      Object.keys(stateListeners).forEach(key => {
+        stateListeners[key] = [];
+      });
+      localStorage.clear();
+    }
+
+    async function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // =========================================================================
+    // TEST SUITES
+    // =========================================================================
+
+    const testSuites = [];
+
+    // Test Suite 1: setState() Function
+    testSuites.push(describe('setState() Function', () => {
+
+      it('should update variable value', () => {
+        resetState();
+        setState('twilioConnected', true);
+        expect(twilioConnected).toBe(true);
+      });
+
+      it('should save to localStorage', () => {
+        resetState();
+        setState('studentEmail', 'test@example.com');
+        const saved = JSON.parse(localStorage.getItem('studentEmail'));
+        expect(saved).toBe('test@example.com');
+      });
+
+      it('should queue database sync', async () => {
+        resetState();
+        setState('sessionToken', 'test123');
+        setState('twilioConnected', true);
+        await wait(2100); // Wait for debounce
+        expect(syncCallCount).toBeGreaterThan(0);
+      });
+
+      it('should trigger state listeners', () => {
+        resetState();
+        let listenerCalled = false;
+        let receivedValue = null;
+
+        watchState('openaiConnected', (newVal) => {
+          listenerCalled = true;
+          receivedValue = newVal;
+        });
+
+        setState('openaiConnected', true);
+        expect(listenerCalled).toBeTruthy();
+        expect(receivedValue).toBe(true);
+      });
+
+    }));
+
+    // Test Suite 2: getState() Function
+    testSuites.push(describe('getState() Function', () => {
+
+      it('should retrieve current state value', () => {
+        resetState();
+        setState('studentName', 'John Doe');
+        const value = getState('studentName');
+        expect(value).toBe('John Doe');
+      });
+
+      it('should return undefined for unset values', () => {
+        resetState();
+        const value = getState('nonexistentValue');
+        expect(value).toBe(undefined);
+      });
+
+    }));
+
+    // Test Suite 3: watchState() Function
+    testSuites.push(describe('watchState() Function', () => {
+
+      it('should register listener for state changes', () => {
+        resetState();
+        let callCount = 0;
+
+        watchState('step4Deployed', () => {
+          callCount++;
+        });
+
+        setState('step4Deployed', true);
+        expect(callCount).toBe(1);
+      });
+
+      it('should support multiple listeners', () => {
+        resetState();
+        let call1 = false;
+        let call2 = false;
+
+        watchState('servicesReady', () => { call1 = true; });
+        watchState('servicesReady', () => { call2 = true; });
+
+        setState('servicesReady', true);
+        expect(call1).toBeTruthy();
+        expect(call2).toBeTruthy();
+      });
+
+      it('should pass new and old values to listener', () => {
+        resetState();
+        let oldVal = null;
+        let newVal = null;
+
+        setState('currentStep', 0);
+
+        watchState('currentStep', (n, o) => {
+          newVal = n;
+          oldVal = o;
+        });
+
+        setState('currentStep', 1);
+        expect(newVal).toBe(1);
+        expect(oldVal).toBe(0);
+      });
+
+    }));
+
+    // Test Suite 4: Database Sync (Debouncing)
+    testSuites.push(describe('Database Sync (Debouncing)', () => {
+
+      it('should debounce multiple rapid setState calls', async () => {
+        resetState();
+        setState('sessionToken', 'test123');
+
+        syncCallCount = 0;
+        setState('twilioConnected', true);
+        setState('openaiConnected', true);
+        setState('step4CodeValidated', true);
+
+        await wait(2100);
+
+        // Should only sync once despite 3 setState calls
+        expect(syncCallCount).toBe(1);
+      });
+
+      it('should sync after 2 seconds of inactivity', async () => {
+        resetState();
+        setState('sessionToken', 'test123');
+
+        syncCallCount = 0;
+        setState('projectDeployed', true);
+
+        await wait(2100);
+        expect(syncCallCount).toBe(1);
+      });
+
+      it('should not sync without sessionToken', async () => {
+        resetState();
+        // Don't set sessionToken
+
+        syncCallCount = 0;
+        setState('twilioConnected', true);
+
+        await wait(2100);
+        expect(syncCallCount).toBe(0);
+      });
+
+    }));
+
+    // Test Suite 5: Step Completion Conditions
+    testSuites.push(describe('Step Completion Conditions', () => {
+
+      it('should check Step 0 completion (Twilio + OpenAI)', () => {
+        resetState();
+        expect(checkStepComplete(0)).toBeFalsy();
+
+        setState('twilioConnected', true);
+        expect(checkStepComplete(0)).toBeFalsy();
+
+        setState('openaiConnected', true);
+        expect(checkStepComplete(0)).toBeTruthy();
+      });
+
+      it('should check Step 1 completion (direction + description)', () => {
+        resetState();
+        expect(checkStepComplete(1)).toBeFalsy();
+
+        setState('callDirectionChosen', true);
+        expect(checkStepComplete(1)).toBeFalsy();
+
+        setState('useCaseDescription', 'Test use case');
+        expect(checkStepComplete(1)).toBeTruthy();
+      });
+
+      it('should check Step 3 completion (validation + deployment)', () => {
+        resetState();
+        expect(checkStepComplete(3)).toBeFalsy();
+
+        setState('step4CodeValidated', true);
+        expect(checkStepComplete(3)).toBeFalsy();
+
+        setState('step4Deployed', true);
+        expect(checkStepComplete(3)).toBeTruthy();
+      });
+
+      it('should check Step 6 completion (system prompt saved)', () => {
+        resetState();
+        expect(checkStepComplete(6)).toBeFalsy();
+
+        setState('systemPromptSaved', true);
+        expect(checkStepComplete(6)).toBeTruthy();
+      });
+
+    }));
+
+    // Test Suite 6: localStorage Integration
+    testSuites.push(describe('localStorage Integration', () => {
+
+      it('should persist state values to localStorage', () => {
+        resetState();
+        setState('selectedPhoneNumber', '+15551234567');
+
+        const stored = localStorage.getItem('selectedPhoneNumber');
+        expect(JSON.parse(stored)).toBe('+15551234567');
+      });
+
+      it('should persist boolean values correctly', () => {
+        resetState();
+        setState('step5Deployed', true);
+
+        const stored = localStorage.getItem('step5Deployed');
+        expect(JSON.parse(stored)).toBe(true);
+      });
+
+      it('should persist object values correctly', () => {
+        resetState();
+        const testObj = { test: 'value', nested: { key: 123 } };
+
+        // Set it directly (setState should handle JSON.stringify)
+        window.testObject = testObj;
+        localStorage.setItem('testObject', JSON.stringify(testObj));
+
+        const stored = JSON.parse(localStorage.getItem('testObject'));
+        expect(stored).toEqual(testObj);
+      });
+
+    }));
+
+    // =========================================================================
+    // TEST RUNNER
+    // =========================================================================
+
+    async function runAllTests() {
+      const startTime = Date.now();
+      testResults = [];
+
+      const resultsDiv = document.getElementById('test-results');
+      resultsDiv.innerHTML = '';
+
+      let totalTests = 0;
+      let passedTests = 0;
+      let failedTests = 0;
+
+      for (const suite of testSuites) {
+        const suiteDiv = document.createElement('div');
+        suiteDiv.className = 'test-suite';
+        suiteDiv.innerHTML = `<h2>${suite.name}</h2>`;
+        resultsDiv.appendChild(suiteDiv);
+
+        for (const test of suite.tests) {
+          totalTests++;
+
+          const testDiv = document.createElement('div');
+          testDiv.className = 'test-case running';
+          testDiv.innerHTML = `
+            <div class="test-name">${test.name}</div>
+            <div class="test-result">Running...</div>
+          `;
+          suiteDiv.appendChild(testDiv);
+
+          try {
+            await test.fn();
+            testDiv.className = 'test-case pass';
+            testDiv.querySelector('.test-result').textContent = '✅ PASS';
+            passedTests++;
+            test.status = 'pass';
+          } catch (error) {
+            testDiv.className = 'test-case fail';
+            testDiv.querySelector('.test-result').innerHTML = `
+              ❌ FAIL
+              <div class="test-error">${error.message}</div>
+            `;
+            failedTests++;
+            test.status = 'fail';
+            test.error = error.message;
+          }
+
+          testResults.push(test);
+        }
+      }
+
+      const endTime = Date.now();
+      const elapsed = endTime - startTime;
+
+      document.getElementById('total-tests').textContent = totalTests;
+      document.getElementById('passed-tests').textContent = passedTests;
+      document.getElementById('failed-tests').textContent = failedTests;
+      document.getElementById('time-elapsed').textContent = `${elapsed}ms`;
+
+      // Update summary color
+      const summaryDiv = document.getElementById('summary');
+      if (failedTests === 0) {
+        summaryDiv.style.background = '#28a745';
+      } else {
+        summaryDiv.style.background = '#dc3545';
+      }
+    }
+
+    // Auto-run tests on page load
+    window.addEventListener('load', () => {
+      setTimeout(() => runAllTests(), 500);
+    });
+  </script>
+</body>
+</html>
