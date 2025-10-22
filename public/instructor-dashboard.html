@@ -363,6 +363,7 @@
         <button class="tab" onclick="switchTab('single')">Send Single Invitation</button>
         <button class="tab" onclick="switchTab('bulk')">Bulk Send</button>
         <button class="tab" onclick="switchTab('history')">Invitation History</button>
+        <button class="tab" onclick="switchTab('cleanup')">🧹 Cleanup</button>
       </div>
 
       <!-- Alert Messages -->
@@ -547,6 +548,69 @@ student2@example.com,Jane Smith</pre>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Cleanup Tab -->
+      <div id="cleanupTab" class="tab-content">
+        <div class="info-box" style="background: #fff3cd; border-left-color: #856404;">
+          <h3 style="color: #856404;">⚠️ Post-Workshop Cleanup</h3>
+          <p style="color: #856404;">
+            After your workshop completes, use this tool to delete all OpenAI API keys from the database for security.
+            This keeps all other student configuration intact (prompts, tools, settings) while removing sensitive credentials.
+          </p>
+        </div>
+
+        <div class="form-section">
+          <h2>🧹 Delete OpenAI API Keys</h2>
+          <p style="margin-bottom: 20px; color: #666;">
+            This will permanently delete all OpenAI API keys from student configurations.
+            All other data (student names, prompts, tools, phone numbers, etc.) will be preserved.
+          </p>
+
+          <div class="form-group">
+            <label for="adminPassword">Admin Password *</label>
+            <input
+              type="password"
+              id="adminPassword"
+              placeholder="Enter ADMIN_PASSWORD from environment"
+              required
+            />
+            <div class="hint">The ADMIN_PASSWORD configured in your environment variables</div>
+          </div>
+
+          <div style="display: flex; gap: 15px; margin-top: 20px;">
+            <button class="button secondary" onclick="previewCleanup()">
+              👁️ Preview (Dry Run)
+            </button>
+            <button class="button" onclick="executeCleanup()" style="background: #dc3545;">
+              🗑️ Delete All API Keys
+            </button>
+          </div>
+
+          <div id="cleanupPreview" style="display: none; margin-top: 30px;">
+            <h3>Preview - Records with API Keys</h3>
+            <div id="cleanupPreviewList" class="invitation-list" style="max-height: 400px; overflow-y: auto;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <div id="cleanupResults" style="display: none; margin-top: 30px;">
+            <div class="form-section" style="background: #d4edda; border: 2px solid #c3e6cb;">
+              <h3 style="color: #155724; margin-bottom: 15px;">✅ Cleanup Complete</h3>
+              <div id="cleanupResultsContent"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" style="background: #e3f2fd; border: 2px solid #90caf9;">
+          <h3 style="color: #1976d2; margin-bottom: 15px;">💡 Why Delete API Keys?</h3>
+          <ul style="color: #1976d2; line-height: 1.8; padding-left: 20px;">
+            <li><strong>Security:</strong> API keys should not be stored long-term after the workshop</li>
+            <li><strong>Cost Control:</strong> Prevents unintended API usage after the workshop ends</li>
+            <li><strong>Best Practice:</strong> Students should use their own keys for production projects</li>
+            <li><strong>Preservation:</strong> All other workshop data remains intact for reference</li>
+          </ul>
         </div>
       </div>
     </div>
@@ -1101,6 +1165,138 @@ student2@example.com,Jane Smith</pre>
 
     // Load progress on page load
     loadStudentProgress();
+
+    // =============================================
+    // CLEANUP TAB - OpenAI API Key Deletion
+    // =============================================
+
+    async function previewCleanup() {
+      const password = document.getElementById('adminPassword').value;
+
+      if (!password) {
+        showAlert('error', '❌ Please enter the admin password');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin-cleanup-keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminPassword: password,
+            dryRun: true
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          showAlert('error', `❌ ${data.error || 'Failed to preview cleanup'}`);
+          return;
+        }
+
+        // Display preview
+        const previewContainer = document.getElementById('cleanupPreview');
+        const previewList = document.getElementById('cleanupPreviewList');
+
+        if (data.recordsWithKeys === 0) {
+          previewList.innerHTML = `
+            <div class="invitation-item">
+              <div class="invitation-info">
+                <div class="email" style="color: #999;">No API keys found in database</div>
+              </div>
+            </div>
+          `;
+        } else {
+          previewList.innerHTML = data.affectedRecords.map(record => `
+            <div class="invitation-item">
+              <div class="invitation-info">
+                <div class="name">${record.studentName || 'No name'}</div>
+                <div class="email">Session: ${record.sessionToken}</div>
+                <div class="email" style="font-size: 0.85rem; margin-top: 5px;">
+                  Created: ${new Date(record.createdAt).toLocaleString()}
+                </div>
+              </div>
+              <span class="invitation-status pending">Has API Key</span>
+            </div>
+          `).join('');
+        }
+
+        previewContainer.style.display = 'block';
+        document.getElementById('cleanupResults').style.display = 'none';
+
+        showAlert('success', `✅ Preview: Found ${data.recordsWithKeys} records with API keys out of ${data.totalRecords} total`);
+
+      } catch (error) {
+        console.error('Preview cleanup error:', error);
+        showAlert('error', `❌ Error: ${error.message}`);
+      }
+    }
+
+    async function executeCleanup() {
+      const password = document.getElementById('adminPassword').value;
+
+      if (!password) {
+        showAlert('error', '❌ Please enter the admin password');
+        return;
+      }
+
+      const confirmDelete = confirm(
+        '⚠️ WARNING: This will permanently delete all OpenAI API keys from the database.\n\n' +
+        'This action cannot be undone.\n\n' +
+        'All other student data will be preserved.\n\n' +
+        'Are you sure you want to continue?'
+      );
+
+      if (!confirmDelete) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin-cleanup-keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminPassword: password,
+            dryRun: false
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          showAlert('error', `❌ ${data.error || 'Failed to delete API keys'}`);
+          return;
+        }
+
+        // Display results
+        const resultsContainer = document.getElementById('cleanupResults');
+        const resultsContent = document.getElementById('cleanupResultsContent');
+
+        resultsContent.innerHTML = `
+          <div style="font-size: 1.1rem; margin-bottom: 15px;">
+            <strong>${data.keysRemoved}</strong> API keys have been deleted from the database.
+          </div>
+          <div style="color: #155724; line-height: 1.8;">
+            <p><strong>✅ Deleted:</strong> OpenAI API keys</p>
+            <p><strong>✅ Preserved:</strong> Student names, prompts, tools, phone numbers, and all other configuration data</p>
+            <p style="margin-top: 15px;">Total records in database: <strong>${data.totalRecords}</strong></p>
+          </div>
+        `;
+
+        resultsContainer.style.display = 'block';
+        document.getElementById('cleanupPreview').style.display = 'none';
+
+        showAlert('success', `✅ Successfully deleted ${data.keysRemoved} API keys`);
+
+        // Clear password field
+        document.getElementById('adminPassword').value = '';
+
+      } catch (error) {
+        console.error('Execute cleanup error:', error);
+        showAlert('error', `❌ Error: ${error.message}`);
+      }
+    }
   </script>
 </body>
 </html>

@@ -223,10 +223,10 @@
     <div id="mainContent" style="display: none;">
       <div class="tabs">
         <button class="tab active" onclick="showTab('overview')">📊 Overview</button>
+        <button class="tab" onclick="showTab('analytics')">📈 Call Analytics</button>
         <button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
         <button class="tab" onclick="showTab('prompts')">📝 Prompts</button>
         <button class="tab" onclick="showTab('functions')">🛠️ Functions</button>
-        <button class="tab" onclick="showTab('calls')">📞 Call Logs</button>
       </div>
 
       <div id="overview" class="tab-content active">
@@ -336,18 +336,83 @@
         </div>
       </div>
 
-      <div id="calls" class="tab-content">
+      <div id="analytics" class="tab-content">
         <div class="panel">
-          <h2>Call Logs</h2>
-          <p style="color: #666; margin-bottom: 20px;">View call history from Twilio Console</p>
+          <h2>📈 Call Analytics</h2>
+          <p style="color: #666; margin-bottom: 20px;">Real-time call metrics and history from Twilio</p>
 
-          <button class="btn" onclick="window.open('https://console.twilio.com/us1/monitor/logs/calls', '_blank')">
+          <button class="btn" onclick="loadCallAnalytics()" id="loadAnalyticsBtn">
+            🔄 Load Call Data
+          </button>
+          <button class="btn btn-secondary" onclick="window.open('https://console.twilio.com/us1/monitor/logs/calls', '_blank')" style="margin-left: 10px;">
             View in Twilio Console
           </button>
 
-          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin-top: 20px;">
-            <div style="font-size: 48px; margin-bottom: 15px;">📞</div>
-            <p>Call logs are available in Twilio Console</p>
+          <div id="analyticsLoading" style="display: none; text-align: center; padding: 40px; color: #666;">
+            <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+            <p>Loading call analytics from Twilio...</p>
+          </div>
+
+          <div id="analyticsError" style="display: none;"></div>
+
+          <div id="analyticsContent" style="display: none;">
+            <!-- Metrics Grid -->
+            <div class="stats-grid" style="margin-top: 30px;">
+              <div class="metric-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <div class="metric-label">Total Calls</div>
+                <div class="metric-value" id="metricTotalCalls">0</div>
+              </div>
+              <div class="metric-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                <div class="metric-label">Answered</div>
+                <div class="metric-value" id="metricAnswered">0</div>
+              </div>
+              <div class="metric-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                <div class="metric-label">Failed</div>
+                <div class="metric-value" id="metricFailed">0</div>
+              </div>
+              <div class="metric-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <div class="metric-label">Avg Duration</div>
+                <div class="metric-value" id="metricAvgDuration">0s</div>
+              </div>
+              <div class="metric-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                <div class="metric-label">Total Duration</div>
+                <div class="metric-value" id="metricTotalDuration">0m</div>
+              </div>
+            </div>
+
+            <!-- Date Range Info -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; color: #666; font-size: 14px;">
+              📅 Showing calls from <strong id="dateRangeFrom">--</strong> to <strong id="dateRangeTo">--</strong>
+              for phone number <strong id="phoneNumberDisplay">--</strong>
+            </div>
+
+            <!-- Call History Table -->
+            <div style="margin-top: 30px;">
+              <h3 style="color: #333; margin-bottom: 15px;">Recent Call History</h3>
+              <div style="overflow-x: auto;">
+                <table id="callHistoryTable" style="width: 100%; border-collapse: collapse; background: white;">
+                  <thead>
+                    <tr style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
+                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Date & Time</th>
+                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">From</th>
+                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Direction</th>
+                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Status</th>
+                      <th style="padding: 12px; text-align: right; font-weight: 600; color: #333;">Duration</th>
+                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Call SID</th>
+                    </tr>
+                  </thead>
+                  <tbody id="callHistoryBody">
+                    <!-- Dynamically populated -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div id="analyticsEmpty" style="display: none; background: #f8f9fa; padding: 40px; border-radius: 8px; text-align: center; margin-top: 20px;">
+            <div style="font-size: 64px; margin-bottom: 15px;">📞</div>
+            <p style="color: #666; font-size: 16px; margin-bottom: 10px;">No calls found</p>
+            <p style="color: #999; font-size: 14px;">Make a test call to see analytics appear here!</p>
           </div>
         </div>
       </div>
@@ -719,6 +784,165 @@
       } catch (error) {
         console.error('❌ OpenAI sync error:', error);
       }
+    }
+
+    // =========================================================================
+    // CALL ANALYTICS TAB
+    // =========================================================================
+
+    async function loadCallAnalytics() {
+      const btn = document.getElementById('loadAnalyticsBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Loading...';
+
+      // Hide all states
+      document.getElementById('analyticsLoading').style.display = 'block';
+      document.getElementById('analyticsError').style.display = 'none';
+      document.getElementById('analyticsContent').style.display = 'none';
+      document.getElementById('analyticsEmpty').style.display = 'none';
+
+      try {
+        // Get Twilio credentials from localStorage
+        const accountSid = localStorage.getItem('twilioAccountSid');
+        const authToken = localStorage.getItem('twilioAuthToken');
+
+        if (!accountSid || !authToken) {
+          throw new Error('Twilio credentials not found. Please connect your Twilio account in the workshop first.');
+        }
+
+        console.log('📊 Fetching call analytics...');
+
+        const response = await fetch(`${API_BASE}/api/twilio-call-analytics`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN,
+            accountSid: accountSid,
+            authToken: authToken
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load call analytics');
+        }
+
+        console.log('✅ Call analytics loaded:', data);
+
+        // Hide loading
+        document.getElementById('analyticsLoading').style.display = 'none';
+
+        // Show results or empty state
+        if (data.calls.length === 0) {
+          document.getElementById('analyticsEmpty').style.display = 'block';
+        } else {
+          renderCallAnalytics(data);
+          document.getElementById('analyticsContent').style.display = 'block';
+        }
+
+      } catch (error) {
+        console.error('Analytics error:', error);
+        document.getElementById('analyticsLoading').style.display = 'none';
+        document.getElementById('analyticsError').style.display = 'block';
+        document.getElementById('analyticsError').innerHTML = `
+          <div class="error">
+            <h3 style="margin-bottom: 10px;">❌ Failed to Load Call Analytics</h3>
+            <p>${error.message}</p>
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Reload Call Data';
+      }
+    }
+
+    function renderCallAnalytics(data) {
+      const { calls, metrics, phoneNumber, dateRange } = data;
+
+      // Update metrics
+      document.getElementById('metricTotalCalls').textContent = metrics.totalCalls;
+      document.getElementById('metricAnswered').textContent = metrics.answeredCalls;
+      document.getElementById('metricFailed').textContent = metrics.failedCalls;
+      document.getElementById('metricAvgDuration').textContent = formatDuration(metrics.averageDuration);
+      document.getElementById('metricTotalDuration').textContent = formatDuration(metrics.totalDuration);
+
+      // Update date range
+      document.getElementById('dateRangeFrom').textContent = new Date(dateRange.from).toLocaleDateString();
+      document.getElementById('dateRangeTo').textContent = new Date(dateRange.to).toLocaleDateString();
+      document.getElementById('phoneNumberDisplay').textContent = phoneNumber;
+
+      // Render call history table
+      const tbody = document.getElementById('callHistoryBody');
+      tbody.innerHTML = calls.map(call => {
+        const statusColor = getStatusColor(call.status);
+        const statusEmoji = getStatusEmoji(call.status);
+
+        return `
+          <tr style="border-bottom: 1px solid #e0e0e0;">
+            <td style="padding: 12px;">${formatDateTime(call.startTime)}</td>
+            <td style="padding: 12px; font-family: monospace; font-size: 13px;">${call.from}</td>
+            <td style="padding: 12px;">
+              <span style="color: ${call.direction === 'inbound' ? '#3b82f6' : '#10b981'};">
+                ${call.direction === 'inbound' ? '📥' : '📤'} ${call.direction}
+              </span>
+            </td>
+            <td style="padding: 12px;">
+              <span style="padding: 4px 10px; background: ${statusColor}20; color: ${statusColor}; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                ${statusEmoji} ${call.status}
+              </span>
+            </td>
+            <td style="padding: 12px; text-align: right; font-weight: 600;">${formatDuration(call.duration)}</td>
+            <td style="padding: 12px; font-family: monospace; font-size: 11px; color: #666;">
+              ${call.sid.substring(0, 20)}...
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function formatDuration(seconds) {
+      if (seconds === 0) return '0s';
+      if (seconds < 60) return `${seconds}s`;
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
+    }
+
+    function formatDateTime(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function getStatusColor(status) {
+      const colors = {
+        'completed': '#10b981',
+        'in-progress': '#f59e0b',
+        'ringing': '#f59e0b',
+        'failed': '#ef4444',
+        'busy': '#ef4444',
+        'no-answer': '#ef4444',
+        'canceled': '#6c757d'
+      };
+      return colors[status] || '#6c757d';
+    }
+
+    function getStatusEmoji(status) {
+      const emojis = {
+        'completed': '✅',
+        'in-progress': '⏳',
+        'ringing': '📞',
+        'failed': '❌',
+        'busy': '🚫',
+        'no-answer': '📵',
+        'canceled': '🛑'
+      };
+      return emojis[status] || '❓';
     }
 
     loadConfig();

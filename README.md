@@ -53,9 +53,15 @@ After deploying, add these environment variables in your Vercel project settings
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
 
+# Required: PostgreSQL Database (automatically configured with Vercel Postgres)
+POSTGRES_URL=your_postgres_connection_string
+
 # Optional: Template Repository (defaults shown)
 GITHUB_TEMPLATE_OWNER=geverist
 GITHUB_TEMPLATE_REPO=conversationrelay-starter-pack
+
+# Optional: Admin password for instructor dashboard cleanup (post-workshop)
+ADMIN_PASSWORD=your_secure_admin_password
 ```
 
 ### Setting up GitHub OAuth App
@@ -191,6 +197,8 @@ Creates a new repository in student's GitHub account from template.
 | `GITHUB_CLIENT_SECRET` | ✅ | GitHub OAuth App Client Secret |
 | `GITHUB_TEMPLATE_OWNER` | ⚠️ | GitHub username of template repo owner (default: geverist) |
 | `GITHUB_TEMPLATE_REPO` | ⚠️ | Template repository name (default: conversationrelay-starter-pack) |
+| `ADMIN_PASSWORD` | ⚠️ | Admin password for instructor dashboard cleanup (post-workshop) |
+| `POSTGRES_URL` | ✅ | PostgreSQL connection string (Vercel Postgres) |
 
 ## 🚢 Deployment Options
 

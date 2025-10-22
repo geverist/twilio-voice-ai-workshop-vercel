@@ -2298,23 +2298,23 @@
             `}
           </div>
 
-          <!-- GitHub Codespaces Deployment -->
+          <!-- Railway WebSocket Server Deployment -->
           ${githubToken && studentRepoName ? `
           <div class="service-card" style="background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; margin-bottom: 30px;">
-            <h4 style="color: white; margin-bottom: 15px;">🚀 Step 1b: Deploy Your Development Environment</h4>
+            <h4 style="color: white; margin-bottom: 15px;">🚀 Step 1b: Get Your WebSocket Server</h4>
             <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
-              Launch your code in GitHub Codespaces - a cloud development environment with a live WebSocket server!
+              Get access to a shared WebSocket server for testing your Voice AI!
             </p>
             <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
               <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
                 <strong>💡 What you get:</strong>
               </p>
               <ul style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                <li>Cloud-based development environment in your browser</li>
-                <li>WebSocket server for Twilio Conversation Relay (auto-starts on port 3000)</li>
-                <li>Public URL for connecting Twilio phone calls to your AI assistant</li>
-                <li>Write code, test calls, and iterate all from your browser</li>
-                <li>60 hours/month free with your GitHub account</li>
+                <li>Shared WebSocket server for Twilio Conversation Relay</li>
+                <li>Public WebSocket URL for connecting Twilio phone calls</li>
+                <li>Instant access - no deployment needed</li>
+                <li>Test calls and iterate on your Voice AI configuration</li>
+                <li>Isolated session for your configuration</li>
               </ul>
             </div>
 
@@ -2323,7 +2323,7 @@
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                   <span style="font-size: 1.5rem;">✅</span>
                   <div>
-                    <strong style="color: white; font-size: 1.05rem;">Codespace Running!</strong>
+                    <strong style="color: white; font-size: 1.05rem;">WebSocket Server Ready!</strong>
                   </div>
                 </div>
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
@@ -2337,15 +2337,12 @@
                     <ol style="margin: 0 0 15px 0; padding-left: 20px; line-height: 1.6;">
                       <li>Port may not be public (created before latest update)</li>
                       <li>Server may have crashed on startup</li>
-                      <li>Codespace may be using old template code</li>
+                      <li>Server may be using old deployment</li>
                     </ol>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                       <button class="btn" onclick="deleteAndRecreateCodespace()" style="padding: 8px 16px; background: rgba(220, 53, 69, 0.8); border: 1px solid rgba(220, 53, 69, 1); color: white; font-size: 12px;">
-                        🗑️ Delete & Recreate Codespace
+                        🔄 Get New Server URL
                       </button>
-                      <a href="https://github.com/${githubUsername}/${studentRepoName}/codespaces" target="_blank" style="padding: 8px 16px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 12px; text-decoration: none; border-radius: 6px; display: inline-block;">
-                        🔗 Manage on GitHub
-                      </a>
                     </div>
                   </div>
                 </details>
@@ -2355,16 +2352,16 @@
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                   <span style="font-size: 1.5rem;">⏸️</span>
                   <div>
-                    <strong style="color: white; font-size: 1.05rem;">Codespace Found (Stopped)</strong><br>
-                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Click below to restart it</span>
+                    <strong style="color: white; font-size: 1.05rem;">WebSocket Server Stopped</strong><br>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Click below to get a new server</span>
                   </div>
                 </div>
                 <p style="color: rgba(255,255,255,0.85); margin-bottom: 15px; font-size: 13px;">
-                  💡 Opening your Codespace will automatically restart it. This takes about 30-60 seconds.
+                  💡 The shared server may have stopped. Get a new server URL to continue.
                 </p>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                   <button class="btn" onclick="window.open('${codespaceWebUrl}', '_blank')" style="padding: 10px 20px; background: rgba(255,255,255,0.9); border: none; color: #1a7f37; font-size: 13px; font-weight: bold;">
-                    🔄 Restart Codespace
+                    🔄 Restart Server
                   </button>
                   <button class="btn" onclick="refreshCodespaceStatus()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 13px;">
                     🔄 Check Status
@@ -2391,7 +2388,7 @@
           </div>
           ` : ''}
 
-          <!-- Twilio Credentials (Only shown after Codespace is ready) -->
+          <!-- Twilio Credentials (Only shown after WebSocket server is ready) -->
           ${codespaceUrl || studentDemoMode ? `
           <div class="service-card">
             <h4>🔴 Twilio Account</h4>
@@ -2548,7 +2545,7 @@
               <div style="text-align: center; padding: 40px;">
                 <div style="font-size: 3rem; margin-bottom: 15px;">🔒</div>
                 <h4 style="margin: 0 0 10px 0; color: #666;">Step 1c: Connect to Twilio</h4>
-                <p style="color: #999; margin: 0; font-size: 14px;">Complete Codespace deployment first</p>
+                <p style="color: #999; margin: 0; font-size: 14px;">Complete WebSocket server deployment first</p>
               </div>
             </div>
             <h4 style="opacity: 0.3;">🔴 Twilio Account</h4>
@@ -2603,7 +2600,7 @@
           <div id="step1Status" class="status-box"></div>
 
           <div class="button-group">
-            <button class="btn btn-primary" id="nextBtn1" onclick="nextStep()" ${twilioConnected && openaiConnected && (codespaceUrl || studentDemoMode) ? '' : 'disabled'}>
+            <button class="btn btn-primary" id="nextBtn1" onclick="nextStep()" ${twilioConnected && openaiConnected ? '' : 'disabled'}>
               Next: Select Use Case →
             </button>
           </div>
@@ -7683,17 +7680,9 @@ case 'send_whatsapp':
                 style="font-size: 1.1rem; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin-right: 15px;">
                 📊 Open Admin Dashboard
               </button>
-              ${codespaceWebUrl ? `
-              <button
-                class="btn"
-                onclick="window.open('${codespaceWebUrl}', '_blank')"
-                style="font-size: 1.1rem; padding: 15px 40px; background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-                💻 View Code (Codespace)
-              </button>
-              ` : ''}
             </div>
             <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin: 0;">
-              ${codespaceWebUrl ? 'Manage your Voice AI system or view your deployed code!' : 'Manage your Voice AI system settings, prompts, and tools!'}
+              Manage your Voice AI system settings, prompts, and tools!
             </p>
           </div>
 
@@ -10324,7 +10313,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   const connect = response.connect();
   console.log('conversationRelay method exists?', typeof connect.conversationRelay);
 
-  // WebSocket handler URL (hosted on Codespace/Railway)
+  // WebSocket handler URL (hosted on Railway)
   const wsHandlerUrl = '${codespaceUrl || websocketUrl}';
 
   connect.conversationRelay({
@@ -10451,7 +10440,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   const connect = response.connect();
   console.log('conversationRelay method exists?', typeof connect.conversationRelay);
 
-  // WebSocket handler URL (hosted on Codespace/Railway)
+  // WebSocket handler URL (hosted on Railway)
   const wsHandlerUrl = '${codespaceUrl || websocketUrl}';
 
   connect.conversationRelay({
@@ -10898,8 +10887,8 @@ app.get('/health', (req, res) => {
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
                   <span style="font-size: 1.5rem;">✅</span>
                   <div>
-                    <strong style="color: white; font-size: 1.05rem;">${step5Committed ? 'WebSocket Handler Deployed!' : 'Codespace Server Ready'}</strong><br>
-                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">${step5Committed ? 'Your code is live on the Codespace' : 'Deploy your WebSocket handler code below'}</span>
+                    <strong style="color: white; font-size: 1.05rem;">${step5Committed ? 'WebSocket Handler Deployed!' : 'WebSocket Server Ready'}</strong><br>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">${step5Committed ? 'Your handler code is saved' : 'Review and save your WebSocket handler code below'}</span>
                   </div>
                 </div>
                 <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
@@ -10912,7 +10901,7 @@ app.get('/health', (req, res) => {
                     id="deployCodespaceBtn5"
                     onclick="commitStep(5)"
                     style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); width: 100%;">
-                    💾 Deploy WebSocket Handler to Codespace
+                    💾 Save WebSocket Handler Code
                   </button>
                 ` : ''}
                 <div id="commitStep5Status" style="margin-top: 15px; color: white;"></div>
@@ -10927,9 +10916,9 @@ app.get('/health', (req, res) => {
                   <strong>💡 What would happen in live mode:</strong>
                 </p>
                 <ol style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                  <li>Deploy code to GitHub Codespace</li>
-                  <li>Start WebSocket server on port 3000</li>
-                  <li>Get public WSS URL for ConversationRelay</li>
+                  <li>Save your WebSocket handler code</li>
+                  <li>Test with the shared WebSocket server</li>
+                  <li>Optional: Deploy your own server later</li>
                 </ol>
               </div>
               <button
@@ -10950,7 +10939,7 @@ app.get('/health', (req, res) => {
                   </div>
                 </div>
                 <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
-                  It looks like you haven't deployed your WebSocket server yet. Please go back to <strong>Step 1</strong> and deploy your GitHub Codespace, or refresh the page if you've already done it.
+                  It looks like you haven't set up your WebSocket server yet. Please go back to <strong>Step 1</strong> and get your server URL, or refresh the page if you've already done it.
                 </p>
                 <div style="display: flex; gap: 10px;">
                   <button class="btn" onclick="currentStep = 0; renderStepContent(); renderProgressSteps();" style="padding: 10px 20px; background: white; color: #667eea; border: none; font-weight: 600;">
@@ -11808,25 +11797,23 @@ app.get('/health', (req, res) => {
 
           if (isCorsError) {
             logWebSocketMessage('error', `
-              <strong>⚠️ Server Not Running!</strong><br><br>
-              Your Codespace is created but the server isn't running yet.<br><br>
-              <strong>Quick Fix (30 seconds):</strong><br>
-              1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7; font-weight: bold;">Click here to open your Codespace →</a><br>
-              2. In the terminal at the bottom, type: <code style="background: #333; padding: 4px 8px; border-radius: 3px; font-weight: bold;">npm start</code><br>
-              3. Wait for "Server running on port 3000" message<br>
-              4. Come back here and refresh<br><br>
+              <strong>⚠️ Server Not Responding!</strong><br><br>
+              The WebSocket server may not be running yet.<br><br>
+              <strong>Quick Fix:</strong><br>
+              1. Wait 30-60 seconds for server to start<br>
+              2. Refresh the page and try again<br><br>
               <strong>Still not working?</strong><br>
               <button onclick="deleteAndRecreateCodespace()" style="background: #f22f46; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px;">
-                🔄 Delete & Recreate Codespace
+                🔄 Get New Server URL
               </button>
             `);
           } else {
             logWebSocketMessage('error', `
               <strong>Cannot reach server!</strong><br><br>
               Possible causes:<br>
-              1. Codespace is stopped/sleeping - <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7;">Open it here to wake it up</a><br>
-              2. Server crashed on startup - Check terminal for errors<br>
-              3. Port 3000 not forwarded correctly<br><br>
+              1. Server is starting up (wait 30-60 seconds)<br>
+              2. Network connectivity issue<br>
+              3. Server URL may have changed<br><br>
               Error: ${healthError.message}
             `);
           }
@@ -11915,17 +11902,17 @@ app.get('/health', (req, res) => {
                     <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
                       <li>Reviewed the <strong>5 Media Stream event types</strong> Twilio sends</li>
                       <li>Understood the <strong>JSON format</strong> of each event</li>
-                      <li>Deployed your <strong>WebSocket server</strong> to Codespaces</li>
+                      <li>Set up your <strong>WebSocket server</strong></li>
                     </ul>
                   </div>
 
                   <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; margin: 15px 0;">
-                    <strong style="display: block; margin-bottom: 10px;">✅ Verify Your Server:</strong>
-                    <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
-                      <li><a href="${codespaceWebUrl}" target="_blank" style="color: white; font-weight: bold; text-decoration: underline;">Open your Codespace →</a></li>
-                      <li>Check terminal shows: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">✓ Server running on port 3000</code></li>
-                      <li>If not running, type: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">npm start</code></li>
-                    </ol>
+                    <strong style="display: block; margin-bottom: 10px;">✅ Your Server is Ready:</strong>
+                    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                      <li>WebSocket server is running and responding</li>
+                      <li>Connected to your configuration</li>
+                      <li>Ready to handle Twilio voice calls</li>
+                    </ul>
                   </div>
 
                   <p style="margin: 15px 0 0 0; font-size: 16px; font-weight: 600;">
@@ -11989,16 +11976,12 @@ app.get('/health', (req, res) => {
           if (!event.wasClean) {
             // Check if it's a Codespace URL
             if (isCodespace) {
-              // For Codespaces, browser WebSocket tests will fail due to auth, but phone calls will work
+              // Browser WebSocket tests may fail due to auth, but phone calls will work
               logWebSocketMessage('warning', `
                 <strong>ℹ️ Browser Test Limitation</strong><br><br>
-                WebSocket tests from your browser won't work with Codespaces due to authentication requirements.<br><br>
+                WebSocket tests from your browser may not work due to authentication requirements.<br><br>
                 <strong>✅ This is normal! Your phone calls will work fine.</strong><br><br>
-                When you make an actual phone call, Twilio's servers will connect to your Codespace WebSocket directly (without browser authentication), and everything will work.<br><br>
-                <strong>To verify your server is running:</strong><br>
-                1. <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7; font-weight: bold;">Open your Codespace →</a><br>
-                2. Check the terminal shows "Server running on port 3000"<br>
-                3. If not, run: <code style="background: #333; padding: 4px 8px; border-radius: 3px;">npm start</code><br><br>
+                When you make an actual phone call, Twilio's servers will connect to your WebSocket server directly (without browser authentication), and everything will work.<br><br>
                 Then proceed to the next step to test with a real phone call!
               `);
             } else {
@@ -12006,10 +11989,9 @@ app.get('/health', (req, res) => {
               logWebSocketMessage('error', `
                 <strong>Connection failed!</strong><br><br>
                 <strong>Troubleshooting:</strong><br>
-                1. Open your Codespace: <a href="${codespaceWebUrl}" target="_blank" style="color: #4fc3f7;">Click here</a><br>
-                2. Check the terminal - the server should show "Server running on port 3000"<br>
-                3. If server crashed, check for missing env vars and restart it<br>
-                4. If you created this Codespace before today, you may need to recreate it with the updated template
+                1. Server may still be starting up<br>
+                2. Wait 30-60 seconds and try again<br>
+                3. If issue persists, get a new server URL
               `);
             }
           } else {
@@ -13077,117 +13059,182 @@ app.get('/health', (req, res) => {
     // EXPORT PROJECT
     // =========================================================================
 
-    function exportProject() {
-      const code3 = document.getElementById('code3')?.value || '';
-      const code4 = document.getElementById('code4')?.value || '';
-      const code5 = document.getElementById('code5')?.value || '';
-
-      const projectFiles = {
-        'functions/voice-handler.js': code3,
-        'functions/websocket-handler.js': code4,
-        'functions/ai-integration.js': code5,
-        '.env.example': `# Twilio Configuration
-TWILIO_ACCOUNT_SID=ACxxxxxx
-TWILIO_AUTH_TOKEN=xxxxxx
-TWILIO_PHONE_NUMBER=+1234567890
-
-# OpenAI Configuration
-OPENAI_API_KEY=sk-proj-xxxxxx
-
-# Optional: Sync Service
-TWILIO_SYNC_SERVICE_SID=ISxxxxxx`,
-        'package.json': JSON.stringify({
-          name: 'twilio-voice-ai-bot',
-          version: '1.0.0',
-          description: 'Voice AI Bot built with Twilio ConversationRelay and OpenAI',
-          dependencies: {
-            'twilio': '^5.0.0',
-            'openai': '^4.0.0',
-            'ws': '^8.0.0'
-          }
-        }, null, 2),
-        'README.md': `# Twilio Voice AI Bot
-
-Built during the Twilio Voice AI Workshop
-
-## Setup
-
-1. Install dependencies:
-\`\`\`bash
-npm install
-\`\`\`
-
-2. Copy \`.env.example\` to \`.env\` and fill in your credentials
-
-3. Deploy to Twilio Serverless:
-\`\`\`bash
-twilio serverless:deploy
-\`\`\`
-
-## Documentation
-
-- [ConversationRelay Docs](https://www.twilio.com/docs/voice/twiml/connect/conversationrelay)
-- [Twilio Functions](https://www.twilio.com/docs/serverless/functions)
-- [OpenAI API](https://platform.openai.com/docs)
-
-## Support
-
-- Workshop URL: ${window.location.href}
-- Twilio Console: https://console.twilio.com
-`
-      };
-
+    async function exportProject() {
       const modal = document.getElementById('exportModal');
       const content = document.getElementById('exportContent');
 
+      // Check if we have GitHub credentials
+      if (!githubToken || !githubUsername || !studentRepoName) {
+        content.innerHTML = `
+          <div class="service-card">
+            <h3>⚠️ GitHub Repository Not Connected</h3>
+            <p style="margin: 15px 0; color: #666;">
+              You need to connect your GitHub account and clone the starter repository first.
+            </p>
+            <button class="btn btn-primary" onclick="closeModal('exportModal'); currentStep = 0; renderStepContent();">
+              Go to Step 1
+            </button>
+          </div>
+        `;
+        modal.classList.add('show');
+        return;
+      }
+
+      // Show loading state
       content.innerHTML = `
-        <div class="service-card">
-          <h3>📦 Your Project Files</h3>
-          <p style="margin: 15px 0;">Download individual files or the complete project as a ZIP.</p>
-
-          <div style="display: flex; flex-direction: column; gap: 10px; margin: 20px 0;">
-            ${Object.keys(projectFiles).map(filename => {
-              const escapedContent = projectFiles[filename].replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/\\/g, '\\\\');
-              return `
-              <button class="btn btn-primary" onclick="downloadFile('${filename}', \`${escapedContent}\`)">
-                📄 ${filename}
-              </button>
-            `;
-            }).join('')}
-          </div>
-
-          <button class="btn btn-success" onclick="downloadAllFiles()">
-            📦 Download Complete Project (ZIP)
-          </button>
-
-          <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
-            <h4>Next Steps:</h4>
-            <ol style="margin: 10px 0 0 20px; line-height: 1.8;">
-              <li>Extract the ZIP file</li>
-              <li>Run <code>npm install</code></li>
-              <li>Configure your <code>.env</code> file</li>
-              <li>Deploy with <code>twilio serverless:deploy</code></li>
-            </ol>
-          </div>
+        <div class="service-card" style="text-align: center; padding: 40px;">
+          <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+          <p style="color: #666;">Fetching your project files from GitHub...</p>
+          <p style="color: #999; font-size: 14px; margin-top: 10px;">
+            ${githubUsername}/${studentRepoName}
+          </p>
         </div>
       `;
-
       modal.classList.add('show');
+
+      try {
+        // Fetch files from GitHub repo
+        console.log(`📦 Fetching project files from GitHub: ${githubUsername}/${studentRepoName}`);
+
+        // List of files to fetch from the repo
+        const filesToFetch = [
+          'websocket-handler.js',
+          'package.json',
+          'README.md',
+          '.env.example',
+          'public/admin-panel.html'
+        ];
+
+        const projectFiles = {};
+
+        // Fetch each file from GitHub
+        for (const filePath of filesToFetch) {
+          try {
+            const response = await fetch(
+              `https://api.github.com/repos/${githubUsername}/${studentRepoName}/contents/${filePath}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${githubToken}`,
+                  'Accept': 'application/vnd.github.v3+json'
+                }
+              }
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              // Decode base64 content
+              const content = atob(data.content);
+              projectFiles[filePath] = content;
+              console.log(`  ✓ Fetched: ${filePath}`);
+            } else {
+              console.warn(`  ⚠️ Could not fetch: ${filePath}`);
+            }
+          } catch (error) {
+            console.warn(`  ❌ Error fetching ${filePath}:`, error.message);
+          }
+        }
+
+        // Render the modal with fetched files
+        content.innerHTML = `
+          <div class="service-card">
+            <h3>📦 Your Project Files</h3>
+            <p style="margin: 15px 0; color: #666;">
+              Fetched from <strong>${githubUsername}/${studentRepoName}</strong>
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin: 20px 0;">
+              ${Object.keys(projectFiles).map(filename => {
+                return `
+                <button class="btn btn-primary" onclick="downloadFileFromContent('${filename}')">
+                  📄 ${filename}
+                </button>
+              `;
+              }).join('')}
+            </div>
+
+            <button class="btn btn-success" onclick="downloadAllFilesFromGitHub()">
+              📦 Download Complete Project (ZIP)
+            </button>
+
+            <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 6px; border-left: 4px solid #2196f3;">
+              <h4 style="color: #1976d2; margin-bottom: 10px;">💡 Your GitHub Repository</h4>
+              <p style="color: #666; margin-bottom: 10px;">
+                All your workshop changes have been saved to your GitHub repo throughout the workshop.
+              </p>
+              <a href="https://github.com/${githubUsername}/${studentRepoName}" target="_blank"
+                 class="btn btn-secondary" style="margin-top: 10px;">
+                🔗 View on GitHub
+              </a>
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px;">
+              <h4>Next Steps:</h4>
+              <ol style="margin: 10px 0 0 20px; line-height: 1.8;">
+                <li>Clone your repo: <code>git clone https://github.com/${githubUsername}/${studentRepoName}</code></li>
+                <li>Run <code>npm install</code></li>
+                <li>Configure your <code>.env</code> file</li>
+                <li>Optional: Deploy to Railway or your own server</li>
+              </ol>
+            </div>
+          </div>
+        `;
+
+        // Store fetched files in a global variable for download functions
+        window.fetchedProjectFiles = projectFiles;
+
+      } catch (error) {
+        console.error('Export project error:', error);
+        content.innerHTML = `
+          <div class="service-card">
+            <h3>❌ Failed to Fetch Project Files</h3>
+            <p style="margin: 15px 0; color: #666;">
+              ${error.message}
+            </p>
+            <button class="btn btn-primary" onclick="exportProject()">
+              🔄 Try Again
+            </button>
+          </div>
+        `;
+      }
     }
 
-    function downloadFile(filename, content) {
+    function downloadFileFromContent(filename) {
+      if (!window.fetchedProjectFiles || !window.fetchedProjectFiles[filename]) {
+        alert('❌ File content not available. Please try exporting again.');
+        return;
+      }
+
+      const content = window.fetchedProjectFiles[filename];
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename;
+      a.download = filename.split('/').pop(); // Get just the filename without path
       a.click();
       URL.revokeObjectURL(url);
     }
 
-    function downloadAllFiles() {
-      alert('ZIP download functionality requires a library like JSZip. For now, download files individually.');
+    async function downloadAllFilesFromGitHub() {
+      if (!window.fetchedProjectFiles) {
+        alert('❌ No files available. Please try exporting again.');
+        return;
+      }
+
+      // For now, open the GitHub repo URL
+      // TODO: Implement ZIP download with JSZip library
+      const confirmDownload = confirm(
+        `ZIP download is not yet implemented.\n\n` +
+        `Would you like to:\n` +
+        `• Download files individually above, OR\n` +
+        `• Clone directly from GitHub?\n\n` +
+        `Click OK to open your GitHub repository.`
+      );
+
+      if (confirmDownload) {
+        window.open(`https://github.com/${githubUsername}/${studentRepoName}`, '_blank');
+      }
     }
+
 
     // =========================================================================
     // DEBUGGER
@@ -13924,7 +13971,7 @@ twilio serverless:deploy
 
   const connect = response.connect();
 
-  // WebSocket handler URL (hosted on Codespace/Railway)
+  // WebSocket handler URL (hosted on Railway)
   const wsHandlerUrl = '${codespaceUrl || websocketUrl}';
 
   connect.conversationRelay({
