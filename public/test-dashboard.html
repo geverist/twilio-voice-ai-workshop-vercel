@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .header h1 {
+      margin-bottom: 10px;
+    }
+    .header p {
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      flex-wrap: wrap;
+    }
+    .tab {
+      padding: 12px 24px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 500;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .tab:hover {
+      background: #e0e0e0;
+    }
+    .tab.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .tab .badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #dc3545;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 0.7em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tab.active .badge {
+      background: #ffc107;
+      color: #333;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    }
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    .btn-success:hover {
+      background: #218838;
+    }
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .summary-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .summary-card.total {
+      border-top: 4px solid #667eea;
+    }
+    .summary-card.passed {
+      border-top: 4px solid #28a745;
+    }
+    .summary-card.failed {
+      border-top: 4px solid #dc3545;
+    }
+    .summary-card.time {
+      border-top: 4px solid #ffc107;
+    }
+    .summary-number {
+      font-size: 2.5em;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .summary-label {
+      color: #666;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .test-results {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-suite {
+      margin-bottom: 30px;
+    }
+    .test-suite h3 {
+      color: #667eea;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    .test-case {
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border-left: 4px solid #ccc;
+      background: #fafafa;
+      transition: all 0.3s;
+    }
+    .test-case:hover {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-case.pass {
+      border-left-color: #28a745;
+      background: #f0fff4;
+    }
+    .test-case.fail {
+      border-left-color: #dc3545;
+      background: #fff5f5;
+    }
+    .test-case.running {
+      border-left-color: #ffc107;
+      background: #fffbf0;
+    }
+    .test-name {
+      font-weight: 500;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .test-result {
+      font-size: 0.9em;
+      color: #666;
+    }
+    .test-error {
+      color: #dc3545;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85em;
+      margin-top: 8px;
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+      border: 1px solid #dc3545;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+      transition: width 0.3s;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show {
+      display: flex;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 80vh;
+      overflow: auto;
+    }
+    .modal-content h2 {
+      margin-bottom: 20px;
+      color: #667eea;
+    }
+    textarea {
+      width: 100%;
+      height: 400px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin: 15px 0;
+      resize: vertical;
+    }
+    .status-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .status-indicator.running {
+      background: #ffc107;
+      animation: pulse 1.5s infinite;
+    }
+    .status-indicator.pass {
+      background: #28a745;
+    }
+    .status-indicator.fail {
+      background: #dc3545;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .loading::after {
+      content: '...';
+      animation: dots 1.5s infinite;
+    }
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🧪 Workshop Test Dashboard</h1>
+    <p>Comprehensive testing suite for Twilio Voice AI Workshop</p>
+  </div>
+
+  <div class="container">
+    <div class="controls">
+      <button class="btn btn-primary" onclick="runAllTests()">▶️ Run All Tests</button>
+      <button class="btn btn-secondary" onclick="runCurrentTab()">▶️ Run Current Tab</button>
+      <button class="btn btn-success" onclick="exportResults()">📋 Export Results</button>
+      <button class="btn btn-secondary" onclick="clearResults()">🗑️ Clear</button>
+      <div style="margin-left: auto;">
+        <span id="status-text" style="color: #666;">Ready</span>
+      </div>
+    </div>
+
+    <div class="summary-cards">
+      <div class="summary-card total">
+        <div class="summary-number" id="total-tests">0</div>
+        <div class="summary-label">Total Tests</div>
+      </div>
+      <div class="summary-card passed">
+        <div class="summary-number" id="passed-tests">0</div>
+        <div class="summary-label">Passed</div>
+      </div>
+      <div class="summary-card failed">
+        <div class="summary-number" id="failed-tests">0</div>
+        <div class="summary-label">Failed</div>
+      </div>
+      <div class="summary-card time">
+        <div class="summary-number" id="time-elapsed">0ms</div>
+        <div class="summary-label">Time</div>
+      </div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="state" onclick="switchTab('state')">
+        State Management
+        <span class="badge" id="badge-state" style="display:none"></span>
+      </button>
+      <button class="tab" data-tab="api" onclick="switchTab('api')">
+        API Endpoints
+        <span class="badge" id="badge-api" style="display:none"></span>
+      </button>
+      <button class="tab" data-tab="ui" onclick="switchTab('ui')">
+        UI Interactions
+        <span class="badge" id="badge-ui" style="display:none"></span>
+      </button>
+      <button class="tab" data-tab="all" onclick="switchTab('all')">
+        All Results
+        <span class="badge" id="badge-all" style="display:none"></span>
+      </button>
+    </div>
+
+    <div id="state-tab" class="tab-content active">
+      <div class="test-results" id="state-results">
+        <div class="loading">Loading state management tests</div>
+      </div>
+    </div>
+
+    <div id="api-tab" class="tab-content">
+      <div class="test-results" id="api-results">
+        <div class="loading">Loading API endpoint tests</div>
+      </div>
+    </div>
+
+    <div id="ui-tab" class="tab-content">
+      <div class="test-results" id="ui-results">
+        <div class="loading">Loading UI interaction tests</div>
+      </div>
+    </div>
+
+    <div id="all-tab" class="tab-content">
+      <div class="test-results" id="all-results">
+        <div class="loading">Run tests to see results</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="export-modal">
+    <div class="modal-content">
+      <h2>📋 Export Test Results</h2>
+      <textarea id="export-textarea" readonly></textarea>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn btn-primary" onclick="copyToClipboard()">Copy to Clipboard</button>
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/state-management-tests-embed.js"></script>
+  <script src="/api-endpoint-tests-embed.js"></script>
+  <script src="/ui-interaction-tests-embed.js"></script>
+
+  <script>
+    let allResults = {
+      state: [],
+      api: [],
+      ui: []
+    };
+    let currentTab = 'state';
+
+    function switchTab(tabName) {
+      currentTab = tabName;
+
+      // Update tab buttons
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+
+    async function runAllTests() {
+      document.getElementById('status-text').textContent = 'Running all tests...';
+
+      // Run state management tests
+      await runStateTests();
+
+      // Run API tests
+      await runAPITests();
+
+      // Run UI tests
+      await runUITests();
+
+      updateAllTab();
+      document.getElementById('status-text').textContent = 'All tests complete';
+    }
+
+    async function runCurrentTab() {
+      if (currentTab === 'state') {
+        await runStateTests();
+      } else if (currentTab === 'api') {
+        await runAPITests();
+      } else if (currentTab === 'ui') {
+        await runUITests();
+      } else if (currentTab === 'all') {
+        await runAllTests();
+      }
+    }
+
+    async function runStateTests() {
+      document.getElementById('status-text').textContent = 'Running state tests...';
+      const iframe = document.createElement('iframe');
+      iframe.src = '/state-management-tests.html';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+
+      // Wait for tests to complete
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Extract results (placeholder - would need actual integration)
+      allResults.state = extractResultsFromIframe(iframe);
+      updateSummary();
+      updateBadges();
+
+      document.body.removeChild(iframe);
+    }
+
+    async function runAPITests() {
+      document.getElementById('status-text').textContent = 'Running API tests...';
+      const iframe = document.createElement('iframe');
+      iframe.src = '/api-endpoint-tests.html';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+
+      await new Promise(resolve => setTimeout(resolve, 8000));
+
+      allResults.api = extractResultsFromIframe(iframe);
+      updateSummary();
+      updateBadges();
+
+      document.body.removeChild(iframe);
+    }
+
+    async function runUITests() {
+      document.getElementById('status-text').textContent = 'Running UI tests...';
+      const iframe = document.createElement('iframe');
+      iframe.src = '/ui-interaction-tests.html';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+
+      await new Promise(resolve => setTimeout(resolve, 8000));
+
+      allResults.ui = extractResultsFromIframe(iframe);
+      updateSummary();
+      updateBadges();
+
+      document.body.removeChild(iframe);
+    }
+
+    function extractResultsFromIframe(iframe) {
+      // This would extract actual test results from the iframe
+      // For now, return placeholder
+      return [];
+    }
+
+    function updateSummary() {
+      const allTests = [...allResults.state, ...allResults.api, ...allResults.ui];
+      const total = allTests.length;
+      const passed = allTests.filter(t => t.status === 'pass').length;
+      const failed = allTests.filter(t => t.status === 'fail').length;
+
+      document.getElementById('total-tests').textContent = total;
+      document.getElementById('passed-tests').textContent = passed;
+      document.getElementById('failed-tests').textContent = failed;
+
+      const progress = total > 0 ? (passed / total) * 100 : 0;
+      document.getElementById('progress-fill').style.width = `${progress}%`;
+    }
+
+    function updateBadges() {
+      const stateFailed = allResults.state.filter(t => t.status === 'fail').length;
+      const apiFailed = allResults.api.filter(t => t.status === 'fail').length;
+      const uiFailed = allResults.ui.filter(t => t.status === 'fail').length;
+      const totalFailed = stateFailed + apiFailed + uiFailed;
+
+      updateBadge('state', stateFailed);
+      updateBadge('api', apiFailed);
+      updateBadge('ui', uiFailed);
+      updateBadge('all', totalFailed);
+    }
+
+    function updateBadge(tab, count) {
+      const badge = document.getElementById(`badge-${tab}`);
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    function updateAllTab() {
+      const allTab = document.getElementById('all-results');
+      let html = '';
+
+      ['state', 'api', 'ui'].forEach(category => {
+        if (allResults[category].length > 0) {
+          html += `<h3>${category.toUpperCase()} Tests</h3>`;
+          // Render results
+        }
+      });
+
+      allTab.innerHTML = html || '<div class="loading">No results yet</div>';
+    }
+
+    function exportResults() {
+      const allTests = [...allResults.state, ...allResults.api, ...allResults.ui];
+      const total = allTests.length;
+      const passed = allTests.filter(t => t.status === 'pass').length;
+      const failed = allTests.filter(t => t.status === 'fail').length;
+
+      let text = '🧪 WORKSHOP TEST RESULTS\n';
+      text += '='.repeat(70) + '\n\n';
+      text += `Total Tests:  ${total}\n`;
+      text += `Passed:       ${passed} ✅\n`;
+      text += `Failed:       ${failed} ❌\n`;
+      text += `Success Rate: ${total > 0 ? ((passed / total) * 100).toFixed(1) : 0}%\n\n`;
+
+      if (failed > 0) {
+        text += '❌ FAILED TESTS:\n';
+        text += '-'.repeat(70) + '\n\n';
+
+        ['state', 'api', 'ui'].forEach(category => {
+          const categoryFailed = allResults[category].filter(t => t.status === 'fail');
+          if (categoryFailed.length > 0) {
+            text += `\n${category.toUpperCase()} Tests (${categoryFailed.length} failed):\n`;
+            categoryFailed.forEach(test => {
+              text += `  ❌ ${test.suite} → ${test.name}\n`;
+              text += `     ${test.error}\n\n`;
+            });
+          }
+        });
+      } else {
+        text += '✅ ALL TESTS PASSED!\n';
+      }
+
+      text += '\n' + '='.repeat(70);
+
+      document.getElementById('export-textarea').value = text;
+      document.getElementById('export-modal').classList.add('show');
+    }
+
+    function copyToClipboard() {
+      const textarea = document.getElementById('export-textarea');
+      textarea.select();
+      document.execCommand('copy');
+      alert('✅ Results copied to clipboard!');
+    }
+
+    function closeModal() {
+      document.getElementById('export-modal').classList.remove('show');
+    }
+
+    function clearResults() {
+      if (confirm('Clear all test results?')) {
+        allResults = { state: [], api: [], ui: [] };
+        document.getElementById('state-results').innerHTML = '<div class="loading">Run tests to see results</div>';
+        document.getElementById('api-results').innerHTML = '<div class="loading">Run tests to see results</div>';
+        document.getElementById('ui-results').innerHTML = '<div class="loading">Run tests to see results</div>';
+        document.getElementById('all-results').innerHTML = '<div class="loading">Run tests to see results</div>';
+        updateSummary();
+        updateBadges();
+        document.getElementById('status-text').textContent = 'Ready';
+      }
+    }
+  </script>
+</body>
+</html>
