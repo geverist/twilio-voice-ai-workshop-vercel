@@ -15280,6 +15280,11 @@ twilio serverless:deploy
           try {
             console.log('💾 Creating initial student config in database...');
 
+            // Create initial system prompt from use case description
+            const initialSystemPrompt = useCaseDescription && useCaseDescription.trim()
+              ? `You are a helpful voice assistant. Your role: ${useCaseDescription}. Keep responses brief and conversational since they will be spoken aloud.`
+              : 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.';
+
             const configResponse = await fetch('/api/student-config-save', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -15287,7 +15292,7 @@ twilio serverless:deploy
                 sessionToken: sessionToken,
                 studentName: studentName || githubUsername || 'Student',
                 openaiApiKey: openaiApiKey || null,
-                systemPrompt: 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.',
+                systemPrompt: initialSystemPrompt,
                 tools: [],
                 voiceSettings: {
                   provider: ttsProvider || 'google',
