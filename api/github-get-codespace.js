@@ -158,10 +158,10 @@ export default async function handler(req, res) {
       }
 
       // Fallback: construct URL using GitHub Codespaces domain
-      // Try both .github.dev (newer) and .app.github.dev (older)
+      // Use .app.github.dev format (current standard)
       if (!websocketUrl) {
-        websocketUrl = `wss://${codespaceData.name}-3000.github.dev`;
-        httpUrl = `https://${codespaceData.name}-3000.github.dev`;
+        websocketUrl = `wss://${codespaceData.name}-3000.app.github.dev`;
+        httpUrl = `https://${codespaceData.name}-3000.app.github.dev`;
       }
     }
 
