@@ -7679,7 +7679,7 @@ case 'send_whatsapp':
               </button>
               <button
                 class="btn"
-                onclick="window.open('/admin-panel.html', '_blank')"
+                onclick="openAdminPanel()"
                 style="font-size: 1.1rem; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin-right: 15px;">
                 📊 Open Admin Dashboard
               </button>
@@ -7736,6 +7736,87 @@ case 'send_whatsapp':
         statusBox.className = 'status-box error show';
         statusBox.textContent = '❌ Deployment error: ' + error.message;
       }
+    }
+
+    /**
+     * Opens the personalized admin panel
+     * Saves all configuration to database first, then opens admin panel
+     */
+    async function openAdminPanel() {
+      try {
+        console.log('📊 Opening admin panel...');
+
+        // First, ensure all configuration is saved to database
+        await saveAllConfigToDatabase();
+
+        // Open admin panel with session token
+        const url = `/admin-panel-dynamic.html?session=${sessionToken}`;
+        window.open(url, '_blank');
+
+        console.log('✅ Admin panel opened');
+      } catch (error) {
+        console.error('❌ Failed to open admin panel:', error);
+        alert('Failed to open admin panel: ' + error.message);
+      }
+    }
+
+    /**
+     * Saves all workshop configuration to database
+     * Called before opening admin panel to ensure everything is persisted
+     */
+    async function saveAllConfigToDatabase() {
+      try {
+        console.log('💾 Saving all configuration to database...');
+
+        const configData = {
+          sessionToken: sessionToken,
+          studentName: studentName || 'Workshop Student',
+          openaiApiKey: openaiApiKey,
+          systemPrompt: generatedContent?.systemPrompt || '',
+          tools: toolsConfigured ? getConfiguredTools() : [],
+          voiceSettings: {
+            provider: ttsProvider,
+            voice: getDefaultVoice(),
+            language: voiceLanguage
+          },
+          useCaseDescription: useCaseDescription || '',
+          callDirection: callDirection || 'inbound',
+          ivrGreeting: generatedContent?.ivrGreeting || '',
+          ttsProvider: ttsProvider || 'elevenlabs',
+          selectedVoice: getDefaultVoice(),
+          selectedPhoneNumber: selectedPhoneNumber || '',
+          websocketUrl: websocketUrl || '',
+          codespaceUrl: codespaceUrl || '',
+          githubRepoUrl: githubRepoUrl || '',
+          railwayUrl: railwayUrl || ''
+        };
+
+        const response = await fetch('/api/student-config-save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(configData)
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to save configuration');
+        }
+
+        console.log('✅ Configuration saved to database');
+        return data;
+      } catch (error) {
+        console.error('❌ Failed to save configuration:', error);
+        throw error;
+      }
+    }
+
+    /**
+     * Gets currently configured tools from Step 8
+     */
+    function getConfiguredTools() {
+      // Return empty array for now - will be populated when we integrate OpenAI Assistants API
+      return [];
     }
 
     async function loadCIAnalytics() {
