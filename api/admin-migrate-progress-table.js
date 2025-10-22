@@ -98,6 +98,17 @@ export default async function handler(req, res) {
       migrationSteps.push(`⚠️ Add student_id column: ${error.message}`);
     }
 
+    // Step 3.5: Add demo_mode column
+    try {
+      await sql`
+        ALTER TABLE workshop_students
+        ADD COLUMN IF NOT EXISTS demo_mode BOOLEAN DEFAULT FALSE
+      `;
+      migrationSteps.push('✅ Added demo_mode column (if missing)');
+    } catch (error) {
+      migrationSteps.push(`⚠️ Add demo_mode column: ${error.message}`);
+    }
+
     // Step 4: Create indexes for performance
     try {
       await sql`CREATE INDEX IF NOT EXISTS idx_students_email ON workshop_students(student_email)`;

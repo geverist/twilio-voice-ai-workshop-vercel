@@ -14,14 +14,11 @@ import {
   handleValidationError
 } from './_lib/validation.js';
 
-// Create postgres connection (only if POSTGRES_URL is set)
-let sql;
-if (process.env.POSTGRES_URL) {
-  sql = postgres(process.env.POSTGRES_URL, {
-    ssl: 'require',
-    max: 1
-  });
-}
+// Create postgres connection
+const sql = process.env.POSTGRES_URL ? postgres(process.env.POSTGRES_URL, {
+  ssl: 'require',
+  max: 1
+}) : null;
 
 export default async function handler(req, res) {
   // Apply CORS
