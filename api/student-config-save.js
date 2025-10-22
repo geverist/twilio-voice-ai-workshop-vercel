@@ -7,7 +7,7 @@
 
 import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
-import { applyRateLimit } from './_lib/ratelimit.js';
+// import { applyRateLimit } from './_lib/ratelimit.js'; // Temporarily disabled - causing function crashes
 import {
   validateRequired,
   validateString,
@@ -33,11 +33,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  // Apply rate limiting
-  const allowed = await applyRateLimit(req, res);
-  if (!allowed) {
-    return;
-  }
+  // TODO: Re-enable rate limiting once Upstash is configured
+  // const allowed = await applyRateLimit(req, res);
+  // if (!allowed) {
+  //   return;
+  // }
 
   // Check if Postgres is configured
   if (!process.env.POSTGRES_URL || !sql) {
