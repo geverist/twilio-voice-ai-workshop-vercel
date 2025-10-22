@@ -521,7 +521,7 @@
         const { data, status } = await apiCall('/api/student-config-save', {
           body: {
             sessionToken: sessionToken,
-            studentName: '<script>alert("xss")</script>',
+            studentName: '<script>alert("xss")<\/script>',
             studentEmail: 'test@example.com'
           }
         });
