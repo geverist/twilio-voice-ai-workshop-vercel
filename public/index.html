@@ -2004,7 +2004,10 @@
     function renderProgressSteps() {
       const container = document.getElementById('progressSteps');
       container.innerHTML = steps.map((step, index) => `
-        <div class="step-item ${index === currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}">
+        <div class="step-item ${index === currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}"
+             onclick="navigateToStep(${index})"
+             style="cursor: pointer;"
+             title="Click to go to ${step.title}">
           <div class="step-number">${index < currentStep ? '' : step.id}</div>
           <div class="step-title">${step.title}</div>
         </div>
