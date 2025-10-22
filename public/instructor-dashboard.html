@@ -363,7 +363,7 @@
         <button class="tab" onclick="switchTab('single')">Send Single Invitation</button>
         <button class="tab" onclick="switchTab('bulk')">Bulk Send</button>
         <button class="tab" onclick="switchTab('history')">Invitation History</button>
-        <button class="tab" onclick="switchTab('cleanup')">🧹 Cleanup</button>
+        <button class="tab" onclick="switchTab('cleanup')">👥 Active Students</button>
       </div>
 
       <!-- Alert Messages -->
@@ -559,19 +559,36 @@ student2@example.com,Jane Smith</pre>
         </div>
       </div>
 
-      <!-- Cleanup Tab -->
+      <!-- Active Students Tab (formerly Cleanup) -->
       <div id="cleanupTab" class="tab-content">
-        <div class="info-box" style="background: #fff3cd; border-left-color: #856404;">
-          <h3 style="color: #856404;">⚠️ Post-Workshop Cleanup</h3>
-          <p style="color: #856404;">
-            Manage student sessions after your workshop. You can delete API keys only (preserving all other data) or completely remove sessions.
+        <div class="info-box" style="background: #e3f2fd; border-left-color: #1976d2;">
+          <h3 style="color: #1976d2;">👥 Student Session Management</h3>
+          <p style="color: #1976d2;">
+            View student details, progress, and configurations. Switch between view mode (read-only) and manage mode (cleanup/deletion).
           </p>
         </div>
 
         <div class="form-section">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="margin: 0;">🗄️ Student Sessions</h2>
-            <button class="button secondary" onclick="loadCleanupSessions()">🔄 Refresh</button>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+            <h2 style="margin: 0;">🗄️ Active Students & Sessions</h2>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <div style="display: flex; gap: 5px; background: #f0f0f0; padding: 5px; border-radius: 8px;">
+                <button
+                  id="viewModeBtn"
+                  class="button secondary"
+                  onclick="setStudentViewMode('view')"
+                  style="padding: 8px 16px; font-size: 0.9rem; background: #F22F46; color: white;">
+                  👁️ View
+                </button>
+                <button
+                  id="manageModeBtn"
+                  class="button secondary"
+                  onclick="setStudentViewMode('manage')"
+                  style="padding: 8px 16px; font-size: 0.9rem;">
+                  🗑️ Manage
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="form-group">
@@ -585,12 +602,20 @@ student2@example.com,Jane Smith</pre>
             <div class="hint">Required to view and manage sessions</div>
           </div>
 
-          <button class="button" onclick="loadCleanupSessions()" style="margin-bottom: 20px;">
+          <button class="button" onclick="loadCleanupSessions()" id="loadSessionsBtn" style="margin-bottom: 20px;">
             🔓 Load Sessions
           </button>
 
           <div id="cleanupSessionsContainer" style="display: none;">
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <!-- View Mode Controls (shown only in view mode) -->
+            <div id="viewModeControls" style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">
+              <div style="font-size: 0.95rem; color: #1976d2;">
+                👁️ <strong>View Mode:</strong> Click on any student to view their detailed session information and progress. Switch to Manage mode to delete sessions.
+              </div>
+            </div>
+
+            <!-- Manage Mode Controls (shown only in manage mode) -->
+            <div id="manageModeControls" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: block;">
               <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
                   <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
@@ -607,8 +632,8 @@ student2@example.com,Jane Smith</pre>
                   </button>
                 </div>
               </div>
-              <div style="font-size: 0.85rem; color: #666; margin-top: 10px; padding: 10px; background: #e7f3ff; border-radius: 6px;">
-                💡 <strong>Tip:</strong> Check a student to select all their sessions, or expand and select individual sessions. Use the expand arrow (▶) to see session details.
+              <div style="font-size: 0.85rem; color: #666; margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 6px;">
+                ⚠️ <strong>Manage Mode:</strong> Check a student to select all their sessions, or expand and select individual sessions. Use the expand arrow (▶) to see session details.
               </div>
             </div>
 
@@ -1192,19 +1217,61 @@ student2@example.com,Jane Smith</pre>
     loadStudentProgress();
 
     // =============================================
-    // CLEANUP TAB - Session Management
+    // ACTIVE STUDENTS TAB - Session Management
     // =============================================
 
     let cleanupStudents = [];
     let cleanupSessions = [];
     let selectedSessionTokens = new Set();
     let selectedStudentEmails = new Set();
+    let studentViewMode = 'view'; // 'view' or 'manage'
+
+    // Toggle between view and manage modes
+    function setStudentViewMode(mode) {
+      studentViewMode = mode;
+
+      // Update button styles
+      const viewBtn = document.getElementById('viewModeBtn');
+      const manageBtn = document.getElementById('manageModeBtn');
+
+      if (mode === 'view') {
+        viewBtn.style.background = '#F22F46';
+        viewBtn.style.color = 'white';
+        manageBtn.style.background = '#6c757d';
+        manageBtn.style.color = 'white';
+
+        // Show view controls, hide manage controls
+        document.getElementById('viewModeControls').style.display = 'block';
+        document.getElementById('manageModeControls').style.display = 'none';
+      } else {
+        viewBtn.style.background = '#6c757d';
+        viewBtn.style.color = 'white';
+        manageBtn.style.background = '#F22F46';
+        manageBtn.style.color = 'white';
+
+        // Show manage controls, hide view controls
+        document.getElementById('viewModeControls').style.display = 'none';
+        document.getElementById('manageModeControls').style.display = 'block';
+      }
+
+      // Re-render sessions with appropriate UI
+      renderCleanupSessions();
+    }
 
     async function loadCleanupSessions() {
+      const button = document.getElementById('loadSessionsBtn');
+      const originalText = button.textContent;
+
+      // Update button to show loading state
+      button.disabled = true;
+      button.textContent = '🔄 Loading...';
+
       const password = document.getElementById('cleanupAdminPassword').value;
 
       if (!password) {
         showAlert('error', '❌ Please enter the admin password');
+        button.disabled = false;
+        button.textContent = originalText;
         return;
       }
 
@@ -1243,9 +1310,14 @@ student2@example.com,Jane Smith</pre>
         const studentCount = cleanupStudents.length;
         showAlert('success', `✅ Loaded ${studentCount} student${studentCount !== 1 ? 's' : ''} with ${cleanupSessions.length} session${cleanupSessions.length !== 1 ? 's' : ''}`);
 
+        // Change button to refresh
+        button.textContent = '🔄 Refresh';
+
       } catch (error) {
         console.error('Load sessions error:', error);
         showAlert('error', `❌ Error: ${error.message}`);
+      } finally {
+        button.disabled = false;
       }
     }
 
@@ -1298,19 +1370,21 @@ student2@example.com,Jane Smith</pre>
 
         return `
           <!-- Student Row -->
-          <div class="invitation-item" style="flex-direction: column; align-items: stretch; padding: 15px 20px; background: ${allSelected ? '#fff3cd' : (someSelected ? '#fffbf0' : 'white')}; border-bottom: 2px solid #dee2e6;">
+          <div class="invitation-item" style="flex-direction: column; align-items: stretch; padding: 15px 20px; background: ${allSelected && studentViewMode === 'manage' ? '#fff3cd' : (someSelected && studentViewMode === 'manage' ? '#fffbf0' : 'white')}; border-bottom: 2px solid #dee2e6; ${studentViewMode === 'view' ? 'cursor: pointer;' : ''}" ${studentViewMode === 'view' ? `onclick="viewStudentSessionDetails('${email}')"` : ''}>
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div style="display: flex; align-items: center; gap: 15px; flex: 1;">
-                <input
-                  type="checkbox"
-                  ${allSelected ? 'checked' : ''}
-                  ${someSelected ? 'indeterminate' : ''}
-                  onchange="toggleStudentSelect('${email}')"
-                  style="cursor: pointer; width: 20px; height: 20px;"
-                  ${someSelected ? 'ref="indeterminate"' : ''}
-                />
+                ${studentViewMode === 'manage' ? `
+                  <input
+                    type="checkbox"
+                    ${allSelected ? 'checked' : ''}
+                    ${someSelected ? 'indeterminate' : ''}
+                    onchange="toggleStudentSelect('${email}'); event.stopPropagation();"
+                    style="cursor: pointer; width: 20px; height: 20px;"
+                    ${someSelected ? 'ref="indeterminate"' : ''}
+                  />
+                ` : ''}
                 <button
-                  onclick="toggleStudentExpand('${email}')"
+                  onclick="toggleStudentExpand('${email}'); event.stopPropagation();"
                   style="background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 5px; color: ${isOrphan ? '#ccc' : '#666'}; ${isOrphan ? 'cursor: default;' : ''}"
                   title="${isOrphan ? 'No sessions' : (isExpanded ? 'Collapse' : 'Expand') + ' sessions'}"
                   ${isOrphan ? 'disabled' : ''}
@@ -1325,6 +1399,11 @@ student2@example.com,Jane Smith</pre>
                     📧 ${email}
                   </div>
                 </div>
+                ${studentViewMode === 'view' ? `
+                  <button onclick="viewStudentSessionDetails('${email}'); event.stopPropagation();" class="button secondary" style="padding: 8px 16px; font-size: 0.85rem; margin-left: auto;">
+                    👁️ View Details
+                  </button>
+                ` : ''}
               </div>
               <div style="text-align: right;">
                 <div style="font-size: 1.5rem; font-weight: bold; color: ${isOrphan ? '#dc3545' : '#F22F46'};">${totalSessions}</div>
@@ -1341,15 +1420,17 @@ student2@example.com,Jane Smith</pre>
               const updatedDate = new Date(session.updatedAt).toLocaleString();
 
               return `
-                <div class="invitation-item" style="flex-direction: column; align-items: stretch; padding: 15px 20px 15px 80px; background: ${isSelected ? '#fff3cd' : '#f8f9fa'}; border-left: 4px solid ${isSelected ? '#ffc107' : '#e0e0e0'};">
+                <div class="invitation-item" style="flex-direction: column; align-items: stretch; padding: 15px 20px 15px 80px; background: ${isSelected && studentViewMode === 'manage' ? '#fff3cd' : '#f8f9fa'}; border-left: 4px solid ${isSelected && studentViewMode === 'manage' ? '#ffc107' : '#e0e0e0'};">
                   <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="display: flex; align-items: flex-start; gap: 15px; flex: 1;">
-                      <input
-                        type="checkbox"
-                        ${isSelected ? 'checked' : ''}
-                        onchange="toggleSessionSelect('${session.sessionToken}')"
-                        style="margin-top: 5px; cursor: pointer; width: 18px; height: 18px;"
-                      />
+                      ${studentViewMode === 'manage' ? `
+                        <input
+                          type="checkbox"
+                          ${isSelected ? 'checked' : ''}
+                          onchange="toggleSessionSelect('${session.sessionToken}')"
+                          style="margin-top: 5px; cursor: pointer; width: 18px; height: 18px;"
+                        />
+                      ` : ''}
                       <div class="invitation-info" style="flex: 1;">
                         <div class="name" style="font-size: 1rem; font-weight: 600;">📋 Session</div>
                         <div class="email" style="margin-top: 5px; font-size: 0.85rem; color: #666; font-family: monospace;">
@@ -1550,6 +1631,120 @@ student2@example.com,Jane Smith</pre>
         console.error('Delete sessions error:', error);
         showAlert('error', `❌ Error: ${error.message}`);
       }
+    }
+
+    // View detailed session information for a student
+    function viewStudentSessionDetails(email) {
+      const student = cleanupStudents.find(s => s.studentEmail === email);
+      const studentSessions = cleanupSessions.filter(s => s.studentEmail === email);
+      const studentName = student?.studentName || 'Unknown Student';
+
+      if (studentSessions.length === 0) {
+        showAlert('info', `ℹ️ ${studentName} has no active sessions`);
+        return;
+      }
+
+      const detailHTML = `
+        <div style="background: white; padding: 30px; border-radius: 12px; max-width: 900px; margin: 0 auto; max-height: 90vh; overflow-y: auto;">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px;">
+            <div>
+              <h2 style="margin-bottom: 10px; color: #0d122b;">👤 ${studentName}</h2>
+              <div style="color: #666; font-size: 1rem;">📧 ${email}</div>
+              <div style="margin-top: 10px; padding: 10px 15px; background: #e3f2fd; border-radius: 8px; display: inline-block;">
+                <strong>${studentSessions.length}</strong> active session${studentSessions.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+            <button onclick="closeStudentSessionDetails()" class="button secondary" style="padding: 8px 16px;">✕ Close</button>
+          </div>
+
+          <h3 style="margin-bottom: 20px; color: #0d122b;">📋 Session Details</h3>
+
+          ${studentSessions.map((session, index) => {
+            const createdDate = new Date(session.createdAt).toLocaleString();
+            const updatedDate = new Date(session.updatedAt).toLocaleString();
+
+            return `
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 2px solid #e0e0e0;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                  <h4 style="color: #0d122b; margin: 0;">Session ${index + 1}</h4>
+                  <div style="text-align: right; font-size: 0.85rem; color: #666;">
+                    <div>Created: ${createdDate}</div>
+                    <div style="margin-top: 3px;">Updated: ${updatedDate}</div>
+                  </div>
+                </div>
+
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
+                  <div style="font-size: 0.85rem; color: #666; font-family: monospace; word-break: break-all;">
+                    🔑 Session Token: ${session.sessionToken}
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                  <div style="background: white; padding: 15px; border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">📞 Phone Number</div>
+                    <div style="font-weight: 600;">${session.phoneNumber || 'Not set'}</div>
+                  </div>
+
+                  <div style="background: white; padding: 15px; border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">🎙️ Voice</div>
+                    <div style="font-weight: 600;">${session.voice || 'Not set'}</div>
+                  </div>
+
+                  <div style="background: white; padding: 15px; border-radius: 8px;">
+                    <div style="font-size: 0.85rem; color: #666; margin-bottom: 5px;">🔊 TTS Provider</div>
+                    <div style="font-weight: 600;">${session.ttsProvider || 'Not set'}</div>
+                  </div>
+                </div>
+
+                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                  ${session.hasApiKey ?
+                    '<span style="background: #fff3cd; padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; border: 2px solid #ffc107;">🔑 API Key Configured</span>' :
+                    '<span style="background: #f8d7da; padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; border: 2px solid #f5c6cb; color: #721c24;">❌ No API Key</span>'}
+                  ${session.hasSystemPrompt ?
+                    '<span style="background: #e3f2fd; padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; border: 2px solid #90caf9;">📝 Custom Prompt</span>' :
+                    '<span style="color: #999; padding: 8px 12px;">No Custom Prompt</span>'}
+                  ${session.hasTools ?
+                    '<span style="background: #e8f5e9; padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; border: 2px solid #a5d6a7;">🔧 Tools Configured</span>' :
+                    '<span style="color: #999; padding: 8px 12px;">No Tools</span>'}
+                </div>
+              </div>
+            `;
+          }).join('')}
+
+          <div style="margin-top: 30px; text-align: center;">
+            <button onclick="closeStudentSessionDetails()" class="button" style="padding: 12px 30px;">Close</button>
+          </div>
+        </div>
+      `;
+
+      // Create modal overlay
+      const overlay = document.createElement('div');
+      overlay.id = 'studentSessionDetailsOverlay';
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        overflow-y: auto;
+      `;
+      overlay.innerHTML = detailHTML;
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeStudentSessionDetails();
+      });
+      document.body.appendChild(overlay);
+    }
+
+    // Close student session details modal
+    function closeStudentSessionDetails() {
+      const overlay = document.getElementById('studentSessionDetailsOverlay');
+      if (overlay) overlay.remove();
     }
 
     // =============================================
