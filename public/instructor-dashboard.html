@@ -599,12 +599,17 @@ student2@example.com,Jane Smith</pre>
               placeholder="Enter ADMIN_PASSWORD from environment"
               required
             />
-            <div class="hint">Required to view and manage sessions</div>
+            <div class="hint">Password is saved in your browser session</div>
           </div>
 
-          <button class="button" onclick="loadCleanupSessions()" id="loadSessionsBtn" style="margin-bottom: 20px;">
-            🔓 Load Sessions
-          </button>
+          <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="button" onclick="loadCleanupSessions()" id="loadSessionsBtn" style="flex: 1;">
+              🔓 Load Sessions
+            </button>
+            <button class="button" onclick="clearAllStudentData()" style="background: #dc3545; flex: 0 0 auto;">
+              🗑️ Clear All Data
+            </button>
+          </div>
 
           <div id="cleanupSessionsContainer" style="display: none;">
             <!-- View Mode Controls (shown only in view mode) -->
@@ -1226,6 +1231,14 @@ student2@example.com,Jane Smith</pre>
     let selectedStudentEmails = new Set();
     let studentViewMode = 'view'; // 'view' or 'manage'
 
+    // Load cached admin password on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const cachedPassword = sessionStorage.getItem('adminPassword');
+      if (cachedPassword) {
+        document.getElementById('cleanupAdminPassword').value = cachedPassword;
+      }
+    });
+
     // Toggle between view and manage modes
     function setStudentViewMode(mode) {
       studentViewMode = mode;
@@ -1274,6 +1287,9 @@ student2@example.com,Jane Smith</pre>
         button.textContent = originalText;
         return;
       }
+
+      // Cache password in session storage
+      sessionStorage.setItem('adminPassword', password);
 
       try {
         const response = await fetch('/api/admin-list-configs', {
@@ -1784,6 +1800,73 @@ student2@example.com,Jane Smith</pre>
         document.body.removeChild(textarea);
         showAlert('success', `✅ Workshop link copied to clipboard!${studentName ? ` (for ${studentName})` : ''}`);
       });
+    }
+
+    // =============================================
+    // CLEAR ALL STUDENT DATA
+    // =============================================
+
+    async function clearAllStudentData() {
+      const password = document.getElementById('cleanupAdminPassword').value;
+
+      if (!password) {
+        showAlert('error', '❌ Please enter the admin password first');
+        return;
+      }
+
+      const confirmClear = confirm(
+        '⚠️ CLEAR ALL STUDENT AND SESSION DATA?\n\n' +
+        'This will PERMANENTLY DELETE:\n' +
+        '• ALL students from all tables\n' +
+        '• ALL sessions from all tables\n' +
+        '• ALL workshop progress data\n' +
+        '• ALL configurations\n\n' +
+        'This action CANNOT be undone.\n\n' +
+        'Are you absolutely sure?'
+      );
+
+      if (!confirmClear) return;
+
+      // Second confirmation
+      const confirmText = prompt(
+        '⚠️ FINAL CONFIRMATION\n\n' +
+        'To confirm you want to delete ALL student data, type: DELETE ALL'
+      );
+
+      if (confirmText !== 'DELETE ALL') {
+        showAlert('error', '❌ Confirmation text did not match. Clear cancelled.');
+        return;
+      }
+
+      try {
+        showAlert('info', '🔄 Clearing all data...');
+
+        const response = await fetch('/api/admin-clear-all-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminPassword: password
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          showAlert('error', `❌ ${data.error || 'Failed to clear data'}`);
+          return;
+        }
+
+        showAlert('success', `✅ ${data.message}\n\nResults:\n${data.results.join('\n')}`);
+
+        // Reload sessions list to show empty state
+        setTimeout(() => {
+          loadCleanupSessions();
+        }, 1000);
+
+      } catch (error) {
+        console.error('Clear all data error:', error);
+        showAlert('error', `❌ Error: ${error.message}`);
+      }
     }
 
     // =============================================
