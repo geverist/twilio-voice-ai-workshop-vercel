@@ -8689,41 +8689,6 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           // Save progress immediately
           saveProgressToStorage();
 
-          // Save student config to database for shared WebSocket server
-          if (!studentDemoMode && !twilioCredentials?.demoMode) {
-            try {
-              console.log('💾 Saving student config to database...');
-
-              const configResponse = await fetch('/api/student-config-save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  sessionToken: sessionToken,
-                  studentName: studentName || githubUsername || 'Student',
-                  openaiApiKey: openaiApiKey,
-                  systemPrompt: customSystemPrompt || 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.',
-                  tools: [], // Tools will be added in Step 8
-                  voiceSettings: {
-                    provider: ttsProvider,
-                    voice: conversationRelayVoice
-                  }
-                })
-              });
-
-              const configData = await configResponse.json();
-
-              if (configData.success) {
-                console.log('✅ Student config saved to database');
-                console.log('   WebSocket URL:', configData.websocketUrl);
-              } else {
-                console.warn('⚠️ Failed to save student config:', configData.error);
-              }
-            } catch (error) {
-              console.error('❌ Error saving student config:', error);
-              // Don't fail deployment if config save fails
-            }
-          }
-
           showStatus(statusId, 'success', '✅ ConversationRelay deployed successfully!');
           console.log('✅ Step 6 deployed, step6Deployed =', step6Deployed);
 
@@ -15308,7 +15273,42 @@ twilio serverless:deploy
 
         showStatus('codespaceDeployStatus', 'info', '⚡ Setting up your WebSocket server...');
 
-        // Step 2: The WebSocket URL is instant - it uses the shared server
+        // Step 2: Create initial student config in database
+        if (!studentDemoMode && !twilioCredentials?.demoMode) {
+          try {
+            console.log('💾 Creating initial student config in database...');
+
+            const configResponse = await fetch('/api/student-config-save', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sessionToken: sessionToken,
+                studentName: studentName || githubUsername || 'Student',
+                openaiApiKey: openaiApiKey || null,
+                systemPrompt: 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.',
+                tools: [],
+                voiceSettings: {
+                  provider: ttsProvider || 'google',
+                  voice: conversationRelayVoice || null
+                }
+              })
+            });
+
+            const configData = await configResponse.json();
+
+            if (configData.success) {
+              console.log('✅ Initial student config created in database');
+              console.log('   Session token:', sessionToken);
+            } else {
+              console.warn('⚠️ Failed to create student config:', configData.error);
+            }
+          } catch (error) {
+            console.error('❌ Error creating student config:', error);
+            // Don't fail deployment if config save fails - they can retry later
+          }
+        }
+
+        // Step 3: The WebSocket URL is instant - it uses the shared server
         websocketUrl = `wss://workshop-websocket-server-production.up.railway.app/ws/${sessionToken}`;
         codespaceUrl = websocketUrl;
 
