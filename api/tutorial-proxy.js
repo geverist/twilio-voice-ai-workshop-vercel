@@ -155,7 +155,7 @@ export default async function handler(req, res) {
                 content: message
               }
             ],
-            max_tokens: 150
+            max_tokens: 500  // Increased for complex responses like scoring
           })
         });
 

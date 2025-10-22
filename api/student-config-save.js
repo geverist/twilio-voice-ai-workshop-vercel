@@ -46,7 +46,17 @@ export default async function handler(req, res) {
       openaiApiKey,
       systemPrompt,
       tools,
-      voiceSettings
+      voiceSettings,
+      useCaseDescription,
+      callDirection,
+      ivrGreeting,
+      ttsProvider,
+      selectedVoice,
+      selectedPhoneNumber,
+      websocketUrl,
+      codespaceUrl,
+      githubRepoUrl,
+      railwayUrl
     } = req.body;
 
     // Input validation
@@ -63,7 +73,7 @@ export default async function handler(req, res) {
 
     console.log(`💾 Saving config for session: ${sessionToken.substring(0, 8)}...`);
 
-    // Ensure table exists
+    // Ensure table exists with all columns
     await sql`
       CREATE TABLE IF NOT EXISTS student_configs (
         session_token TEXT PRIMARY KEY,
@@ -72,6 +82,16 @@ export default async function handler(req, res) {
         system_prompt TEXT,
         tools JSONB DEFAULT '[]',
         voice_settings JSONB DEFAULT '{}',
+        use_case_description TEXT,
+        call_direction TEXT,
+        ivr_greeting TEXT,
+        tts_provider TEXT,
+        selected_voice TEXT,
+        selected_phone_number TEXT,
+        websocket_url TEXT,
+        codespace_url TEXT,
+        github_repo_url TEXT,
+        railway_url TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
@@ -86,6 +106,16 @@ export default async function handler(req, res) {
         system_prompt,
         tools,
         voice_settings,
+        use_case_description,
+        call_direction,
+        ivr_greeting,
+        tts_provider,
+        selected_voice,
+        selected_phone_number,
+        websocket_url,
+        codespace_url,
+        github_repo_url,
+        railway_url,
         updated_at
       ) VALUES (
         ${sessionToken},
@@ -94,6 +124,16 @@ export default async function handler(req, res) {
         ${systemPrompt || null},
         ${JSON.stringify(tools || [])},
         ${JSON.stringify(voiceSettings || {})},
+        ${useCaseDescription || null},
+        ${callDirection || null},
+        ${ivrGreeting || null},
+        ${ttsProvider || null},
+        ${selectedVoice || null},
+        ${selectedPhoneNumber || null},
+        ${websocketUrl || null},
+        ${codespaceUrl || null},
+        ${githubRepoUrl || null},
+        ${railwayUrl || null},
         NOW()
       )
       ON CONFLICT (session_token)
@@ -103,6 +143,16 @@ export default async function handler(req, res) {
         system_prompt = EXCLUDED.system_prompt,
         tools = EXCLUDED.tools,
         voice_settings = EXCLUDED.voice_settings,
+        use_case_description = EXCLUDED.use_case_description,
+        call_direction = EXCLUDED.call_direction,
+        ivr_greeting = EXCLUDED.ivr_greeting,
+        tts_provider = EXCLUDED.tts_provider,
+        selected_voice = EXCLUDED.selected_voice,
+        selected_phone_number = EXCLUDED.selected_phone_number,
+        websocket_url = EXCLUDED.websocket_url,
+        codespace_url = EXCLUDED.codespace_url,
+        github_repo_url = EXCLUDED.github_repo_url,
+        railway_url = EXCLUDED.railway_url,
         updated_at = NOW()
     `;
 
