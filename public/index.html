@@ -2421,6 +2421,18 @@
         localStorage.removeItem('workshop_setup_complete');
       }
 
+      // Restore demo mode if it was previously active
+      if (studentDemoMode && !twilioCredentials) {
+        console.log('🎭 Restoring demo mode from localStorage');
+        twilioCredentials = {
+          accountSid: 'ACdemo123456789012345678901234567890',
+          authToken: 'demo_token',
+          demoMode: true
+        };
+        setState("twilioConnected", true);
+        updateDemoModeBanner();
+      }
+
       // Check for saved progress
       // Check if user is in the middle of setting up accounts (with expiration)
       let isSettingUpAccounts = false;
