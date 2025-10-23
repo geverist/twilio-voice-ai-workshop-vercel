@@ -2843,98 +2843,35 @@
             `}
           </div>
 
-          <!-- Railway WebSocket Server Deployment -->
+          <!-- Shared WebSocket Server Info (No Deployment Needed) -->
           ${githubToken && studentRepoName ? `
           <div class="service-card" style="background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; margin-bottom: 30px;">
-            <h4 style="color: white; margin-bottom: 15px;">🚀 Step 1b: Get Your WebSocket Server</h4>
-            <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
-              Get access to a shared WebSocket server for testing your Voice AI!
-            </p>
-            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
-                <strong>💡 What you get:</strong>
-              </p>
-              <ul style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                <li>Shared WebSocket server for Twilio Conversation Relay</li>
-                <li>Public WebSocket URL for connecting Twilio phone calls</li>
-                <li>Instant access - no deployment needed</li>
-                <li>Test calls and iterate on your Voice AI configuration</li>
-                <li>Isolated session for your configuration</li>
-              </ul>
+            <h4 style="color: white; margin-bottom: 15px;">🚀 Step 1b: WebSocket Server</h4>
+            <div style="background: rgba(40, 167, 69, 0.3); padding: 20px; border-radius: 8px; border: 2px solid rgba(40, 167, 69, 0.6);">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                <span style="font-size: 1.5rem;">✅</span>
+                <div>
+                  <strong style="color: white; font-size: 1.05rem;">Shared WebSocket Server Ready!</strong><br>
+                  <span style="color: rgba(255,255,255,0.8); font-size: 13px;">No deployment needed - server is already running</span>
+                </div>
+              </div>
+              <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+                <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
+                  <strong>💡 What's included:</strong>
+                </p>
+                <ul style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
+                  <li>Shared WebSocket server for Twilio Conversation Relay</li>
+                  <li>Isolated session for your configuration</li>
+                  <li>WebSocket URL will be provided when you save your config</li>
+                  <li>Test calls and iterate on your Voice AI</li>
+                </ul>
+              </div>
             </div>
-
-            ${codespaceUrl ? `
-              <div style="background: rgba(40, 167, 69, 0.3); padding: 20px; border-radius: 8px; border: 2px solid rgba(40, 167, 69, 0.6);">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                  <span style="font-size: 1.5rem;">✅</span>
-                  <div>
-                    <strong style="color: white; font-size: 1.05rem;">WebSocket Server Ready!</strong>
-                  </div>
-                </div>
-                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-                  <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 5px;">WebSocket URL:</div>
-                  <code style="color: white; font-size: 12px; word-break: break-all; font-family: monospace;">${codespaceUrl}</code>
-                </div>
-                <details style="margin-top: 15px;">
-                  <summary style="color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer;">⚠️ Troubleshooting</summary>
-                  <div style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 12px; color: rgba(255,255,255,0.85);">
-                    <p style="margin: 0 0 10px 0;"><strong>If WebSocket connection fails:</strong></p>
-                    <ol style="margin: 0 0 15px 0; padding-left: 20px; line-height: 1.6;">
-                      <li>Port may not be public (created before latest update)</li>
-                      <li>Server may have crashed on startup</li>
-                      <li>Server may be using old deployment</li>
-                    </ol>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                      <button class="btn" onclick="deleteAndRecreateCodespace()" style="padding: 8px 16px; background: rgba(220, 53, 69, 0.8); border: 1px solid rgba(220, 53, 69, 1); color: white; font-size: 12px;">
-                        🔄 Get New Server URL
-                      </button>
-                    </div>
-                  </div>
-                </details>
-              </div>
-            ` : codespaceName ? `
-              <div style="background: rgba(255, 193, 7, 0.3); padding: 20px; border-radius: 8px; border: 2px solid rgba(255, 193, 7, 0.6);">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                  <span style="font-size: 1.5rem;">⏸️</span>
-                  <div>
-                    <strong style="color: white; font-size: 1.05rem;">WebSocket Server Stopped</strong><br>
-                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Click below to get a new server</span>
-                  </div>
-                </div>
-                <p style="color: rgba(255,255,255,0.85); margin-bottom: 15px; font-size: 13px;">
-                  💡 The shared server may have stopped. Get a new server URL to continue.
-                </p>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                  <button class="btn" onclick="window.open('${codespaceWebUrl}', '_blank')" style="padding: 10px 20px; background: rgba(255,255,255,0.9); border: none; color: #1a7f37; font-size: 13px; font-weight: bold;">
-                    🔄 Restart Server
-                  </button>
-                  <button class="btn" onclick="refreshCodespaceStatus()" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 13px;">
-                    🔄 Check Status
-                  </button>
-                </div>
-              </div>
-            ` : `
-              <div style="margin-bottom: 15px;">
-                <button
-                  class="btn btn-primary next-action"
-                  id="deployCodespaceBtn"
-                  onclick="deploySharedWebSocket()"
-                  style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #1a7f37; border: none; font-weight: bold;">
-                  ⚡ Get WebSocket Server
-                </button>
-                <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
-                  Instant setup • No deployment needed
-                </p>
-                <div id="codespacesUsageInfo" style="margin-top: 10px; text-align: center;"></div>
-              </div>
-            `}
-
-            <div id="codespaceDeployStatus" style="margin-top: 15px;"></div>
           </div>
           ` : ''}
 
-          <!-- Twilio Credentials (Only shown after WebSocket server is ready) -->
-          ${codespaceUrl || studentDemoMode ? `
+          <!-- Twilio Credentials (Shown after GitHub repo is cloned OR in demo mode) -->
+          ${studentRepoName || studentDemoMode ? `
           <div class="service-card">
             <h4>🔴 Twilio Account</h4>
 
