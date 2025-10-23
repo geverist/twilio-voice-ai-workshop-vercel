@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Status Checker</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #F22F46;
+      margin-bottom: 20px;
+    }
+    .status {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      font-family: monospace;
+    }
+    .success { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    .info { background: #d1ecf1; color: #0c5460; }
+    button {
+      background: #F22F46;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+    button:hover {
+      background: #d11f3a;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+    .results {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      display: none;
+    }
+    pre {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Instructor Dashboard Status Checker</h1>
+
+    <div class="status info">
+      📊 This tool checks if your database migration is complete and if the instructor dashboard will work.
+    </div>
+
+    <div>
+      <label for="adminPassword" style="font-weight: 600;">Enter Admin Password:</label>
+      <input type="password" id="adminPassword" placeholder="Your ADMIN_PASSWORD from Vercel">
+      <div style="font-size: 12px; color: #666; margin-top: 5px;">
+        Get this from: <a href="https://vercel.com/geverists-projects/twilio-voice-ai-workshop-vercel/settings/environment-variables" target="_blank">Vercel Environment Variables</a>
+      </div>
+    </div>
+
+    <button onclick="checkStatus()">Check Dashboard Status</button>
+
+    <div id="results" class="results"></div>
+  </div>
+
+  <script>
+    async function checkStatus() {
+      const password = document.getElementById('adminPassword').value;
+      const resultsDiv = document.getElementById('results');
+
+      if (!password) {
+        alert('Please enter your admin password');
+        return;
+      }
+
+      resultsDiv.style.display = 'block';
+      resultsDiv.innerHTML = '<div class="status info">⏳ Checking...</div>';
+
+      try {
+        // Test the current endpoint
+        const response = await fetch('/api/admin-list-configs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ adminPassword: password })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          resultsDiv.innerHTML = `
+            <div class="status error">
+              ❌ Error: ${data.error}
+            </div>
+            <p>Double-check your admin password in Vercel settings.</p>
+          `;
+          return;
+        }
+
+        // Success! Analyze the data
+        const studentCount = data.students?.length || 0;
+        const sessionCount = data.sessions?.length || 0;
+
+        let html = `
+          <div class="status success">
+            ✅ Dashboard API is working!
+          </div>
+
+          <h3 style="margin-top: 20px;">📊 Current Data:</h3>
+          <div class="status info">
+            • Students: ${studentCount}<br>
+            • Sessions: ${sessionCount}
+          </div>
+        `;
+
+        if (studentCount > 0 && sessionCount > 0) {
+          html += `
+            <div class="status success">
+              🎉 <strong>Migration appears complete!</strong><br><br>
+              Your database has both students and sessions. The instructor dashboard should work perfectly.
+            </div>
+
+            <h3 style="margin-top: 20px;">✅ Next Steps:</h3>
+            <ol style="line-height: 2;">
+              <li>Go to <a href="/instructor-dashboard.html" target="_blank">Instructor Dashboard</a></li>
+              <li>Click "Admin Login" and enter your password</li>
+              <li>Click "Load Sessions" to view all student data</li>
+            </ol>
+          `;
+        } else {
+          html += `
+            <div class="status error">
+              ⚠️ <strong>Database appears empty</strong><br><br>
+              No students or sessions found. You may need to run the migration.
+            </div>
+
+            <h3 style="margin-top: 20px;">📋 Next Steps:</h3>
+            <ol style="line-height: 2;">
+              <li>Check if old tables exist with data</li>
+              <li>Run the migration script to copy data to new schema</li>
+              <li>See MIGRATION-STATUS.md for instructions</li>
+            </ol>
+          `;
+        }
+
+        // Show sample data
+        if (data.sessions && data.sessions.length > 0) {
+          html += `
+            <h3 style="margin-top: 20px;">📝 Sample Session Data:</h3>
+            <pre>${JSON.stringify(data.sessions[0], null, 2)}</pre>
+          `;
+        }
+
+        resultsDiv.innerHTML = html;
+
+      } catch (error) {
+        resultsDiv.innerHTML = `
+          <div class="status error">
+            ❌ Error checking status: ${error.message}
+          </div>
+          <p>Make sure you're connected to the internet and the Vercel deployment is complete.</p>
+        `;
+      }
+    }
+  </script>
+</body>
+</html>
