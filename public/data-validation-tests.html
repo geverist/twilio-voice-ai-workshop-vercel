@@ -710,14 +710,17 @@
     testSuites.push(describe('Input Sanitization', () => {
 
       it('should remove HTML tags from input', () => {
-        expect(sanitizeInput('<script>alert("xss")</script>Hello')).toBe('Hello');
+        const scriptTest = '<' + 'script>alert("xss")<' + '/script>Hello';
+        expect(sanitizeInput(scriptTest)).toBe('Hello');
         expect(sanitizeInput('<p>Test</p>')).toBe('Test');
         expect(sanitizeInput('<a href="evil.com">Click</a>')).toBe('Click');
       });
 
       it('should remove script tags and content', () => {
-        expect(sanitizeInput('Before<script>malicious()</script>After')).toBe('BeforeAfter');
-        expect(sanitizeInput('<script src="evil.js"></script>Text')).toBe('Text');
+        const scriptTest1 = 'Before<' + 'script>malicious()<' + '/script>After';
+        const scriptTest2 = '<' + 'script src="evil.js"><' + '/script>Text';
+        expect(sanitizeInput(scriptTest1)).toBe('BeforeAfter');
+        expect(sanitizeInput(scriptTest2)).toBe('Text');
       });
 
       it('should trim whitespace', () => {
