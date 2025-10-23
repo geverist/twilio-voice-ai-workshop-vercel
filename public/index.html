@@ -4698,6 +4698,19 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
         await loadServices();
 
       } catch (error) {
+        // Check if this is "service already exists" - that's actually a success!
+        if (error.message && error.message.includes('already exists')) {
+          console.log('✅ Conversational Intelligence already enabled (service exists)');
+          showStatus('step3Status', 'success',
+            `✅ Conversational Intelligence is already enabled for your account!<br>` +
+            `<div style="margin-top: 10px; font-size: 13px;">Your calls will automatically include AI-powered transcripts and insights.</div>` +
+            `<div style="margin-top: 8px; font-size: 12px; color: rgba(26, 115, 232, 0.8);">💡 The service was previously set up - you're ready to go!</div>`
+          );
+          // Try to fetch the existing service SID
+          await loadServices();
+          return;
+        }
+
         console.error('❌ Failed to enable Conversational Intelligence:', error);
         showStatus('step3Status', 'error',
           `❌ Failed to enable Conversational Intelligence: ${error.message}<br>` +
