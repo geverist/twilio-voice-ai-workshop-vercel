@@ -2679,21 +2679,14 @@
           if (cloneBtn && !cloneBtn.disabled) {
             nextButton = cloneBtn;
           }
-        } else if (!codespaceUrl) {
-          // Need to deploy Codespace - but only if button exists and not disabled
-          const deployBtn = document.querySelector('[onclick*="deployToCodespaces"]');
-          if (deployBtn && !deployBtn.disabled) {
-            nextButton = deployBtn;
-          }
-          // If button is disabled/missing, we're in the middle of deployment - don't highlight anything
         } else if (!twilioConnected) {
-          // Need to connect Twilio - find the visible connect button
-          const connectBtn = document.querySelector('[onclick*="connectTwilio"]:not([disabled])') ||
-                           document.querySelector('[onclick*="connectTwilioWithApiKey"]:not([disabled])') ||
-                           document.querySelector('[onclick*="connectDemoMode"]:not([disabled])');
-          nextButton = connectBtn;
-        } else {
-          // All done - highlight Next button
+          // Need to connect Twilio - highlight Account SID input field first
+          nextButton = document.getElementById('accountSidGroup');
+        } else if (!openaiConnected) {
+          // Twilio connected, now need OpenAI - highlight OpenAI key input field
+          nextButton = document.getElementById('openaiKeyGroup');
+        } else if (twilioConnected && openaiConnected) {
+          // Both connected - highlight Next button
           nextButton = document.getElementById('nextBtn1');
         }
       } else if (currentStep === 1) {
@@ -3018,24 +3011,7 @@
             <div id="twilioStatus" class="connection-status" style="display: none; margin-top: 10px;"></div>
             ` : ''}
           </div>
-          ` : `
-          <!-- Locked Twilio Section -->
-          <div class="service-card" style="opacity: 0.6; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); z-index: 10; display: flex; align-items: center; justify-content: center;">
-              <div style="text-align: center; padding: 40px;">
-                <div style="font-size: 3rem; margin-bottom: 15px;">🔒</div>
-                <h4 style="margin: 0 0 10px 0; color: #666;">Step 1c: Connect to Twilio</h4>
-                <p style="color: #999; margin: 0; font-size: 14px;">Complete WebSocket server deployment first</p>
-              </div>
-            </div>
-            <h4 style="opacity: 0.3;">🔴 Twilio Account</h4>
-            <div style="opacity: 0.3; filter: blur(2px);">
-              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 15px;">
-                <p>Twilio credentials will be available after your development environment is ready...</p>
-              </div>
-            </div>
-          </div>
-          `}
+          ` : ''}
 
           <!-- OpenAI API Key Configuration -->
           ${twilioConnected ? `
@@ -3330,6 +3306,7 @@
     }
 
     async function connectOpenAI() {
+      clearHighlights(); // Remove highlight immediately when clicked
       const apiKeyInput = document.getElementById('openaiKey');
       let apiKey = apiKeyInput.value.trim();
       // Support both Step 1 and Step 5
@@ -10635,7 +10612,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             <div class="code-header">
               <span>📝 ConversationRelay TwiML Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success ${step6CodeValidated ? '' : 'next-action'}" style="padding: 6px 12px; font-size: 13px; ${step6CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode8()" ${step6CodeValidated ? 'disabled' : ''}>✓ Validate</button>
+                <button class="btn btn-success ${(!step6CodeValidated || code8Changed) ? 'next-action' : ''}" style="padding: 6px 12px; font-size: 13px; ${(step6CodeValidated && !code8Changed) ? 'opacity: 0.5;' : ''}" onclick="validateCode8()" ${(step6CodeValidated && !code8Changed) ? 'disabled' : ''}>✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code8')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode8()">Reset</button>
               </div>
@@ -10962,7 +10939,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       if (allValid) {
         conversationRelayCreated = true;
         step6CodeValidated = true;
-        showStatus('step8Status', 'success', '✅ Perfect! ConversationRelay TwiML is valid. Test it below!');
+        showStatus('step6Status', 'success', '✅ Perfect! ConversationRelay TwiML is valid. Deploy it below!');
         updateProgressBar();
 
         // Move next-action effect from Validate button to Deploy button
@@ -11002,7 +10979,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         if (!checks.hasVoice) missing.push('voice parameter');
         if (!checks.hasTTS) missing.push('ttsProvider parameter');
 
-        showStatus('step8Status', 'error', `❌ Missing: ${missing.join(', ')}`);
+        showStatus('step6Status', 'error', `❌ Missing: ${missing.join(', ')}`);
       }
     }
 
@@ -11036,8 +11013,16 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
   callback(null, response);
 };`;
-      document.getElementById('console8').innerHTML = '';
-      document.getElementById('step8Status').innerHTML = '';
+      // Clear status (Step 6 uses step6Status)
+      const statusEl = document.getElementById('step6Status');
+      if (statusEl) statusEl.innerHTML = '';
+
+      // Mark as not validated so user can re-validate
+      step6CodeValidated = false;
+      code8Changed = false;
+
+      // Re-render to update validate button state
+      renderStepContent();
     }
 
     // Validate Step 8 WebSocket Handler with Tools & Knowledge Base
@@ -13537,22 +13522,26 @@ app.get('/health', (req, res) => {
         'code4': {
           flag: 'code4Changed',
           buttonSelector: '[onclick="validateCode4()"]',
-          validatedFlag: 'step4CodeValidated'
+          validatedFlag: 'step4CodeValidated',
+          deployedFlag: 'step4Deployed'
         },
         'code7': {
           flag: 'code7Changed',
           buttonSelector: '#validateBtn7',
-          validatedFlag: 'step5CodeValidated'
+          validatedFlag: 'step5CodeValidated',
+          deployedFlag: 'step5Deployed'
         },
         'code8': {
           flag: 'code8Changed',
           buttonSelector: '[onclick="validateCode8()"]',
-          validatedFlag: 'step6CodeValidated'
+          validatedFlag: 'step6CodeValidated',
+          deployedFlag: 'step6Deployed'
         },
         'code9': {
           flag: 'code9Changed',
           buttonSelector: '[onclick="validateCode9()"]',
-          validatedFlag: 'toolsConfigured'
+          validatedFlag: 'toolsConfigured',
+          deployedFlag: 'step8Deployed'
         }
       };
 
@@ -13567,6 +13556,13 @@ app.get('/health', (req, res) => {
           validateBtn.disabled = false;
           validateBtn.style.opacity = '1';
           validateBtn.classList.add('next-action');
+        }
+
+        // If code was deployed, mark as needing re-deployment
+        if (cfg.deployedFlag && eval(cfg.deployedFlag)) {
+          eval(`${cfg.deployedFlag} = false`);
+          // Re-render to update deploy button state
+          renderStepContent();
         }
       }
     }
