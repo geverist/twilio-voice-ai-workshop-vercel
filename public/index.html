@@ -8317,6 +8317,218 @@ case 'send_whatsapp':
       loadButton.innerHTML = '<div style="color: white;">Loading analytics...</div>';
 
       try {
+        // Demo mode simulation
+        if (studentDemoMode || twilioCredentials?.demoMode === true) {
+          setTimeout(() => {
+            loadButton.style.display = 'none';
+            analyticsContainer.style.display = 'block';
+            analyticsContainer.innerHTML = `
+              <div style="background: white; color: #333; padding: 20px; border-radius: 8px;">
+                <h4 style="margin: 0 0 15px 0; color: #1a73e8;">📞 Demo Workshop Calls with AI Analytics (3)</h4>
+
+                <!-- Call 1 -->
+                <div style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                      <strong>Call #1 - Appointment Booking</strong>
+                      <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        From: +1 (555) 123-4567<br>
+                        Time: ${new Date(Date.now() - 3600000).toLocaleString()}
+                      </div>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-size: 24px;">😊</div>
+                      <div style="font-size: 12px; color: #56ab2f; font-weight: bold; text-transform: uppercase;">
+                        POSITIVE
+                      </div>
+                    </div>
+                  </div>
+                  <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-top: 10px;">
+                    <strong style="font-size: 13px;">Conversation Transcript:</strong>
+                    <div style="max-height: 200px; overflow-y: auto; margin-top: 8px; font-size: 13px; line-height: 1.6;">
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🤖 AI:</span>
+                        Hello! Thanks for calling. How can I help you today?
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🗣️ Caller:</span>
+                        Hi, I'd like to schedule a doctor's appointment for next week.
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🤖 AI:</span>
+                        Great! I can help you with that. What day works best for you?
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🗣️ Caller:</span>
+                        How about Tuesday afternoon?
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🤖 AI:</span>
+                        I have 2pm and 3:30pm available on Tuesday. Which time works better?
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🗣️ Caller:</span>
+                        2pm is perfect, thank you!
+                      </div>
+                    </div>
+                  </div>
+                  <div style="margin-top: 10px;">
+                    <strong style="font-size: 13px;">Topics Detected:</strong>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                      <span style="background: #e3f2fd; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                        appointment scheduling
+                      </span>
+                      <span style="background: #e3f2fd; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                        healthcare
+                      </span>
+                      <span style="background: #e3f2fd; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                        availability
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Call 2 -->
+                <div style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                      <strong>Call #2 - Order Status Inquiry</strong>
+                      <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        From: +1 (555) 987-6543<br>
+                        Time: ${new Date(Date.now() - 7200000).toLocaleString()}
+                      </div>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-size: 24px;">😐</div>
+                      <div style="font-size: 12px; color: #666; font-weight: bold; text-transform: uppercase;">
+                        NEUTRAL
+                      </div>
+                    </div>
+                  </div>
+                  <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-top: 10px;">
+                    <strong style="font-size: 13px;">Conversation Transcript:</strong>
+                    <div style="max-height: 200px; overflow-y: auto; margin-top: 8px; font-size: 13px; line-height: 1.6;">
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🤖 AI:</span>
+                        Hi! How can I assist you today?
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🗣️ Caller:</span>
+                        I'm calling to check on my order status.
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🤖 AI:</span>
+                        I can help with that. Can you provide your order number?
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🗣️ Caller:</span>
+                        Yes, it's order number 12345.
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🤖 AI:</span>
+                        Your order shipped yesterday and should arrive by Friday.
+                      </div>
+                    </div>
+                  </div>
+                  <div style="margin-top: 10px;">
+                    <strong style="font-size: 13px;">Topics Detected:</strong>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                      <span style="background: #e3f2fd; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                        order tracking
+                      </span>
+                      <span style="background: #e3f2fd; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                        shipping
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Call 3 -->
+                <div style="border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                      <strong>Call #3 - Technical Support</strong>
+                      <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        From: +1 (555) 246-8135<br>
+                        Time: ${new Date(Date.now() - 10800000).toLocaleString()}
+                      </div>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-size: 24px;">😊</div>
+                      <div style="font-size: 12px; color: #56ab2f; font-weight: bold; text-transform: uppercase;">
+                        POSITIVE
+                      </div>
+                    </div>
+                  </div>
+                  <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-top: 10px;">
+                    <strong style="font-size: 13px;">Conversation Transcript:</strong>
+                    <div style="max-height: 200px; overflow-y: auto; margin-top: 8px; font-size: 13px; line-height: 1.6;">
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🤖 AI:</span>
+                        Welcome to tech support! What can I help you with?
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🗣️ Caller:</span>
+                        My internet connection keeps dropping. Can you help?
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🤖 AI:</span>
+                        I can definitely help troubleshoot that. Try unplugging your router for 30 seconds.
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🗣️ Caller:</span>
+                        Okay, I did that and it's working now! Thank you so much!
+                      </div>
+                      <div style="margin: 8px 0;">
+                        <span style="color: #666; font-weight: bold;">🤖 AI:</span>
+                        Great! I'm glad that fixed it. Is there anything else I can help with?
+                      </div>
+                    </div>
+                  </div>
+                  <div style="margin-top: 10px;">
+                    <strong style="font-size: 13px;">Topics Detected:</strong>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                      <span style="background: #e3f2fd; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                        technical support
+                      </span>
+                      <span style="background: #e3f2fd; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                        troubleshooting
+                      </span>
+                      <span style="background: #e3f2fd; color: #1a73e8; padding: 4px 12px; border-radius: 12px; font-size: 12px;">
+                        internet connectivity
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #1a73e8;">
+                  <h5 style="margin: 0 0 10px 0; color: #1a73e8;">🧠 About Conversational Intelligence</h5>
+                  <p style="font-size: 13px; color: #666; line-height: 1.6; margin: 0 0 10px 0;">
+                    Twilio Conversational Intelligence uses AI Language Operators to automatically:
+                  </p>
+                  <ul style="font-size: 13px; color: #666; line-height: 1.8; margin: 0 0 10px 0;">
+                    <li><strong>Transcribe calls</strong> with Deepgram speech-to-text</li>
+                    <li><strong>Analyze sentiment</strong> to understand caller emotions</li>
+                    <li><strong>Detect topics</strong> to categorize conversations</li>
+                    <li><strong>Identify PII</strong> for compliance and privacy</li>
+                    <li><strong>Extract keywords</strong> for searchability</li>
+                  </ul>
+                  <a href="https://www.twilio.com/docs/voice/intelligence" target="_blank" style="color: #1a73e8; text-decoration: none; font-size: 13px; font-weight: bold;">
+                    📚 Learn more about Conversational Intelligence →
+                  </a>
+                </div>
+
+                <div style="margin-top: 15px; padding: 12px; background: #fff3cd; border-radius: 6px; border-left: 4px solid #ffc107;">
+                  <p style="margin: 0; color: #856404; font-size: 13px;">
+                    ✨ <strong>Demo Mode:</strong> This is simulated analytics data. In production, you'd see real transcripts and sentiment analysis from your actual calls.
+                  </p>
+                </div>
+              </div>
+            `;
+          }, 1000);
+          return;
+        }
+
         // Fetch analytics from CI service
         const response = await fetch(`/api/ci-analytics?accountSid=${twilioAccountSid}&authToken=${twilioAuthToken}&serviceSid=${ciServiceSid}`);
 
