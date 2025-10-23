@@ -13130,16 +13130,13 @@ app.get('/health', (req, res) => {
         return;
       }
 
-      // Get the voice handler URL from deployed WebSocket URL
+      // Get the voice handler URL from Twilio Serverless deployment
       let voiceHandlerUrl;
-      if (websocketUrl) {
-        // Convert WebSocket URL to HTTP(S) URL for voice handler
-        // wss://example.com/ws -> https://example.com/voice-handler
-        voiceHandlerUrl = websocketUrl.replace('wss://', 'https://').replace('ws://', 'http://');
-        // Remove WebSocket path and add voice-handler endpoint
-        voiceHandlerUrl = voiceHandlerUrl.split('/ws')[0] + '/voice-handler';
+      if (twilioServerlessDomain) {
+        // Use Twilio Serverless domain for voice handler
+        voiceHandlerUrl = `https://${twilioServerlessDomain}/voice-handler`;
       } else {
-        showStatus('step6Status', 'error', 'No deployment URL found. Please complete the deployment step (Step 5) first.');
+        showStatus('step6Status', 'error', 'No Twilio Serverless deployment found. Please complete the deployment step first.');
         return;
       }
 
