@@ -2878,12 +2878,12 @@
                 <p style="color: rgba(255,255,255,0.85); margin: 0 0 15px 0; font-size: 13px;">
                   Next step: Clone the workshop repository to your GitHub account.
                 </p>
-                <button class="btn btn-primary" onclick="cloneWorkshopRepo()" style="width: 100%; padding: 12px; font-size: 15px; background: white; color: #24292e; border: none;">
+                <button class="btn btn-primary next-action" id="cloneRepoBtn" onclick="cloneWorkshopRepo()" style="width: 100%; padding: 12px; font-size: 15px; background: white; color: #24292e; border: none;">
                   <strong>📦 Clone Workshop Repository</strong>
                 </button>
               </div>
             ` : `
-              <button class="btn btn-primary" onclick="initiateGitHubOAuth()" style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #24292e; border: none;">
+              <button class="btn btn-primary next-action" id="githubLoginBtn" onclick="initiateGitHubOAuth()" style="width: 100%; padding: 15px; font-size: 16px; background: white; color: #24292e; border: none;">
                 <strong>🔐 Login with GitHub</strong>
               </button>
               <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px; text-align: center;">
@@ -2976,15 +2976,15 @@
 
             <!-- Token Auth -->
             <div id="tokenAuth">
-              <div class="form-group">
+              <div class="form-group next-action" id="accountSidGroup">
                 <label>Account SID</label>
-                <input type="text" id="twilioAccountSid" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+                <input type="text" id="twilioAccountSid" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" oninput="handleAccountSidInput()" />
               </div>
-              <div class="form-group">
+              <div class="form-group" id="authTokenGroup">
                 <label>Auth Token</label>
-                <input type="password" id="twilioAuthToken" placeholder="********************************" />
+                <input type="password" id="twilioAuthToken" placeholder="********************************" oninput="handleAuthTokenInput()" />
               </div>
-              <button class="btn btn-primary" onclick="connectTwilio()">Connect Twilio</button>
+              <button class="btn btn-primary" id="connectTwilioBtn" onclick="connectTwilio()">Connect Twilio</button>
             </div>
 
             <!-- API Key Auth (DISABLED - Coming Soon) -->
@@ -3091,14 +3091,14 @@
                 </button>
               </div>
             ` : `
-              <div class="form-group">
+              <div class="form-group next-action" id="openaiKeyGroup">
                 <label>OpenAI API Key</label>
-                <input type="password" id="openaiKey" placeholder="sk-proj-********************************" value="${openaiApiKey || ''}" />
+                <input type="password" id="openaiKey" placeholder="sk-proj-********************************" value="${openaiApiKey || ''}" oninput="handleOpenAIKeyInput()" />
                 <p style="font-size: 12px; color: #666; margin-top: 5px;">
                   Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a>
                 </p>
               </div>
-              <button class="btn btn-primary" onclick="connectOpenAI()">Connect OpenAI</button>
+              <button class="btn btn-primary" id="connectOpenAIBtn" onclick="connectOpenAI()">Connect OpenAI</button>
               <div id="openaiStatusStep1" class="connection-status" style="display: none; margin-top: 10px;"></div>
             `}
           </div>
@@ -3107,7 +3107,7 @@
           <div id="step1Status" class="status-box"></div>
 
           <div class="button-group">
-            <button class="btn btn-primary" id="nextBtn1" onclick="nextStep()" ${twilioConnected && openaiConnected ? '' : 'disabled'}>
+            <button class="btn btn-primary ${twilioConnected && openaiConnected ? 'next-action' : ''}" id="nextBtn1" onclick="nextStep()" ${twilioConnected && openaiConnected ? '' : 'disabled'}>
               Next: Choose Use Case →
             </button>
           </div>
@@ -3141,6 +3141,62 @@
       document.getElementById('tokenAuth').style.display = method === 'token' ? 'block' : 'none';
       document.getElementById('apiKeyAuth').style.display = 'none'; // API Key auth disabled
       document.getElementById('demoAuth').style.display = method === 'demo' ? 'block' : 'none';
+    }
+
+    // =========================================================================
+    // STEP 1 SUB-STEP HANDLERS - Progressive next-action flow
+    // =========================================================================
+
+    function handleAccountSidInput() {
+      const accountSid = document.getElementById('twilioAccountSid')?.value?.trim();
+      const accountSidGroup = document.getElementById('accountSidGroup');
+      const authTokenGroup = document.getElementById('authTokenGroup');
+
+      // If Account SID is valid (starts with AC and is 34 chars)
+      if (accountSid && accountSid.startsWith('AC') && accountSid.length === 34) {
+        // Move next-action from SID to Auth Token
+        if (accountSidGroup) accountSidGroup.classList.remove('next-action');
+        if (authTokenGroup) authTokenGroup.classList.add('next-action');
+      } else {
+        // Keep next-action on SID if invalid
+        if (accountSidGroup) accountSidGroup.classList.add('next-action');
+        if (authTokenGroup) authTokenGroup.classList.remove('next-action');
+      }
+    }
+
+    function handleAuthTokenInput() {
+      const accountSid = document.getElementById('twilioAccountSid')?.value?.trim();
+      const authToken = document.getElementById('twilioAuthToken')?.value?.trim();
+      const authTokenGroup = document.getElementById('authTokenGroup');
+      const connectBtn = document.getElementById('connectTwilioBtn');
+
+      // If both SID and Token are filled
+      if (accountSid && accountSid.startsWith('AC') && accountSid.length === 34 && authToken && authToken.length > 10) {
+        // Move next-action from Auth Token to Connect button
+        if (authTokenGroup) authTokenGroup.classList.remove('next-action');
+        if (connectBtn) connectBtn.classList.add('next-action');
+      } else {
+        // Keep next-action on Auth Token
+        if (authTokenGroup) authTokenGroup.classList.add('next-action');
+        if (connectBtn) connectBtn.classList.remove('next-action');
+      }
+    }
+
+    function handleOpenAIKeyInput() {
+      const openaiKey = document.getElementById('openaiKey')?.value?.trim();
+      const openaiKeyGroup = document.getElementById('openaiKeyGroup');
+      const connectBtn = document.getElementById('connectOpenAIBtn');
+
+      // If key is filled (starts with sk- and reasonable length)
+      if (openaiKey && (openaiKey.startsWith('sk-') || openaiKey.startsWith('demo')) && openaiKey.length > 10) {
+        // Move next-action from input to Connect button
+        if (openaiKeyGroup) openaiKeyGroup.classList.remove('next-action');
+        if (connectBtn) connectBtn.classList.add('next-action');
+      } else {
+        // Keep next-action on input
+        if (openaiKeyGroup) openaiKeyGroup.classList.add('next-action');
+        if (connectBtn) connectBtn.classList.remove('next-action');
+      }
     }
 
     // Self-Hosted Authentication (No credentials needed!)
