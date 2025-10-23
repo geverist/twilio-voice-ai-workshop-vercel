@@ -83,6 +83,7 @@ export default async function handler(req, res) {
 
       const columnNames = sessionColumns.map(c => c.column_name);
       const hasSessionToken = columnNames.includes('session_token');
+      const hasStudentId = columnNames.includes('student_id');
 
       if (!hasSessionToken) {
         // Sessions table exists but doesn't have the right structure
@@ -92,78 +93,168 @@ export default async function handler(req, res) {
         students = [];
         sessions = [];
       } else {
-        // Build SELECT statement based on available columns
-        const selectColumns = ['session_token', 'student_email'];
-        // Configuration fields
-        if (columnNames.includes('selected_phone_number')) selectColumns.push('selected_phone_number');
-        if (columnNames.includes('selected_voice')) selectColumns.push('selected_voice');
-        if (columnNames.includes('tts_provider')) selectColumns.push('tts_provider');
-        if (columnNames.includes('call_direction')) selectColumns.push('call_direction');
-        if (columnNames.includes('use_case')) selectColumns.push('use_case');
-        if (columnNames.includes('system_prompt')) selectColumns.push('system_prompt');
-        if (columnNames.includes('tools')) selectColumns.push('tools');
-        // Progress tracking fields
-        if (columnNames.includes('demo_mode')) selectColumns.push('demo_mode');
-        if (columnNames.includes('current_step')) selectColumns.push('current_step');
-        if (columnNames.includes('twilio_connected')) selectColumns.push('twilio_connected');
-        if (columnNames.includes('openai_connected')) selectColumns.push('openai_connected');
-        if (columnNames.includes('call_direction_chosen')) selectColumns.push('call_direction_chosen');
-        if (columnNames.includes('services_ready')) selectColumns.push('services_ready');
-        // Step validation flags
-        if (columnNames.includes('step4_code_validated')) selectColumns.push('step4_code_validated');
-        if (columnNames.includes('step4_committed')) selectColumns.push('step4_committed');
-        if (columnNames.includes('step4_deployed')) selectColumns.push('step4_deployed');
-        if (columnNames.includes('step5_code_validated')) selectColumns.push('step5_code_validated');
-        if (columnNames.includes('step5_committed')) selectColumns.push('step5_committed');
-        if (columnNames.includes('step5_deployed')) selectColumns.push('step5_deployed');
-        if (columnNames.includes('step6_code_validated')) selectColumns.push('step6_code_validated');
-        if (columnNames.includes('step6_committed')) selectColumns.push('step6_committed');
-        if (columnNames.includes('step6_deployed')) selectColumns.push('step6_deployed');
-        if (columnNames.includes('system_prompt_saved')) selectColumns.push('system_prompt_saved');
-        if (columnNames.includes('step7_committed')) selectColumns.push('step7_committed');
-        if (columnNames.includes('step7_deployed')) selectColumns.push('step7_deployed');
-        if (columnNames.includes('tools_configured')) selectColumns.push('tools_configured');
-        if (columnNames.includes('step8_code_validated')) selectColumns.push('step8_code_validated');
-        if (columnNames.includes('step8_committed')) selectColumns.push('step8_committed');
-        if (columnNames.includes('step8_deployed')) selectColumns.push('step8_deployed');
-        if (columnNames.includes('project_deployed')) selectColumns.push('project_deployed');
-        // Timestamps
-        if (columnNames.includes('created_at')) selectColumns.push('created_at');
-        if (columnNames.includes('updated_at')) selectColumns.push('updated_at');
-
-        // Add conditional selections for nullable fields
-        const conditionalSelections = [];
-        if (columnNames.includes('openai_api_key')) {
-          conditionalSelections.push('CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key');
-        }
-        if (columnNames.includes('system_prompt')) {
-          conditionalSelections.push('CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt');
-        }
-        if (columnNames.includes('tools')) {
-          conditionalSelections.push("CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools");
-        }
-
-        // Use normalized structure
-        students = await sql`
-          SELECT
-            student_email,
-            student_name,
-            created_at,
-            updated_at
-          FROM students
-          ORDER BY created_at DESC
+        // Check students table columns
+        const studentsColumns = await sql`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'students'
         `;
+        const studentsColumnNames = studentsColumns.map(c => c.column_name);
+        const hasStudentEmail = studentsColumnNames.includes('student_email');
 
-        // Query sessions with dynamic column selection
-        const query = `
-          SELECT
-            ${selectColumns.join(', ')}
-            ${conditionalSelections.length > 0 ? ', ' + conditionalSelections.join(', ') : ''}
-          FROM sessions
-          ORDER BY created_at DESC
-        `;
+        // V2 normalized schema uses student_id FK, need to JOIN with students table
+        if (hasStudentId) {
+          // Build dynamic SELECT for sessions columns (prefixed with s.)
+          const sessionSelectColumns = ['s.session_token', 's.student_id'];
+          // Configuration fields
+          if (columnNames.includes('selected_phone_number')) sessionSelectColumns.push('s.selected_phone_number');
+          if (columnNames.includes('selected_voice')) sessionSelectColumns.push('s.selected_voice');
+          if (columnNames.includes('tts_provider')) sessionSelectColumns.push('s.tts_provider');
+          if (columnNames.includes('call_direction')) sessionSelectColumns.push('s.call_direction');
+          if (columnNames.includes('use_case')) sessionSelectColumns.push('s.use_case');
+          if (columnNames.includes('system_prompt')) sessionSelectColumns.push('s.system_prompt');
+          if (columnNames.includes('tools')) sessionSelectColumns.push('s.tools');
+          // Progress tracking fields
+          if (columnNames.includes('demo_mode')) sessionSelectColumns.push('s.demo_mode');
+          if (columnNames.includes('current_step')) sessionSelectColumns.push('s.current_step');
+          if (columnNames.includes('twilio_connected')) sessionSelectColumns.push('s.twilio_connected');
+          if (columnNames.includes('openai_connected')) sessionSelectColumns.push('s.openai_connected');
+          if (columnNames.includes('call_direction_chosen')) sessionSelectColumns.push('s.call_direction_chosen');
+          if (columnNames.includes('services_ready')) sessionSelectColumns.push('s.services_ready');
+          // Step validation flags
+          if (columnNames.includes('step4_code_validated')) sessionSelectColumns.push('s.step4_code_validated');
+          if (columnNames.includes('step4_committed')) sessionSelectColumns.push('s.step4_committed');
+          if (columnNames.includes('step4_deployed')) sessionSelectColumns.push('s.step4_deployed');
+          if (columnNames.includes('step5_code_validated')) sessionSelectColumns.push('s.step5_code_validated');
+          if (columnNames.includes('step5_committed')) sessionSelectColumns.push('s.step5_committed');
+          if (columnNames.includes('step5_deployed')) sessionSelectColumns.push('s.step5_deployed');
+          if (columnNames.includes('step6_code_validated')) sessionSelectColumns.push('s.step6_code_validated');
+          if (columnNames.includes('step6_committed')) sessionSelectColumns.push('s.step6_committed');
+          if (columnNames.includes('step6_deployed')) sessionSelectColumns.push('s.step6_deployed');
+          if (columnNames.includes('system_prompt_saved')) sessionSelectColumns.push('s.system_prompt_saved');
+          if (columnNames.includes('step7_committed')) sessionSelectColumns.push('s.step7_committed');
+          if (columnNames.includes('step7_deployed')) sessionSelectColumns.push('s.step7_deployed');
+          if (columnNames.includes('tools_configured')) sessionSelectColumns.push('s.tools_configured');
+          if (columnNames.includes('step8_code_validated')) sessionSelectColumns.push('s.step8_code_validated');
+          if (columnNames.includes('step8_committed')) sessionSelectColumns.push('s.step8_committed');
+          if (columnNames.includes('step8_deployed')) sessionSelectColumns.push('s.step8_deployed');
+          if (columnNames.includes('project_deployed')) sessionSelectColumns.push('s.project_deployed');
+          // Timestamps
+          if (columnNames.includes('created_at')) sessionSelectColumns.push('s.created_at');
+          if (columnNames.includes('updated_at')) sessionSelectColumns.push('s.updated_at');
 
-        sessions = await sql.unsafe(query);
+          // Add conditional selections for nullable fields
+          const conditionalSelections = [];
+          if (columnNames.includes('openai_api_key')) {
+            conditionalSelections.push('CASE WHEN s.openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key');
+          }
+          if (columnNames.includes('system_prompt')) {
+            conditionalSelections.push('CASE WHEN s.system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt');
+          }
+          if (columnNames.includes('tools')) {
+            conditionalSelections.push("CASE WHEN s.tools IS NOT NULL AND s.tools::text != '[]' THEN true ELSE false END as has_tools");
+          }
+
+          // Query students
+          const studentsQuery = `
+            SELECT
+              student_id,
+              ${hasStudentEmail ? 'student_email,' : ''}
+              student_name,
+              created_at,
+              updated_at
+            FROM students
+            ORDER BY created_at DESC
+          `;
+          students = await sql.unsafe(studentsQuery);
+
+          // Query sessions with JOIN to students table
+          const query = `
+            SELECT
+              ${sessionSelectColumns.join(', ')}
+              ${conditionalSelections.length > 0 ? ', ' + conditionalSelections.join(', ') : ''}
+              ${hasStudentEmail ? ', st.student_email' : ''}
+              , st.student_name as student_name_from_students
+            FROM sessions s
+            INNER JOIN students st ON s.student_id = st.student_id
+            ORDER BY s.created_at DESC
+          `;
+
+          sessions = await sql.unsafe(query);
+        } else {
+          // Legacy schema - student_email directly in sessions table
+          const selectColumns = ['session_token', 'student_email'];
+          // Configuration fields
+          if (columnNames.includes('selected_phone_number')) selectColumns.push('selected_phone_number');
+          if (columnNames.includes('selected_voice')) selectColumns.push('selected_voice');
+          if (columnNames.includes('tts_provider')) selectColumns.push('tts_provider');
+          if (columnNames.includes('call_direction')) selectColumns.push('call_direction');
+          if (columnNames.includes('use_case')) selectColumns.push('use_case');
+          if (columnNames.includes('system_prompt')) selectColumns.push('system_prompt');
+          if (columnNames.includes('tools')) selectColumns.push('tools');
+          // Progress tracking fields
+          if (columnNames.includes('demo_mode')) selectColumns.push('demo_mode');
+          if (columnNames.includes('current_step')) selectColumns.push('current_step');
+          if (columnNames.includes('twilio_connected')) selectColumns.push('twilio_connected');
+          if (columnNames.includes('openai_connected')) selectColumns.push('openai_connected');
+          if (columnNames.includes('call_direction_chosen')) selectColumns.push('call_direction_chosen');
+          if (columnNames.includes('services_ready')) selectColumns.push('services_ready');
+          // Step validation flags
+          if (columnNames.includes('step4_code_validated')) selectColumns.push('step4_code_validated');
+          if (columnNames.includes('step4_committed')) selectColumns.push('step4_committed');
+          if (columnNames.includes('step4_deployed')) selectColumns.push('step4_deployed');
+          if (columnNames.includes('step5_code_validated')) selectColumns.push('step5_code_validated');
+          if (columnNames.includes('step5_committed')) selectColumns.push('step5_committed');
+          if (columnNames.includes('step5_deployed')) selectColumns.push('step5_deployed');
+          if (columnNames.includes('step6_code_validated')) selectColumns.push('step6_code_validated');
+          if (columnNames.includes('step6_committed')) selectColumns.push('step6_committed');
+          if (columnNames.includes('step6_deployed')) selectColumns.push('step6_deployed');
+          if (columnNames.includes('system_prompt_saved')) selectColumns.push('system_prompt_saved');
+          if (columnNames.includes('step7_committed')) selectColumns.push('step7_committed');
+          if (columnNames.includes('step7_deployed')) selectColumns.push('step7_deployed');
+          if (columnNames.includes('tools_configured')) selectColumns.push('tools_configured');
+          if (columnNames.includes('step8_code_validated')) selectColumns.push('step8_code_validated');
+          if (columnNames.includes('step8_committed')) selectColumns.push('step8_committed');
+          if (columnNames.includes('step8_deployed')) selectColumns.push('step8_deployed');
+          if (columnNames.includes('project_deployed')) selectColumns.push('project_deployed');
+          // Timestamps
+          if (columnNames.includes('created_at')) selectColumns.push('created_at');
+          if (columnNames.includes('updated_at')) selectColumns.push('updated_at');
+
+          // Add conditional selections for nullable fields
+          const conditionalSelections = [];
+          if (columnNames.includes('openai_api_key')) {
+            conditionalSelections.push('CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key');
+          }
+          if (columnNames.includes('system_prompt')) {
+            conditionalSelections.push('CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt');
+          }
+          if (columnNames.includes('tools')) {
+            conditionalSelections.push("CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools");
+          }
+
+          // Use normalized structure
+          students = await sql`
+            SELECT
+              student_email,
+              student_name,
+              created_at,
+              updated_at
+            FROM students
+            ORDER BY created_at DESC
+          `;
+
+          // Query sessions with dynamic column selection
+          const query = `
+            SELECT
+              ${selectColumns.join(', ')}
+              ${conditionalSelections.length > 0 ? ', ' + conditionalSelections.join(', ') : ''}
+            FROM sessions
+            ORDER BY created_at DESC
+          `;
+
+          sessions = await sql.unsafe(query);
+        }
       }
     }
 
