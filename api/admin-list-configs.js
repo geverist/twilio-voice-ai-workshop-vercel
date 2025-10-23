@@ -174,23 +174,44 @@ export default async function handler(req, res) {
       `;
 
       if (columns.length > 0) {
-        // Has session_token - use merged structure
-        const result = await sql`
+        // Has session_token - use merged structure - check columns first
+        const workshopColumns = await sql`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'workshop_students'
+        `;
+        const columnNames = workshopColumns.map(c => c.column_name);
+
+        const selectColumns = [];
+        if (columnNames.includes('session_token')) selectColumns.push('session_token');
+        if (columnNames.includes('student_email')) selectColumns.push('student_email');
+        if (columnNames.includes('student_name')) selectColumns.push('student_name');
+        if (columnNames.includes('selected_phone_number')) selectColumns.push('selected_phone_number');
+        if (columnNames.includes('selected_voice')) selectColumns.push('selected_voice');
+        if (columnNames.includes('tts_provider')) selectColumns.push('tts_provider');
+        if (columnNames.includes('created_at')) selectColumns.push('created_at');
+        if (columnNames.includes('updated_at')) selectColumns.push('updated_at');
+
+        const conditionalSelections = [];
+        if (columnNames.includes('openai_api_key')) {
+          conditionalSelections.push('CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key');
+        }
+        if (columnNames.includes('system_prompt')) {
+          conditionalSelections.push('CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt');
+        }
+        if (columnNames.includes('tools')) {
+          conditionalSelections.push("CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools");
+        }
+
+        const query = `
           SELECT
-            session_token,
-            student_email,
-            student_name,
-            selected_phone_number,
-            selected_voice,
-            tts_provider,
-            CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
-            CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
-            CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
-            created_at,
-            updated_at
+            ${selectColumns.join(', ')}
+            ${conditionalSelections.length > 0 ? ', ' + conditionalSelections.join(', ') : ''}
           FROM workshop_students
           ORDER BY created_at DESC
         `;
+
+        const result = await sql.unsafe(query);
 
         // Extract unique students
         const uniqueStudents = {};
@@ -207,22 +228,43 @@ export default async function handler(req, res) {
         students = Object.values(uniqueStudents);
         sessions = result;
       } else {
-        // Old structure - student_email is PK, no session_token
-        const result = await sql`
+        // Old structure - student_email is PK, no session_token - check columns first
+        const workshopColumns = await sql`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name = 'workshop_students'
+        `;
+        const columnNames = workshopColumns.map(c => c.column_name);
+
+        const selectColumns = [];
+        if (columnNames.includes('student_email')) selectColumns.push('student_email');
+        if (columnNames.includes('student_name')) selectColumns.push('student_name');
+        if (columnNames.includes('selected_phone_number')) selectColumns.push('selected_phone_number');
+        if (columnNames.includes('selected_voice')) selectColumns.push('selected_voice');
+        if (columnNames.includes('tts_provider')) selectColumns.push('tts_provider');
+        if (columnNames.includes('created_at')) selectColumns.push('created_at');
+        if (columnNames.includes('updated_at')) selectColumns.push('updated_at');
+
+        const conditionalSelections = [];
+        if (columnNames.includes('openai_api_key')) {
+          conditionalSelections.push('CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key');
+        }
+        if (columnNames.includes('system_prompt')) {
+          conditionalSelections.push('CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt');
+        }
+        if (columnNames.includes('tools')) {
+          conditionalSelections.push("CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools");
+        }
+
+        const query = `
           SELECT
-            student_email,
-            student_name,
-            selected_phone_number,
-            selected_voice,
-            tts_provider,
-            CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
-            CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
-            CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
-            created_at,
-            updated_at
+            ${selectColumns.join(', ')}
+            ${conditionalSelections.length > 0 ? ', ' + conditionalSelections.join(', ') : ''}
           FROM workshop_students
           ORDER BY created_at DESC
         `;
+
+        const result = await sql.unsafe(query);
 
         // In old structure, each row is a student (not a session)
         students = result;
