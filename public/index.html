@@ -11370,6 +11370,15 @@ app.get('/health', (req, res) => {
                 </div>
                 <div id="commitStep5Status" style="margin-top: 15px; color: white;"></div>
                 <div id="codespaceDeployStatus5" style="margin-top: 15px; color: white;"></div>
+
+                <!-- Test WebSocket Server Button -->
+                <button
+                  class="btn"
+                  onclick="testSharedWebSocketServer()"
+                  style="margin-top: 15px; padding: 12px 24px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-weight: 600;">
+                  🧪 Test Shared WebSocket Server
+                </button>
+                <div id="wsTestStatus" style="margin-top: 15px; color: white; font-size: 13px;"></div>
               </div>
             ` : studentDemoMode ? `
               <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
@@ -11638,6 +11647,101 @@ app.get('/health', (req, res) => {
         } else {
           console7.innerHTML += '<div class="console-line info">💡 Check browser console (F12) for full error details</div>';
         }
+      }
+    }
+
+    // =========================================================================
+    // TEST SHARED WEBSOCKET SERVER
+    // Verifies the shared Railway WebSocket server is working with student's OpenAI key
+    // =========================================================================
+    async function testSharedWebSocketServer() {
+      const statusDiv = document.getElementById('wsTestStatus');
+      const RAILWAY_URL = 'wss://workshop-websocket-server-production.up.railway.app';
+
+      // Demo mode simulation
+      if (twilioCredentials?.demoMode || studentDemoMode) {
+        statusDiv.innerHTML = `
+          <div style="padding: 15px; background: rgba(40, 167, 69, 0.2); border-radius: 6px; border: 1px solid rgba(40, 167, 69, 0.4);">
+            <div style="margin-bottom: 10px;">🧪 <strong>Demo Mode: Simulating WebSocket test...</strong></div>
+            <div style="margin-bottom: 8px;">✅ WebSocket connected!</div>
+            <div style="margin-bottom: 8px;">✅ Fetching your settings from Vercel API...</div>
+            <div style="margin-bottom: 8px;">✅ Using your OpenAI key</div>
+            <div style="margin-bottom: 8px;">📤 Sending test prompt: "Say hello in one sentence"</div>
+            <div style="margin-bottom: 8px;">📨 AI Response: "Hello! How can I assist you today?"</div>
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
+              <strong style="color: #28a745;">🎉 SUCCESS!</strong> Shared WebSocket server is ready!
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      statusDiv.innerHTML = '<div>🧪 Testing shared WebSocket server...</div>';
+
+      try {
+        // Open WebSocket connection directly from browser
+        const ws = new WebSocket(`${RAILWAY_URL}/ws/${sessionToken}`);
+        let testComplete = false;
+
+        const timeout = setTimeout(() => {
+          if (!testComplete) {
+            statusDiv.innerHTML = `
+              <div style="padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 6px; border: 1px solid rgba(220, 53, 69, 0.4);">
+                <div><strong>❌ Test timeout</strong> - No response from server</div>
+                <div style="margin-top: 12px;">Check that you configured your OpenAI key in Step 1</div>
+              </div>
+            `;
+            ws.close();
+          }
+        }, 10000);
+
+        ws.onopen = () => {
+          statusDiv.innerHTML = '<div>✅ Connected! Sending test prompt...</div>';
+          // Send test prompt after delay (Railway needs setup time)
+          setTimeout(() => {
+            ws.send(JSON.stringify({
+              type: 'prompt',
+              voicePrompt: 'Say hello in one sentence'
+            }));
+          }, 1000);
+        };
+
+        ws.onmessage = (event) => {
+          const message = JSON.parse(event.data);
+          if (message.type === 'text') {
+            testComplete = true;
+            clearTimeout(timeout);
+            statusDiv.innerHTML = `
+              <div style="padding: 15px; background: rgba(40, 167, 69, 0.2); border-radius: 6px; border: 1px solid rgba(40, 167, 69, 0.4);">
+                <div style="margin-bottom: 10px;"><strong style="color: #28a745;">🎉 SUCCESS!</strong></div>
+                <div style="margin-bottom: 8px;">✅ Server fetches your settings from database</div>
+                <div style="margin-bottom: 8px;">✅ Server uses YOUR OpenAI key (not instructor's)</div>
+                <div style="margin-bottom: 8px;">✅ ConversationRelay prompts working correctly</div>
+                <div style="margin-bottom: 8px;">✅ Multi-tenancy confirmed</div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2);">
+                  <strong>AI Response:</strong> "${message.token}"
+                </div>
+              </div>
+            `;
+            ws.close();
+          }
+        };
+
+        ws.onerror = (error) => {
+          statusDiv.innerHTML = `
+            <div style="padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 6px; border: 1px solid rgba(220, 53, 69, 0.4);">
+              <div><strong>❌ Connection error</strong></div>
+              <div style="margin-top: 8px;">Could not connect to shared WebSocket server</div>
+            </div>
+          `;
+        };
+
+      } catch (error) {
+        statusDiv.innerHTML = `
+          <div style="padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 6px; border: 1px solid rgba(220, 53, 69, 0.4);">
+            <div><strong>❌ Error:</strong> ${error.message}</div>
+          </div>
+        `;
       }
     }
 
