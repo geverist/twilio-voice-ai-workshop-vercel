@@ -2892,33 +2892,6 @@
             `}
           </div>
 
-          <!-- Shared WebSocket Server Info (No Deployment Needed) -->
-          ${githubToken && studentRepoName ? `
-          <div class="service-card" style="background: linear-gradient(135deg, #2da44e 0%, #1a7f37 100%); color: white; margin-bottom: 30px;">
-            <h4 style="color: white; margin-bottom: 15px;">🚀 Step 1b: WebSocket Server</h4>
-            <div style="background: rgba(40, 167, 69, 0.3); padding: 20px; border-radius: 8px; border: 2px solid rgba(40, 167, 69, 0.6);">
-              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                <span style="font-size: 1.5rem;">✅</span>
-                <div>
-                  <strong style="color: white; font-size: 1.05rem;">Shared WebSocket Server Ready!</strong><br>
-                  <span style="color: rgba(255,255,255,0.8); font-size: 13px;">No deployment needed - server is already running</span>
-                </div>
-              </div>
-              <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
-                <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
-                  <strong>💡 What's included:</strong>
-                </p>
-                <ul style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                  <li>Shared WebSocket server for Twilio Conversation Relay</li>
-                  <li>Isolated session for your configuration</li>
-                  <li>WebSocket URL will be provided when you save your config</li>
-                  <li>Test calls and iterate on your Voice AI</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          ` : ''}
-
           <!-- Twilio Credentials (Shown after GitHub repo is cloned OR in demo mode) -->
           ${studentRepoName || studentDemoMode ? `
           <div class="service-card">
