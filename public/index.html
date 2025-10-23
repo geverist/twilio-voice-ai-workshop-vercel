@@ -11549,7 +11549,7 @@ app.get('/health', (req, res) => {
 </invoke>
           </div>
 
-          <div id="step7Status" class="status-box"></div>
+          <div id="step5Status" class="status-box"></div>
 
           ${!step5CodeValidated ? `
           <div id="step5Placeholder" class="instructions" style="margin-top: 20px; background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px;">
@@ -11560,7 +11560,7 @@ app.get('/health', (req, res) => {
           ` : ''}
 
           <div id="step5DeploySection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8; display: ${step5CodeValidated ? 'block' : 'none'};">
-            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">📡 Your WebSocket Server</h3>
+            <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">🚀 Deploy Your WebSocket Server</h3>
             ${studentDemoMode ? `
               <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
                 In demo mode, we'll simulate deploying your WebSocket server to a cloud environment.
@@ -11570,9 +11570,9 @@ app.get('/health', (req, res) => {
                   <strong>💡 What would happen in live mode:</strong>
                 </p>
                 <ol style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                  <li>Save your WebSocket handler code</li>
-                  <li>Test with the shared WebSocket server</li>
-                  <li>Optional: Deploy your own server later</li>
+                  <li>Create your personalized WebSocket endpoint</li>
+                  <li>Server fetches YOUR OpenAI key & system prompt</li>
+                  <li>Test your deployment</li>
                 </ol>
               </div>
               <button
@@ -11580,53 +11580,69 @@ app.get('/health', (req, res) => {
                 id="deployCodespaceBtn5"
                 onclick="simulateCodespaceDeployment()"
                 style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                💾 Deploy WebSocket Handler
+                🚀 Deploy My WebSocket Server
               </button>
               <div id="codespaceDeployStatus5" style="margin-top: 15px; color: white;"></div>
             ` : `
               <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px; line-height: 1.6;">
-                Great! You'll use the <strong>shared Railway WebSocket server</strong> that's already deployed and running for all workshop participants.
+                Now let's deploy your WebSocket server! Click below to create your personalized endpoint.
               </p>
 
-              <div style="background: rgba(40, 167, 69, 0.2); padding: 20px; border-radius: 8px; border: 2px solid rgba(40, 167, 69, 0.6); margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                  <span style="font-size: 1.5rem;">✅</span>
-                  <div>
-                    <strong style="color: white; font-size: 1.05rem;">Shared WebSocket Server</strong><br>
-                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Multi-tenant server with your personalized AI settings</span>
+              <div id="step5PreDeploySection" style="display: ${step5Deployed ? 'none' : 'block'};">
+                <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                    <span style="font-size: 1.5rem;">🎯</span>
+                    <div>
+                      <strong style="color: white; font-size: 1.05rem;">What You're Creating</strong>
+                    </div>
                   </div>
+                  <ul style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 14px;">
+                    <li>A unique WebSocket endpoint just for you</li>
+                    <li>Connected to YOUR OpenAI API key</li>
+                    <li>Uses YOUR custom system prompt (from Step 7)</li>
+                    <li>Ready for real-time AI voice conversations</li>
+                  </ul>
                 </div>
-                <p style="color: rgba(255,255,255,0.9); margin: 0 0 12px 0; line-height: 1.6; font-size: 14px;">
-                  This server fetches YOUR OpenAI key and system prompt from the database, ensuring you get personalized AI responses.
-                </p>
-                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; font-family: monospace; margin-bottom: 15px;">
-                  <div style="color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 5px;">WebSocket URL:</div>
-                  <code style="color: white; font-size: 13px; word-break: break-all;">wss://workshop-websocket-server-production.up.railway.app/ws/{your_session_token}</code>
-                </div>
-                <ul style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
-                  <li>✅ Uses YOUR OpenAI API key (not shared with others)</li>
-                  <li>✅ Uses YOUR custom system prompt from Step 7</li>
-                  <li>✅ Ready to use - no deployment needed!</li>
-                  <li>✅ Supports all workshop features (ConversationRelay, tools, etc.)</li>
-                </ul>
 
-                <!-- Test WebSocket Server Button -->
                 <button
-                  class="btn"
-                  onclick="testSharedWebSocketServer(); step5Deployed = true; renderStepContent();"
-                  style="margin-top: 15px; padding: 12px 24px; background: white; color: #667eea; border: none; font-weight: 600;">
-                  🧪 Test Shared WebSocket Server
+                  class="btn btn-success next-action"
+                  id="deployCodespaceBtn5"
+                  onclick="deployLiveWebSocketServer()"
+                  style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); width: 100%;">
+                  🚀 Deploy My WebSocket Server
                 </button>
-                <div id="wsTestStatus" style="margin-top: 15px; font-size: 13px;"></div>
+                <div id="codespaceDeployStatus5" style="margin-top: 15px; font-size: 13px;"></div>
               </div>
 
-              <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
-                <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
-                  <strong>💡 Optional:</strong> Deploy Your Own Server Later
-                </p>
-                <p style="color: rgba(255,255,255,0.75); margin: 0; font-size: 13px; line-height: 1.6;">
-                  Want to deploy your own WebSocket server? You can do that after the workshop using Railway, Render, or any Node.js hosting platform. For now, the shared server works great!
-                </p>
+              <div id="step5PostDeploySection" style="display: ${step5Deployed ? 'block' : 'none'};">
+                <div style="background: rgba(40, 167, 69, 0.2); padding: 20px; border-radius: 8px; border: 2px solid rgba(40, 167, 69, 0.6); margin-bottom: 20px;">
+                  <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                    <span style="font-size: 1.5rem;">✅</span>
+                    <div>
+                      <strong style="color: white; font-size: 1.05rem;">Your WebSocket Server is Live!</strong><br>
+                      <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Personalized endpoint connected to your AI settings</span>
+                    </div>
+                  </div>
+                  <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; font-family: monospace; margin-bottom: 15px;">
+                    <div style="color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 5px;">Your WebSocket URL:</div>
+                    <code style="color: white; font-size: 13px; word-break: break-all;">wss://workshop-websocket-server-production.up.railway.app/ws/${sessionToken}</code>
+                  </div>
+                  <ul style="color: rgba(255,255,255,0.85); margin: 0 0 15px 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
+                    <li>✅ Uses YOUR OpenAI API key</li>
+                    <li>✅ Uses YOUR custom system prompt</li>
+                    <li>✅ Isolated from other students</li>
+                    <li>✅ Ready for ConversationRelay</li>
+                  </ul>
+
+                  <!-- Test WebSocket Server Button -->
+                  <button
+                    class="btn next-action"
+                    onclick="testSharedWebSocketServer()"
+                    style="padding: 12px 24px; background: white; color: #667eea; border: none; font-weight: 600; width: 100%;">
+                    🧪 Test My WebSocket Server
+                  </button>
+                  <div id="wsTestStatus" style="margin-top: 15px; font-size: 13px;"></div>
+                </div>
               </div>
             `}
           </div>
@@ -12400,7 +12416,7 @@ app.get('/health', (req, res) => {
       const allPassed = Object.values(checks).every(v => v);
 
       if (allPassed) {
-        showStatus('step7Status', 'success', '✅ Code validation passed! Click the deploy button below to deploy your WebSocket handler.');
+        showStatus('step5Status', 'success', '✅ Code validation passed! Click the deploy button below to deploy your WebSocket handler.');
         step5CodeValidated = true;
         saveProgressToStorage();
         updateProgressBar();
@@ -12431,7 +12447,7 @@ app.get('/health', (req, res) => {
         if (!checks.hasHandler) message += '- Missing handler setup (exports.handler or Express app)\n';
         if (!checks.hasCallback) message += '- Missing event handlers (callback() or ws.on())\n';
         if (!checks.hasImplementation) message += `- Not enough implementation code (found ${codeLines} lines of code, ${todoLines} TODOs)\n`;
-        showStatus('step7Status', 'warning', message);
+        showStatus('step5Status', 'warning', message);
       }
     }
 
@@ -15946,22 +15962,19 @@ app.get('/health', (req, res) => {
         btn.textContent = '🚀 Deploying...';
       }
 
-      if (statusEl) statusEl.innerHTML = '<div style="color: #4fc1ff;">📦 Demo: Creating cloud development environment...</div>';
+      if (statusEl) statusEl.innerHTML = '<div style="color: #4fc1ff;">📡 Creating your WebSocket endpoint...</div>';
 
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      if (statusEl) statusEl.innerHTML = '<div style="color: #4fc1ff;">⚙️ Demo: Installing dependencies...</div>';
+      await new Promise(resolve => setTimeout(resolve, 800));
+      if (statusEl) statusEl.innerHTML = '<div style="color: #4fc1ff;">🔐 Connecting to your OpenAI key...</div>';
 
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      if (statusEl) statusEl.innerHTML = '<div style="color: #4fc1ff;">🚀 Demo: Starting WebSocket server...</div>';
+      await new Promise(resolve => setTimeout(resolve, 800));
+      if (statusEl) statusEl.innerHTML = '<div style="color: #4fc1ff;">✨ Configuring your AI settings...</div>';
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Set demo Codespace info (if not already set from Step 1)
-      if (!codespaceUrl) {
-        codespaceUrl = 'wss://demo-codespace-3000.app.github.dev';
-        codespaceWebUrl = 'https://github.com/codespaces/demo-codespace';
-        codespaceName = 'demo-codespace-12345';
-        websocketUrl = codespaceUrl;
+      // Set demo WebSocket URL
+      if (!websocketUrl) {
+        websocketUrl = `wss://demo-websocket-${sessionToken.substring(3, 8)}.railway.app/ws/${sessionToken}`;
       }
 
       step5Deployed = true;
@@ -15973,9 +15986,12 @@ app.get('/health', (req, res) => {
       if (statusEl) {
         statusEl.innerHTML = `
           <div style="color: #98c379;">
-            ✅ Demo: WebSocket server deployed successfully!<br>
+            ✅ Your WebSocket server is live! (Demo)<br>
             <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-top: 10px; font-family: monospace; font-size: 12px; word-break: break-all;">
-              ${codespaceUrl}
+              ${websocketUrl}
+            </div>
+            <div style="margin-top: 10px; font-size: 13px; color: rgba(255,255,255,0.8);">
+              📝 In demo mode - your personalized endpoint is simulated
             </div>
           </div>
         `;
@@ -15986,11 +16002,68 @@ app.get('/health', (req, res) => {
       }
 
       // Enable Next button and add next-action effect
-      const nextBtn = document.getElementById('nextBtn5');
+      const nextBtn = document.getElementById('nextBtn7');
       if (nextBtn) {
         nextBtn.disabled = false;
         nextBtn.classList.add('next-action');
       }
+
+      renderStepContent();
+    }
+
+    /**
+     * Deploy WebSocket Server (Live Mode)
+     * Creates personalized endpoint on shared Railway server
+     */
+    async function deployLiveWebSocketServer() {
+      clearHighlights(); // Remove highlight immediately when clicked
+      const btn = document.getElementById('deployCodespaceBtn5');
+      const statusEl = document.getElementById('codespaceDeployStatus5');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '🚀 Deploying...';
+      }
+
+      if (statusEl) statusEl.innerHTML = '<div style="color: #4fc1ff;">📡 Creating your WebSocket endpoint...</div>';
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+      if (statusEl) statusEl.innerHTML = '<div style="color: #4fc1ff;">🔐 Connecting to your OpenAI key...</div>';
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+      if (statusEl) statusEl.innerHTML = '<div style="color: #4fc1ff;">✨ Configuring your AI settings...</div>';
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Mark as deployed
+      step5Deployed = true;
+      websocketBuilt = true;
+      websocketUrl = `wss://workshop-websocket-server-production.up.railway.app/ws/${sessionToken}`;
+
+      saveProgressToStorage();
+      updateProgressBar();
+
+      if (statusEl) {
+        statusEl.innerHTML = `
+          <div style="color: #98c379;">
+            ✅ Your WebSocket server is live!<br>
+            <div style="margin-top: 10px; font-size: 13px; color: rgba(255,255,255,0.9);">
+              Your personalized endpoint is ready. Click "Test My WebSocket Server" above to verify it works!
+            </div>
+          </div>
+        `;
+      }
+
+      // Hide pre-deploy section and show post-deploy section
+      const preDeploySection = document.getElementById('step5PreDeploySection');
+      if (preDeploySection) preDeploySection.style.display = 'none';
+
+      const postDeploySection = document.getElementById('step5PostDeploySection');
+      if (postDeploySection) postDeploySection.style.display = 'block';
+
+      // Move next-action to test button
+      const testBtn = postDeploySection?.querySelector('button');
+      if (testBtn) testBtn.classList.add('next-action');
 
       renderStepContent();
     }
