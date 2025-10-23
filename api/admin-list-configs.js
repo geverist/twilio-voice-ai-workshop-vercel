@@ -94,15 +94,36 @@ export default async function handler(req, res) {
       } else {
         // Build SELECT statement based on available columns
         const selectColumns = ['session_token', 'student_email'];
+        // Configuration fields
+        if (columnNames.includes('selected_phone_number')) selectColumns.push('selected_phone_number');
+        if (columnNames.includes('selected_voice')) selectColumns.push('selected_voice');
+        if (columnNames.includes('tts_provider')) selectColumns.push('tts_provider');
+        // Progress tracking fields
         if (columnNames.includes('demo_mode')) selectColumns.push('demo_mode');
         if (columnNames.includes('current_step')) selectColumns.push('current_step');
         if (columnNames.includes('twilio_connected')) selectColumns.push('twilio_connected');
         if (columnNames.includes('openai_connected')) selectColumns.push('openai_connected');
+        if (columnNames.includes('call_direction_chosen')) selectColumns.push('call_direction_chosen');
+        if (columnNames.includes('services_ready')) selectColumns.push('services_ready');
+        // Step validation flags
+        if (columnNames.includes('step4_code_validated')) selectColumns.push('step4_code_validated');
+        if (columnNames.includes('step4_committed')) selectColumns.push('step4_committed');
         if (columnNames.includes('step4_deployed')) selectColumns.push('step4_deployed');
+        if (columnNames.includes('step5_code_validated')) selectColumns.push('step5_code_validated');
+        if (columnNames.includes('step5_committed')) selectColumns.push('step5_committed');
         if (columnNames.includes('step5_deployed')) selectColumns.push('step5_deployed');
+        if (columnNames.includes('step6_code_validated')) selectColumns.push('step6_code_validated');
+        if (columnNames.includes('step6_committed')) selectColumns.push('step6_committed');
         if (columnNames.includes('step6_deployed')) selectColumns.push('step6_deployed');
+        if (columnNames.includes('system_prompt_saved')) selectColumns.push('system_prompt_saved');
+        if (columnNames.includes('step7_committed')) selectColumns.push('step7_committed');
         if (columnNames.includes('step7_deployed')) selectColumns.push('step7_deployed');
+        if (columnNames.includes('tools_configured')) selectColumns.push('tools_configured');
+        if (columnNames.includes('step8_code_validated')) selectColumns.push('step8_code_validated');
+        if (columnNames.includes('step8_committed')) selectColumns.push('step8_committed');
         if (columnNames.includes('step8_deployed')) selectColumns.push('step8_deployed');
+        if (columnNames.includes('project_deployed')) selectColumns.push('project_deployed');
+        // Timestamps
         if (columnNames.includes('created_at')) selectColumns.push('created_at');
         if (columnNames.includes('updated_at')) selectColumns.push('updated_at');
 

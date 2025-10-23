@@ -1482,10 +1482,8 @@
         case 3: // currentStep 3 = Step 4: Basic TwiML
           if (!step4CodeValidated) {
             targetSelector = '[onclick="validateCode4()"]';
-          } else if (!step4Committed) {
-            targetSelector = '[onclick*="commitStep(4)"]';
           } else if (!step4Deployed) {
-            targetSelector = '[onclick*="deployFunction"]';
+            targetSelector = '[onclick*="commitStep(4)"]';
           } else {
             targetSelector = '#nextBtn4';
           }
@@ -1595,11 +1593,14 @@
         codespaceName,
         railwayToken,
         railwayProjectId,
+        sessionToken,  // Save session token with progress
         timestamp: new Date().toISOString(),
         completedSteps: steps.slice(0, currentStep).map(s => s.title)
       };
-      localStorage.setItem('workshop_progress', JSON.stringify(progress));
-      console.log('Progress auto-saved:', progress);
+      // Save progress per session token so each session has independent state
+      const storageKey = `workshop_progress_${sessionToken}`;
+      localStorage.setItem(storageKey, JSON.stringify(progress));
+      console.log('Progress auto-saved for session:', sessionToken.substring(0, 8), progress);
 
       // Update UI highlights after state change
       if (typeof highlightNextAction === 'function') {
@@ -1685,16 +1686,20 @@
 
     function loadProgressFromStorage() {
       try {
-        const saved = localStorage.getItem('workshop_progress');
+        // Load progress for THIS session token specifically
+        const storageKey = `workshop_progress_${sessionToken}`;
+        const saved = localStorage.getItem(storageKey);
         if (saved) {
           const progress = JSON.parse(saved);
           const savedDate = new Date(progress.timestamp);
           const daysSince = (Date.now() - savedDate.getTime()) / (1000 * 60 * 60 * 24);
 
           if (daysSince < 7) {
+            console.log('Loaded progress for session:', sessionToken.substring(0, 8));
             return progress;
           } else {
-            localStorage.removeItem('workshop_progress');
+            localStorage.removeItem(storageKey);
+            console.log('Removed stale progress for session:', sessionToken.substring(0, 8));
           }
         }
       } catch (error) {
@@ -4819,7 +4824,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
             <div class="code-header">
               <span>📝 ${isOutbound ? 'IVR' : 'Inbound'} TwiML Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success ${step4CodeValidated ? '' : 'next-action'}" style="padding: 6px 12px; font-size: 13px; ${step4CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode4()" ${step4CodeValidated ? 'disabled' : ''}>✓ Validate</button>
+                <button class="btn btn-success ${(!step4CodeValidated || code4Changed) ? 'next-action' : ''}" style="padding: 6px 12px; font-size: 13px; ${(step4CodeValidated && !code4Changed) ? 'opacity: 0.5;' : ''}" onclick="validateCode4()" ${(step4CodeValidated && !code4Changed) ? 'disabled' : ''}>✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code4')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode4()">Reset</button>
               </div>
@@ -5004,7 +5009,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
           <div class="button-group" style="gap: 20px;">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary" id="nextBtn4" onclick="nextStep()" disabled>
+            <button class="btn btn-primary ${step4Deployed ? 'next-action' : ''}" id="nextBtn4" onclick="nextStep()" ${step4Deployed ? '' : 'disabled'}>
               Next: WebSocket Streaming →
             </button>
           </div>
