@@ -5,6 +5,10 @@
  * This config is used by the shared WebSocket server to handle their calls.
  */
 
+export const config = {
+  runtime: 'nodejs'
+};
+
 import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
 import { encryptApiKey } from './_lib/encryption.js';

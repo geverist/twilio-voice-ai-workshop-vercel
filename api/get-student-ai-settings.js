@@ -7,6 +7,10 @@
  * Updated to use normalized V2 schema (student_configs table)
  */
 
+export const config = {
+  runtime: 'nodejs'
+};
+
 import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
 import { decryptApiKey } from './_lib/encryption.js';

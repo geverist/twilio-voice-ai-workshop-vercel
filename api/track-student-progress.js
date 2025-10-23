@@ -1,6 +1,12 @@
 /**
  * Track Student Progress (Vercel API)
  *
+ * ⚠️  DEPRECATED: This API is deprecated and will be removed in a future release.
+ *
+ * Please use /api/student-progress instead (normalized V2 schema).
+ *
+ * Migration guide: /SCHEMA.md and /MIGRATION-PROGRESS-TRACKING.md
+ *
  * This function tracks student progress through workshop exercises.
  * Uses Vercel Postgres to store progress data persistently.
  *
@@ -40,6 +46,9 @@ export default async function handler(req, res) {
   if (handlePreflightRequest(req, res)) {
     return;
   }
+
+  // Log deprecation warning
+  console.warn('⚠️  DEPRECATED: /api/track-student-progress is deprecated. Use /api/student-progress instead (normalized V2 schema). See /SCHEMA.md and /MIGRATION-PROGRESS-TRACKING.md for migration guide.');
 
   try {
     // Check if Postgres is configured

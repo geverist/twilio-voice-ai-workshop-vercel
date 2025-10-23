@@ -7,6 +7,10 @@
  * GET /api/student-config-get?sessionToken=xyz
  */
 
+export const config = {
+  runtime: 'nodejs'
+};
+
 import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
 import { decryptApiKey } from './_lib/encryption.js';

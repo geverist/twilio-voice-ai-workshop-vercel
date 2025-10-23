@@ -17,6 +17,10 @@
  * }
  */
 
+export const config = {
+  runtime: 'nodejs'
+};
+
 import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
 import { encryptApiKey, isEncrypted } from './_lib/encryption.js';
