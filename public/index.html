@@ -1220,6 +1220,7 @@
     let conversationRelayVoice = null; // Selected voice for ConversationRelay
     let ciServiceSid = null; // Conversational Intelligence service (silent background setup)
     let workshopCallSids = []; // Track all calls made during workshop for analytics
+    let testWebSocket = null; // WebSocket test connection (needs to be closed before making calls)
 
     // Incremental deployment tracking
     let step4Committed = false; // Basic TwiML
@@ -13084,6 +13085,18 @@ app.get('/health', (req, res) => {
       if (!toNumber || !toNumber.startsWith('+')) {
         showStatus('step6Status', 'error', 'Please enter a valid phone number with country code (e.g., +1234567890)');
         return;
+      }
+
+      // Close any existing WebSocket test connection before making call
+      if (testWebSocket) {
+        console.log('🔌 Closing existing WebSocket test connection before making call...');
+        try {
+          testWebSocket.close();
+          testWebSocket = null;
+          isConnected = false;
+        } catch (e) {
+          console.warn('Error closing WebSocket:', e);
+        }
       }
 
       // Handle demo mode
