@@ -7880,22 +7880,6 @@ case 'send_whatsapp':
             </ul>
           </div>
 
-          <!-- Workshop Call History -->
-          <div class="service-card" style="background: linear-gradient(135deg, #4fc1ff 0%, #1a73e8 100%);">
-            <h3 style="color: white; margin-bottom: 15px;">📞 Your Workshop Call History</h3>
-            <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px;">
-              Review all the calls you made during this workshop session with AI-powered insights.
-            </p>
-            <div id="workshopCallHistory">
-              <button class="btn" onclick="loadWorkshopCallHistory()" style="background: white; color: #1a73e8; padding: 12px 24px; font-size: 16px; font-weight: bold;">
-                📊 Load Call History
-              </button>
-            </div>
-            <div id="workshopCallHistoryData" style="display: none; margin-top: 20px;">
-              <!-- Call history will be loaded here -->
-            </div>
-          </div>
-
           <!-- Next Steps -->
           <div class="service-card">
             <h3>📦 Take Your Project Further</h3>
@@ -11615,25 +11599,49 @@ app.get('/health', (req, res) => {
               </button>
               <div id="codespaceDeployStatus5" style="margin-top: 15px; color: white;"></div>
             ` : `
-              <div style="background: rgba(255, 193, 7, 0.3); padding: 20px; border-radius: 8px; border: 2px solid rgba(255, 193, 7, 0.6);">
+              <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px; line-height: 1.6;">
+                Great! You'll use the <strong>shared Railway WebSocket server</strong> that's already deployed and running for all workshop participants.
+              </p>
+
+              <div style="background: rgba(40, 167, 69, 0.2); padding: 20px; border-radius: 8px; border: 2px solid rgba(40, 167, 69, 0.6); margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                  <span style="font-size: 1.5rem;">⚠️</span>
+                  <span style="font-size: 1.5rem;">✅</span>
                   <div>
-                    <strong style="color: white; font-size: 1.05rem;">WebSocket Server Not Found</strong><br>
-                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">You should have deployed this in Step 1</span>
+                    <strong style="color: white; font-size: 1.05rem;">Shared WebSocket Server</strong><br>
+                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">Multi-tenant server with your personalized AI settings</span>
                   </div>
                 </div>
-                <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
-                  It looks like you haven't set up your WebSocket server yet. Please go back to <strong>Step 1</strong> and get your server URL, or refresh the page if you've already done it.
+                <p style="color: rgba(255,255,255,0.9); margin: 0 0 12px 0; line-height: 1.6; font-size: 14px;">
+                  This server fetches YOUR OpenAI key and system prompt from the database, ensuring you get personalized AI responses.
                 </p>
-                <div style="display: flex; gap: 10px;">
-                  <button class="btn" onclick="currentStep = 0; renderStepContent(); renderProgressSteps();" style="padding: 10px 20px; background: white; color: #667eea; border: none; font-weight: 600;">
-                    ← Go Back to Step 1
-                  </button>
-                  <button class="btn" onclick="checkForExistingCodespace(); renderStepContent();" style="padding: 10px 20px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);">
-                    🔄 Check Again
-                  </button>
+                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; font-family: monospace; margin-bottom: 15px;">
+                  <div style="color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 5px;">WebSocket URL:</div>
+                  <code style="color: white; font-size: 13px; word-break: break-all;">wss://workshop-websocket-server-production.up.railway.app/ws/{your_session_token}</code>
                 </div>
+                <ul style="color: rgba(255,255,255,0.85); margin: 0; padding-left: 20px; line-height: 1.8; font-size: 13px;">
+                  <li>✅ Uses YOUR OpenAI API key (not shared with others)</li>
+                  <li>✅ Uses YOUR custom system prompt from Step 7</li>
+                  <li>✅ Ready to use - no deployment needed!</li>
+                  <li>✅ Supports all workshop features (ConversationRelay, tools, etc.)</li>
+                </ul>
+
+                <!-- Test WebSocket Server Button -->
+                <button
+                  class="btn"
+                  onclick="testSharedWebSocketServer(); step5Deployed = true; renderStepContent();"
+                  style="margin-top: 15px; padding: 12px 24px; background: white; color: #667eea; border: none; font-weight: 600;">
+                  🧪 Test Shared WebSocket Server
+                </button>
+                <div id="wsTestStatus" style="margin-top: 15px; font-size: 13px;"></div>
+              </div>
+
+              <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+                <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">
+                  <strong>💡 Optional:</strong> Deploy Your Own Server Later
+                </p>
+                <p style="color: rgba(255,255,255,0.75); margin: 0; font-size: 13px; line-height: 1.6;">
+                  Want to deploy your own WebSocket server? You can do that after the workshop using Railway, Render, or any Node.js hosting platform. For now, the shared server works great!
+                </p>
               </div>
             `}
           </div>
