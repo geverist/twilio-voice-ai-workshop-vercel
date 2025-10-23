@@ -387,33 +387,30 @@
           }
         });
 
-        // Then retrieve
-        const { data, status } = await apiCall('/api/student-config-get', {
-          method: 'POST',
-          body: { sessionToken: sessionToken }
-        });
+        // Then retrieve using GET
+        const response = await fetch(`/api/student-config-get?sessionToken=${sessionToken}`);
+        const data = await response.json();
+        const status = response.status;
 
         expect(status).toBe(200);
         expect(data.success).toBeTruthy();
         expect(data.config).toBeTruthy();
-        expect(data.config.studentEmail).toBe('retrieve-test@example.com');
+        expect(data.config.studentName).toBe('Retrieve Test');
       });
 
       it('should return 404 for non-existent session', async () => {
-        const { data, status } = await apiCall('/api/student-config-get', {
-          method: 'POST',
-          body: { sessionToken: 'nonexistent_session_12345' }
-        });
+        const response = await fetch('/api/student-config-get?sessionToken=nonexistent_session_12345');
+        const data = await response.json();
+        const status = response.status;
 
         expect(status).toBe(404);
         expect(data.success).toBeFalsy();
       });
 
       it('should reject missing sessionToken', async () => {
-        const { data, status } = await apiCall('/api/student-config-get', {
-          method: 'POST',
-          body: {}
-        });
+        const response = await fetch('/api/student-config-get');
+        const data = await response.json();
+        const status = response.status;
 
         expect(status).toBe(400);
         expect(data.success).toBeFalsy();
@@ -424,56 +421,53 @@
     // Test Suite 3: auth-session endpoint
     testSuites.push(describe('/api/auth-session', () => {
 
-      it('should create new session with email and name', async () => {
+      it('should reject invalid action', async () => {
         const { data, status } = await apiCall('/api/auth-session', {
           body: {
-            email: 'newuser@example.com',
-            name: 'New User',
-            action: 'login'
-          }
-        });
-
-        expect(status).toBe(200);
-        expect(data.success).toBeTruthy();
-        expect(data.sessionToken).toBeTruthy();
-        expect(data.sessionToken).toMatch(/^ws_/);
-      });
-
-      it('should reject missing email', async () => {
-        const { data, status } = await apiCall('/api/auth-session', {
-          body: {
-            name: 'Test User',
-            action: 'login'
+            action: 'invalidAction'
           }
         });
 
         expect(status).toBe(400);
         expect(data.success).toBeFalsy();
+        expect(data.error).toBe('Invalid action');
       });
 
-      it('should reject invalid email format', async () => {
+      it('should reject validateSession with missing sessionToken', async () => {
         const { data, status } = await apiCall('/api/auth-session', {
           body: {
-            email: 'invalid-email',
-            name: 'Test User',
-            action: 'login'
+            action: 'validateSession'
           }
         });
 
         expect(status).toBe(400);
         expect(data.success).toBeFalsy();
+        expect(data.error).toContain('Session token required');
       });
 
-      it('should reject missing name', async () => {
+      it('should reject validateSession with invalid token', async () => {
         const { data, status } = await apiCall('/api/auth-session', {
           body: {
-            email: 'test@example.com',
-            action: 'login'
+            action: 'validateSession',
+            sessionToken: 'invalid_token_12345'
+          }
+        });
+
+        expect(status).toBe(401);
+        expect(data.success).toBeFalsy();
+        expect(data.error).toContain('Invalid or expired session');
+      });
+
+      it('should reject getSessionCredentials with missing token', async () => {
+        const { data, status } = await apiCall('/api/auth-session', {
+          body: {
+            action: 'getSessionCredentials'
           }
         });
 
         expect(status).toBe(400);
         expect(data.success).toBeFalsy();
+        expect(data.error).toContain('Session token required');
       });
 
     }));
