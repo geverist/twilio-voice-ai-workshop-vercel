@@ -2011,12 +2011,12 @@
         const nextBtn2 = document.getElementById('nextBtn2');
         if (nextBtn2) {
           nextBtn2.disabled = false;
-          // Only add next-action if we're currently on Step 2
+          // Only add next-action and show status if we're currently on Step 2
           if (currentStep === 1) {
             nextBtn2.classList.add('next-action');
+            const directionText = callDirection === 'outbound' ? 'outbound calls (you call them)' : 'inbound calls (they call you)';
+            showStatus('step2Status', 'success', `✅ Great! You'll build a bot for ${directionText}.`);
           }
-          const directionText = callDirection === 'outbound' ? 'outbound calls (you call them)' : 'inbound calls (they call you)';
-          showStatus('step2Status', 'success', `✅ Great! You'll build a bot for ${directionText}.`);
         }
       }
 
@@ -2025,7 +2025,10 @@
         const nextBtn3 = document.getElementById('nextBtn3');
         if (nextBtn3) {
           nextBtn3.disabled = false;
-          showStatus('step3Status', 'success', '✅ Services provisioned! Click Next to continue.');
+          // Only show status if we're currently on Step 3
+          if (currentStep === 2) {
+            showStatus('step3Status', 'success', '✅ Services provisioned! Click Next to continue.');
+          }
         }
       }
 
