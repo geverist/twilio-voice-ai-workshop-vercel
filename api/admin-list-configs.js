@@ -700,7 +700,7 @@ export default async function handler(req, res) {
       sessions: sessions.map(session => ({
         sessionToken: session.session_token,
         studentEmail: session.student_email,
-        studentName: students.find(s => s.student_email === session.student_email)?.student_name || 'Unnamed',
+        studentName: session.student_name_from_students || session.student_name || 'Unnamed',
         phoneNumber: session.selected_phone_number ?? null,
         voice: session.selected_voice ?? null,
         ttsProvider: session.tts_provider ?? null,
