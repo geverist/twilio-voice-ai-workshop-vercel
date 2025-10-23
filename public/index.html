@@ -11331,7 +11331,7 @@ ${hintsLine}${intelligenceLine}
             <div class="code-header">
               <span>📝 WebSocket Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success" id="validateBtn7" style="padding: 6px 12px; font-size: 13px; ${step5CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode7()" ${step5CodeValidated ? 'disabled' : ''}>✓ Validate</button>
+                <button class="btn btn-success ${step5CodeValidated ? '' : 'next-action'}" id="validateBtn7" style="padding: 6px 12px; font-size: 13px; ${step5CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode7()" ${step5CodeValidated ? 'disabled' : ''}>✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code7')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode7()">Reset</button>
               </div>
