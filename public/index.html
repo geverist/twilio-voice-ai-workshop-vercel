@@ -13117,7 +13117,20 @@ app.get('/health', (req, res) => {
         return;
       }
 
-      showStatus('step6Status', 'info', 'Initiating call...');
+      // Get the voice handler URL from deployed WebSocket URL
+      let voiceHandlerUrl;
+      if (websocketUrl) {
+        // Convert WebSocket URL to HTTP(S) URL for voice handler
+        // wss://example.com/ws -> https://example.com/voice-handler
+        voiceHandlerUrl = websocketUrl.replace('wss://', 'https://').replace('ws://', 'http://');
+        // Remove WebSocket path and add voice-handler endpoint
+        voiceHandlerUrl = voiceHandlerUrl.split('/ws')[0] + '/voice-handler';
+      } else {
+        showStatus('step6Status', 'error', 'No deployment URL found. Please complete the deployment step (Step 5) first.');
+        return;
+      }
+
+      showStatus('step6Status', 'info', `Initiating call to ${toNumber}...`);
 
       try {
         const response = await fetch('/api/tutorial-proxy', {
@@ -13127,7 +13140,7 @@ app.get('/health', (req, res) => {
             action: 'makeCall',
             to: toNumber,
             from: fromNumber,
-            url: `https://${window.location.host}/voice-handler`,
+            url: voiceHandlerUrl,
             ...twilioCredentials
           })
         });
