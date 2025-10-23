@@ -1271,8 +1271,18 @@
       const varName = path.split('.').pop();
       const oldValue = window[varName];
 
-      // Update the variable
+      // Update the window variable
       window[varName] = value;
+
+      // Also update internal variables (for consistency and tests)
+      if (varName === 'twilioConnected') twilioConnected = value;
+      if (varName === 'openaiConnected') openaiConnected = value;
+      if (varName === 'currentStep') currentStep = value;
+      if (varName === 'callDirectionChosen') callDirectionChosen = value;
+      if (varName === 'callDirection') callDirection = value;
+      if (varName === 'useCaseDescription') useCaseDescription = value;
+      if (varName === 'servicesReady') servicesReady = value;
+      if (varName === 'selectedPhoneNumber') selectedPhoneNumber = value;
 
       // Save to localStorage immediately
       saveProgressToStorage();

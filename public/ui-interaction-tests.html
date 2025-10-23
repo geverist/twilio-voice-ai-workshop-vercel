@@ -634,7 +634,19 @@
 
       // Ensure iframe is loaded
       await waitForIframeLoad();
-      await wait(1000); // Give time for initialization
+      await wait(2000); // Give time for initialization
+
+      // Wait for key globals to be defined
+      let retries = 0;
+      while (retries < 10) {
+        const steps = getIframeGlobal('steps');
+        const setState = getIframeGlobal('setState');
+        if (steps && steps.length > 0 && typeof setState === 'function') {
+          break;
+        }
+        await wait(500);
+        retries++;
+      }
 
       // Update test variables from iframe
       try {
