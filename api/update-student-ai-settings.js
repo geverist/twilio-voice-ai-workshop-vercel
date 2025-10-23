@@ -5,7 +5,7 @@
  * Used when students commit WebSocket handler code in Steps 5, 7, 8
  */
 
-import { sql } from '@vercel/postgres';
+import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
 import { applyRateLimit } from './_lib/ratelimit.js';
 import {
@@ -15,6 +15,11 @@ import {
   handleValidationError,
   sanitizeString
 } from './_lib/validation.js';
+
+const sql = postgres(process.env.POSTGRES_URL, {
+  ssl: 'require',
+  max: 1
+});
 
 export default async function handler(req, res) {
   // Apply CORS
@@ -81,22 +86,22 @@ export default async function handler(req, res) {
 
     // First check if a record exists for this session token
     const existing = await sql`
-      SELECT student_id FROM workshop_students WHERE student_id = ${sessionToken}
+      SELECT session_token FROM student_configs WHERE session_token = ${sessionToken}
     `;
 
-    if (existing.rows.length === 0) {
+    if (existing.length === 0) {
       // Create new record for this session
       const result = await sql`
-        INSERT INTO workshop_students (
-          student_id,
+        INSERT INTO student_configs (
+          session_token,
           student_email,
           student_name,
-          ai_system_prompt,
-          ai_greeting,
-          ai_voice,
-          ai_tools,
-          ai_settings_updated_at,
-          created_at
+          system_prompt,
+          ivr_greeting,
+          selected_voice,
+          tools,
+          created_at,
+          updated_at
         ) VALUES (
           ${sessionToken},
           ${sessionToken + '@workshop.local'},
@@ -109,52 +114,52 @@ export default async function handler(req, res) {
           NOW()
         )
         RETURNING
-          student_id as "studentId",
-          ai_system_prompt as "systemPrompt",
-          ai_greeting as "greeting",
-          ai_voice as "voice",
-          ai_tools as "tools"
+          session_token as "sessionToken",
+          system_prompt as "systemPrompt",
+          ivr_greeting as "greeting",
+          selected_voice as "voice",
+          tools
       `;
 
       return res.status(200).json({
         success: true,
         message: 'AI settings created successfully',
-        settings: result.rows[0]
+        settings: result[0]
       });
     }
 
     // Update existing record
     const result = await sql`
-      UPDATE workshop_students
+      UPDATE student_configs
       SET
-        ai_system_prompt = COALESCE(${systemPrompt}, ai_system_prompt),
-        ai_greeting = COALESCE(${greeting}, ai_greeting),
-        ai_voice = COALESCE(${voice}, ai_voice),
-        ai_tools = COALESCE(${tools ? JSON.stringify(tools) : null}::jsonb, ai_tools),
-        ai_settings_updated_at = NOW()
-      WHERE student_id = ${sessionToken}
+        system_prompt = COALESCE(${systemPrompt}, system_prompt),
+        ivr_greeting = COALESCE(${greeting}, ivr_greeting),
+        selected_voice = COALESCE(${voice}, selected_voice),
+        tools = COALESCE(${tools ? JSON.stringify(tools) : null}::jsonb, tools),
+        updated_at = NOW()
+      WHERE session_token = ${sessionToken}
       RETURNING
-        student_id as "studentId",
-        ai_system_prompt as "systemPrompt",
-        ai_greeting as "greeting",
-        ai_voice as "voice",
-        ai_tools as "tools",
-        ai_settings_updated_at as "updatedAt"
+        session_token as "sessionToken",
+        system_prompt as "systemPrompt",
+        ivr_greeting as "greeting",
+        selected_voice as "voice",
+        tools,
+        updated_at as "updatedAt"
     `;
 
-    if (result.rows.length === 0) {
+    if (result.length === 0) {
       return res.status(404).json({
         success: false,
         error: 'Student not found. Please complete Step 1 first.'
       });
     }
 
-    console.log(`✓ Updated AI settings for ${studentEmail}`);
+    console.log(`✓ Updated AI settings for session: ${sessionToken.substring(0, 8)}...`);
 
     return res.status(200).json({
       success: true,
       message: 'AI settings updated successfully',
-      settings: result.rows[0]
+      settings: result[0]
     });
 
   } catch (error) {

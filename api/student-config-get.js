@@ -9,6 +9,7 @@
 
 import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
+import { decryptApiKey } from './_lib/encryption.js';
 
 // Create postgres connection
 const sql = postgres(process.env.POSTGRES_URL, {
@@ -77,6 +78,20 @@ export default async function handler(req, res) {
 
     const config = configs[0];
 
+    // Decrypt OpenAI API key before returning (if present)
+    let decryptedApiKey = null;
+    if (config.openai_api_key) {
+      try {
+        decryptedApiKey = decryptApiKey(config.openai_api_key);
+        console.log(`🔓 OpenAI API key decrypted for session: ${sessionToken.substring(0, 8)}...`);
+      } catch (error) {
+        console.error('Failed to decrypt API key:', error.message);
+        // Return error but allow workshop to continue (key might be legacy unencrypted)
+        decryptedApiKey = config.openai_api_key;
+        console.warn('⚠️  Returning unencrypted key (legacy data or decryption failed)');
+      }
+    }
+
     console.log(`✅ Config retrieved for: ${config.student_name || 'Unknown'}`);
 
     return res.status(200).json({
@@ -84,7 +99,7 @@ export default async function handler(req, res) {
       config: {
         sessionToken: config.session_token,
         studentName: config.student_name,
-        openaiApiKey: config.openai_api_key,
+        openaiApiKey: decryptedApiKey,
         systemPrompt: config.system_prompt,
         tools: config.tools || [],
         voiceSettings: config.voice_settings || {},

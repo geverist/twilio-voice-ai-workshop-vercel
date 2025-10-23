@@ -1449,7 +1449,7 @@
       let targetSelector = null;
 
       switch(currentStep) {
-        case 0: // Step 1: Setup
+        case 0: // currentStep 0 = Step 1: Setup
           if (!twilioConnected) {
             targetSelector = '[onclick*="connectTwilio"]';
           } else if (!openaiConnected) {
@@ -1459,7 +1459,7 @@
           }
           break;
 
-        case 1: // Step 2: Use Case
+        case 1: // currentStep 1 = Step 2: Use Case
           if (!callDirectionChosen) {
             targetSelector = '.direction-card';
           } else if (!useCaseDescription?.trim()) {
@@ -1469,7 +1469,7 @@
           }
           break;
 
-        case 2: // Step 3: Services
+        case 2: // currentStep 2 = Step 3: Services
           if (!selectedPhoneNumber) {
             targetSelector = '.phone-option';
           } else if (!servicesReady) {
@@ -1479,7 +1479,7 @@
           }
           break;
 
-        case 3: // Step 4: Basic TwiML
+        case 3: // currentStep 3 = Step 4: Basic TwiML
           if (!step4CodeValidated) {
             targetSelector = '[onclick="validateCode4()"]';
           } else if (!step4Committed) {
@@ -1491,7 +1491,7 @@
           }
           break;
 
-        case 4: // Step 5: WebSocket
+        case 4: // currentStep 4 = Step 5: WebSocket
           if (!step5CodeValidated) {
             targetSelector = '#validateBtn7';
           } else if (!step5Deployed) {
@@ -1501,7 +1501,7 @@
           }
           break;
 
-        case 5: // Step 6: ConversationRelay
+        case 5: // currentStep 5 = Step 6: ConversationRelay
           if (!step6CodeValidated) {
             targetSelector = '[onclick="validateCode8()"]';
           } else if (!step6Deployed) {
@@ -1511,7 +1511,7 @@
           }
           break;
 
-        case 6: // Step 7: Prompt Engineering
+        case 6: // currentStep 6 = Step 7: Prompt Engineering
           if (!systemPromptSaved) {
             targetSelector = '[onclick*="savePrompt"]';
           } else {
@@ -1519,7 +1519,7 @@
           }
           break;
 
-        case 7: // Step 8: Tools
+        case 7: // currentStep 7 = Step 8: Tools
           if (!toolsConfigured) {
             targetSelector = '[onclick="validateCode9()"]';
           } else {
@@ -1527,7 +1527,7 @@
           }
           break;
 
-        case 8: // Step 9: Deploy
+        case 8: // currentStep 8 = Step 9: Deploy
           targetSelector = '[onclick*="deployProject"]';
           break;
       }
@@ -1620,67 +1620,63 @@
       try {
         // Determine completion status for each step based on validation flags
         const stepCompletionStatus = {
-          1: twilioConnected && openaiConnected,                    // Step 1: Connect accounts
-          2: callDirectionChosen && useCaseDescription?.trim(),     // Step 2: Choose use case + description (✅ FIXED)
-          3: selectedPhoneNumber && servicesReady,                  // Step 3: Provision services
-          4: step4CodeValidated && step4Deployed,                   // Step 4: Basic TwiML
-          5: step5CodeValidated && step5Deployed,                   // Step 5: WebSocket handler
-          6: step6CodeValidated && step6Deployed,                   // Step 6: ConversationRelay
-          7: systemPromptSaved && step7Deployed,                    // Step 7: Custom AI Prompt (✅ FIXED)
-          8: step8CodeValidated && step8Deployed,                   // Step 8: Tools & Functions (✅ FIXED)
-          9: projectDeployed                                        // Step 9: Final Deployment (✅ FIXED)
+          0: twilioConnected && openaiConnected,                    // Step 0 (UI shows Step 1): Connect accounts
+          1: callDirectionChosen && useCaseDescription?.trim(),     // Step 1 (UI shows Step 2): Choose use case + description
+          2: selectedPhoneNumber && servicesReady,                  // Step 2 (UI shows Step 3): Provision services
+          3: step4CodeValidated && step4Deployed,                   // Step 3 (UI shows Step 4): Basic TwiML
+          4: step5CodeValidated && step5Deployed,                   // Step 4 (UI shows Step 5): WebSocket handler
+          5: step6CodeValidated && step6Deployed,                   // Step 5 (UI shows Step 6): ConversationRelay
+          6: systemPromptSaved && step7Deployed,                    // Step 6 (UI shows Step 7): Custom AI Prompt
+          7: step8CodeValidated && step8Deployed,                   // Step 7 (UI shows Step 8): Tools & Functions
+          8: projectDeployed                                        // Step 8 (UI shows Step 9): Final Deployment
         };
 
-        // Map steps to exercise IDs
-        const stepToExercise = {
-          1: 'step-1-connect-accounts',
-          2: 'step-2-choose-use-case',
-          3: 'step-3-provision-services',
-          4: 'step-4-basic-twiml',
-          5: 'step-5-websocket-handler',
-          6: 'step-6-conversation-relay',
-          7: 'step-7-ai-tools',
-          8: 'step-8-test-call',
-          9: 'step-9-multichannel'
+        // Map step indices (0-8) to step names
+        const stepNames = {
+          0: 'Connect Accounts',
+          1: 'Choose Use Case',
+          2: 'Provision Services',
+          3: 'Basic TwiML',
+          4: 'WebSocket Handler',
+          5: 'ConversationRelay',
+          6: 'Custom AI Prompt',
+          7: 'Tools & Functions',
+          8: 'Final Deployment'
         };
 
-        console.log(`📊 Tracking progress for ${studentEmail} session ${sessionToken.substring(0, 8)} (currentStep: ${currentStep + 1})`);
+        console.log(`📊 Tracking progress for ${studentEmail} session ${sessionToken.substring(0, 8)} (currentStep: ${currentStep}, UI Step: ${currentStep + 1})`);
 
-        // IMPORTANT: Only track steps up to the current step
-        // This prevents showing future steps when student restarts workshop
-        const maxStepToTrack = currentStep + 1; // currentStep is 0-indexed
+        // Track progress for current step using the normalized V2 student-progress API
+        const stepNumber = currentStep;  // 0-indexed (0-8)
+        const isCompleted = stepCompletionStatus[stepNumber] || false;
+        const stepName = stepNames[stepNumber];
 
-        // Send progress for steps up to and including current step
-        for (let stepNum = 1; stepNum <= maxStepToTrack; stepNum++) {
-          const exerciseId = stepToExercise[stepNum];
-          const isCompleted = stepCompletionStatus[stepNum] || false;
+        console.log(`  📝 Recording step ${stepNumber} (${stepName}): ${isCompleted ? 'COMPLETED' : 'IN PROGRESS'}`);
 
-          console.log(`  📝 Sending: ${exerciseId} - ${isCompleted ? 'COMPLETED' : 'IN PROGRESS'}`);
+        const response = await fetch(`${window.location.origin}/api/student-progress`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sessionToken: sessionToken,
+            studentEmail: studentEmail,
+            studentName: studentName || studentEmail,
+            stepNumber: stepNumber,
+            stepName: stepName,
+            completed: isCompleted,
+            timeSpent: 0,  // TODO: Track actual time spent per step
+            codeSubmitted: null  // TODO: Track code submissions if needed
+          })
+        });
 
-          const response = await fetch(`${window.location.origin}/api/track-student-progress`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              sessionToken: sessionToken,  // Session is primary key
-              studentEmail: studentEmail,  // For grouping by student
-              studentName: studentName || studentEmail,
-              exerciseId: exerciseId,
-              completed: isCompleted,
-              totalExercises: 9,
-              repoCreated: !!studentRepoName,
-              demoMode: studentDemoMode || false
-            })
-          });
-
-          const data = await response.json();
-          if (!data.success) {
-            console.warn(`  ⚠️ Failed to track ${exerciseId}:`, data.error);
-          }
+        const data = await response.json();
+        if (data.success) {
+          console.log(`  ✅ Step ${stepNumber} progress recorded successfully`);
+        } else {
+          console.warn(`  ⚠️ Failed to record step ${stepNumber}:`, data.error);
         }
 
-        console.log(`📊 Progress tracking complete (tracked ${maxStepToTrack} of 9 steps)`);
       } catch (error) {
         console.error('❌ Error tracking student progress:', error);
         // Don't interrupt the user experience if tracking fails
@@ -2359,13 +2355,36 @@
     }
 
     // Initialize
-    function init() {
+    async function init() {
       // Generate or restore session token (used for identifying student across workshop)
       if (!sessionToken || sessionToken === 'null' || sessionToken === 'undefined') {
-        // Generate a unique session token
-        sessionToken = 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('sessionToken', sessionToken);
-        console.log('Generated new session token:', sessionToken);
+        // Generate a cryptographically secure session token from server
+        try {
+          const response = await fetch('/api/generate-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              studentEmail: studentEmail || undefined,
+              studentName: studentName || undefined
+            })
+          });
+
+          const data = await response.json();
+
+          if (data.success && data.sessionToken) {
+            sessionToken = data.sessionToken;
+            localStorage.setItem('sessionToken', sessionToken);
+            console.log('🔐 Generated secure session token from server:', sessionToken);
+          } else {
+            throw new Error('Failed to generate session token');
+          }
+        } catch (error) {
+          console.error('Error generating session token:', error);
+          // Fallback to client-side generation (not recommended but prevents app from breaking)
+          sessionToken = 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
+          localStorage.setItem('sessionToken', sessionToken);
+          console.warn('⚠️ Using fallback client-side session token (less secure)');
+        }
       } else {
         console.log('Restored session token from localStorage:', sessionToken);
       }
@@ -2713,6 +2732,22 @@
           // All services ready - highlight Next button
           nextButton = document.getElementById('nextBtn3');
         }
+      } else if (currentStep === 5) {
+        // Step 6: ConversationRelay - uses validateCode8, commitStep6Btn, nextBtn8
+        const validateBtn = document.querySelector('[onclick="validateCode8()"]');
+        const deployBtn = document.getElementById('commitStep6Btn');
+        const nextBtn = document.getElementById('nextBtn8');
+
+        if (nextBtn && !nextBtn.disabled) {
+          // Already deployed - highlight next button
+          nextButton = nextBtn;
+        } else if (deployBtn && !deployBtn.disabled) {
+          // Code validated, ready to deploy - highlight deploy button
+          nextButton = deployBtn;
+        } else if (validateBtn && !validateBtn.disabled) {
+          // Need to validate first - highlight validate button
+          nextButton = validateBtn;
+        }
       } else if (currentStep >= 3 && currentStep <= 7) {
         // Code editing steps - highlight based on validation state
         const stepNum = currentStep + 1;
@@ -2743,10 +2778,11 @@
     // =========================================================================
 
     function renderStep_Setup() {
+      const step = steps[currentStep];
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>Step 1: Connect Your Accounts</h2>
+            <h2>Step ${step.id}: ${step.title}</h2>
             <p>Let's connect your Twilio and OpenAI accounts to get started</p>
           </div>
 
@@ -3471,10 +3507,11 @@
     // =========================================================================
 
     function renderStep_Direction() {
+      const step = steps[currentStep];
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>Step 2: Define Your Use Case</h2>
+            <h2>Step ${step.id}: ${step.title}</h2>
             <p>Describe what you want to build and choose your call direction</p>
           </div>
 
@@ -3822,10 +3859,11 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
     // =========================================================================
 
     function renderStep_Services() {
+      const step = steps[currentStep];
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>Step 3: Provision Required Services</h2>
+            <h2>Step ${step.id}: ${step.title}</h2>
             <p>Let's set up the Twilio services you need for Voice ${callDirection === 'outbound' ? 'Outbound' : 'Inbound'}</p>
           </div>
 
@@ -4676,11 +4714,12 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
     function renderStep_BasicTwiML() {
       const isOutbound = callDirection === 'outbound';
+      const step = steps[currentStep];
 
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>Step 4: Create Basic ${isOutbound ? 'Dial' : 'Inbound'} TwiML</h2>
+            <h2>Step ${step.id}: ${step.title}</h2>
             <p>Let's start with simple voice calling before adding AI</p>
           </div>
 
@@ -5553,10 +5592,11 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
     // =========================================================================
 
     function renderStep_PromptEngineering() {
+      const step = steps[currentStep];
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>Step 7: Prompt Engineering - The Most Important Step</h2>
+            <h2>Step ${step.id}: ${step.title}</h2>
             <p>Your system prompt is THE MOST IMPORTANT part of your Voice AI. Learn how to craft effective prompts for voice interactions.</p>
           </div>
 
@@ -5773,7 +5813,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
           </div>
 
           <!-- Deploy Custom Prompt - Shows after prompt is saved -->
-          <div id="step7DeploySection" style="margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 3px solid #5a67d8; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3); display: ${systemPromptSaved ? 'block' : 'none'};">
+          <div id="step7DeploySection" style="margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 3px solid #5a67d8; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3); display: none;">
             <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.3rem;">💾 Deploy Your Custom Prompt</h3>
             <p style="color: rgba(255,255,255,0.95); margin-bottom: 20px; line-height: 1.6;">
               Your system prompt looks great! Now deploy it to your WebSocket handler so your AI uses it in conversations.
@@ -5790,7 +5830,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
             </div>
 
             <button
-              class="btn btn-success ${customSystemPrompt && !step7Deployed ? 'next-action' : ''}"
+              class="btn btn-success ${systemPromptSaved && !step7Deployed ? 'next-action' : ''}"
               id="commitStep7Btn"
               onclick="commitStep(7)"
               style="width: 100%; font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); border: none;">
@@ -6528,10 +6568,11 @@ Expected: ${scenario.expected}</div>`;
     // =========================================================================
 
     function renderStep_Tooling() {
+      const step = steps[currentStep];
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>Step 7: Add Tooling & Knowledge Base (Optional)</h2>
+            <h2>Step ${step.id}: ${step.title}</h2>
             <p>Enhance your AI with custom functions and domain knowledge</p>
           </div>
 
@@ -7640,10 +7681,11 @@ case 'send_whatsapp':
     }
 
     function renderStep_Deploy() {
+      const step = steps[currentStep];
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>🚀 Step 9: Deploy Your Voice AI System</h2>
+            <h2>🚀 Step ${step.id}: ${step.title}</h2>
             <p>Congratulations! You've built a production-ready Voice AI system. Let's deploy it!</p>
           </div>
 
@@ -9088,6 +9130,16 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             deployedServiceSid = 'ZS' + Math.random().toString(36).substring(7);
             twilioServerlessDomain = 'demo-workshop-' + Math.random().toString(36).substring(7) + '.twil.io';
 
+            // Remove next-action from validate and commit buttons to prevent flash
+            const validateBtn = document.querySelector('[onclick="validateCode4()"]');
+            if (validateBtn) {
+              validateBtn.classList.remove('next-action');
+            }
+            const commitBtn = document.getElementById('commitStep4Btn');
+            if (commitBtn) {
+              commitBtn.classList.remove('next-action');
+            }
+
             // Show the test section after deployment (demo mode)
             const testSection = document.getElementById('step4TestSection');
             if (testSection) {
@@ -10103,6 +10155,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     // =========================================================================
 
     function renderStep_ConversationRelay() {
+      const step = steps[currentStep];
       // Use the deployed service domain if available, otherwise fallback to current host
       if (!websocketUrl && deployedServiceSid) {
         // websocketUrl should already be set from deployment, but if not, we can't proceed
@@ -10112,7 +10165,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>Step 6: Upgrade to ConversationRelay (AI)</h2>
+            <h2>Step ${step.id}: ${step.title}</h2>
             <p>Replace your basic ${callDirection === 'outbound' ? 'Dial' : 'IVR'} with AI-powered conversation</p>
           </div>
 
@@ -10903,10 +10956,11 @@ ${hintsLine}${intelligenceLine}
     // =========================================================================
 
     function renderStep_WebSocket() {
+      const step = steps[currentStep];
       return `
         <div class="step-content active">
           <div class="step-header">
-            <h2>Step 5: Understanding Media Streams</h2>
+            <h2>Step ${step.id}: ${step.title}</h2>
             <p>Learn the foundation of real-time voice communication that powers ConversationRelay</p>
           </div>
 
@@ -13001,13 +13055,13 @@ app.get('/health', (req, res) => {
 
     function checkPrerequisites() {
       switch(currentStep) {
-        case 0: // Step 1: Setup
+        case 0: // currentStep 0 = Step 1: Setup
           if (!twilioConnected) {
             return { canProceed: false, message: 'Please connect your Twilio account first!' };
           }
           break;
 
-        case 1: // Step 2: Direction & Use Case
+        case 1: // currentStep 1 = Step 2: Direction & Use Case
           if (!useCaseDescription || !useCaseDescription.trim()) {
             return { canProceed: false, message: 'Please describe your use case first!' };
           }
@@ -13016,7 +13070,7 @@ app.get('/health', (req, res) => {
           }
           break;
 
-        case 2: // Step 3: Services
+        case 2: // currentStep 2 = Step 3: Services
           if (!selectedPhoneNumber) {
             return { canProceed: false, message: 'Please select or purchase a phone number!' };
           }
@@ -13025,13 +13079,13 @@ app.get('/health', (req, res) => {
           }
           break;
 
-        case 3: // Step 4: Basic TwiML
+        case 3: // currentStep 3 = Step 4: Basic TwiML
           if (!basicTwimlCreated) {
             return { canProceed: false, message: 'Please create and validate your Basic TwiML code!' };
           }
           break;
 
-        case 4: // Step 5: WebSocket
+        case 4: // currentStep 4 = Step 5: WebSocket
           if (!websocketBuilt) {
             return { canProceed: false, message: 'Please create and validate your WebSocket handler!' };
           }
@@ -13039,7 +13093,7 @@ app.get('/health', (req, res) => {
           // OpenAI will be validated when they try to deploy or test in Step 6
           break;
 
-        case 5: // Step 6: ConversationRelay
+        case 5: // currentStep 5 = Step 6: ConversationRelay
           // Validate OpenAI is connected before proceeding to Step 6
           if (!openaiConnected && !studentDemoMode && !twilioCredentials?.demoMode) {
             return { canProceed: false, message: 'Please connect your OpenAI API key in Step 5 before proceeding!' };
@@ -13049,19 +13103,19 @@ app.get('/health', (req, res) => {
           }
           break;
 
-        case 6: // Step 7: Custom AI Prompt
+        case 6: // currentStep 6 = Step 7: Custom AI Prompt
           if (!systemPromptSaved && !studentDemoMode) {
             return { canProceed: false, message: 'Please save your custom AI prompt before proceeding!' };
           }
           break;
 
-        case 7: // Step 8: Tools & Functions
+        case 7: // currentStep 7 = Step 8: Tools & Functions
           if (!toolsConfigured && !studentDemoMode) {
             return { canProceed: false, message: 'Please validate and configure your tools before proceeding!' };
           }
           break;
 
-        case 8: // Step 9: Final Deployment
+        case 8: // currentStep 8 = Step 9: Final Deployment
           // No prerequisite - this is the final deployment step
           break;
       }

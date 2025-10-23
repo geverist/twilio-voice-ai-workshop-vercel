@@ -7,6 +7,7 @@
 
 import postgres from 'postgres';
 import { applyCORS, handlePreflightRequest } from './_lib/cors.js';
+import { encryptApiKey } from './_lib/encryption.js';
 // import { applyRateLimit } from './_lib/ratelimit.js'; // Temporarily disabled - causing function crashes
 // import {
 //   validateRequired,
@@ -108,6 +109,21 @@ export default async function handler(req, res) {
 
     console.log(`💾 Saving config for session: ${sessionToken.substring(0, 8)}...`);
 
+    // Encrypt OpenAI API key before storing (if provided)
+    let encryptedApiKey = null;
+    if (openaiApiKey) {
+      try {
+        encryptedApiKey = encryptApiKey(openaiApiKey);
+        console.log(`🔐 OpenAI API key encrypted for session: ${sessionToken.substring(0, 8)}...`);
+      } catch (error) {
+        console.error('Failed to encrypt API key:', error.message);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to encrypt API key. Check ENCRYPTION_KEY environment variable.'
+        });
+      }
+    }
+
     // Ensure table exists with all columns including state tracking
     await sql`
       CREATE TABLE IF NOT EXISTS student_configs (
@@ -203,7 +219,7 @@ export default async function handler(req, res) {
         ${sessionToken},
         ${studentName || null},
         ${studentEmail || null},
-        ${openaiApiKey || null},
+        ${encryptedApiKey},
         ${systemPrompt || null},
         ${JSON.stringify(tools || [])},
         ${JSON.stringify(voiceSettings || {})},
