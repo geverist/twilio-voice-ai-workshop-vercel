@@ -79,19 +79,45 @@ export default async function handler(req, res) {
         SELECT column_name
         FROM information_schema.columns
         WHERE table_name = 'sessions'
-        AND column_name IN ('selected_phone_number', 'selected_voice', 'session_token')
       `;
 
-      const hasRequiredColumns = sessionColumns.length >= 2; // At least session_token and one config column
+      const columnNames = sessionColumns.map(c => c.column_name);
+      const hasSessionToken = columnNames.includes('session_token');
 
-      if (!hasRequiredColumns) {
+      if (!hasSessionToken) {
         // Sessions table exists but doesn't have the right structure
         // Fall through to check workshop_students instead
-        console.warn('⚠️ Sessions table exists but missing required columns, checking workshop_students');
+        console.warn('⚠️ Sessions table exists but missing session_token column, checking workshop_students');
         // Reset students/sessions so we fall through to workshop_students check
         students = [];
         sessions = [];
       } else {
+        // Build SELECT statement based on available columns
+        const selectColumns = ['session_token', 'student_email'];
+        if (columnNames.includes('demo_mode')) selectColumns.push('demo_mode');
+        if (columnNames.includes('current_step')) selectColumns.push('current_step');
+        if (columnNames.includes('twilio_connected')) selectColumns.push('twilio_connected');
+        if (columnNames.includes('openai_connected')) selectColumns.push('openai_connected');
+        if (columnNames.includes('step4_deployed')) selectColumns.push('step4_deployed');
+        if (columnNames.includes('step5_deployed')) selectColumns.push('step5_deployed');
+        if (columnNames.includes('step6_deployed')) selectColumns.push('step6_deployed');
+        if (columnNames.includes('step7_deployed')) selectColumns.push('step7_deployed');
+        if (columnNames.includes('step8_deployed')) selectColumns.push('step8_deployed');
+        if (columnNames.includes('created_at')) selectColumns.push('created_at');
+        if (columnNames.includes('updated_at')) selectColumns.push('updated_at');
+
+        // Add conditional selections for nullable fields
+        const conditionalSelections = [];
+        if (columnNames.includes('openai_api_key')) {
+          conditionalSelections.push('CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key');
+        }
+        if (columnNames.includes('system_prompt')) {
+          conditionalSelections.push('CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt');
+        }
+        if (columnNames.includes('tools')) {
+          conditionalSelections.push("CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools");
+        }
+
         // Use normalized structure
         students = await sql`
           SELECT
@@ -103,21 +129,16 @@ export default async function handler(req, res) {
           ORDER BY created_at DESC
         `;
 
-        sessions = await sql`
+        // Query sessions with dynamic column selection
+        const query = `
           SELECT
-            session_token,
-            student_email,
-            selected_phone_number,
-            selected_voice,
-            tts_provider,
-            CASE WHEN openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
-            CASE WHEN system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
-            CASE WHEN tools IS NOT NULL AND tools::text != '[]' THEN true ELSE false END as has_tools,
-            created_at,
-            updated_at
+            ${selectColumns.join(', ')}
+            ${conditionalSelections.length > 0 ? ', ' + conditionalSelections.join(', ') : ''}
           FROM sessions
           ORDER BY created_at DESC
         `;
+
+        sessions = await sql.unsafe(query);
       }
     }
 
@@ -269,12 +290,13 @@ export default async function handler(req, res) {
         sessionToken: session.session_token,
         studentEmail: session.student_email,
         studentName: students.find(s => s.student_email === session.student_email)?.student_name || 'Unnamed',
-        phoneNumber: session.selected_phone_number,
-        voice: session.selected_voice,
-        ttsProvider: session.tts_provider,
-        hasApiKey: session.has_api_key,
-        hasSystemPrompt: session.has_system_prompt,
-        hasTools: session.has_tools,
+        phoneNumber: session.selected_phone_number || null,
+        voice: session.selected_voice || null,
+        ttsProvider: session.tts_provider || null,
+        hasApiKey: session.has_api_key || false,
+        hasSystemPrompt: session.has_system_prompt || false,
+        hasTools: session.has_tools || false,
+        demoMode: session.demo_mode || false,
         // State tracking data
         currentStep: session.current_step || 0,
         twilioConnected: session.twilio_connected || false,
