@@ -11548,35 +11548,7 @@ app.get('/health', (req, res) => {
 
           <div id="step5DeploySection" style="margin: 30px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; border: 2px solid #5a67d8; display: ${step5CodeValidated ? 'block' : 'none'};">
             <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.2rem;">📡 Your WebSocket Server</h3>
-            ${codespaceUrl ? `
-              <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px; line-height: 1.6;">
-                Now let's deploy your WebSocket handler code to your Codespace server.
-              </p>
-              <div style="background: rgba(40, 167, 69, 0.3); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 2px solid rgba(40, 167, 69, 0.5);">
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                  <span style="font-size: 1.5rem;">✅</span>
-                  <div>
-                    <strong style="color: white; font-size: 1.05rem;">${step5Committed ? 'WebSocket Handler Deployed!' : 'WebSocket Server Ready'}</strong><br>
-                    <span style="color: rgba(255,255,255,0.8); font-size: 13px;">${step5Committed ? 'Your handler code is saved' : 'Review and save your WebSocket handler code below'}</span>
-                  </div>
-                </div>
-                <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px; margin-bottom: 15px;">
-                  <div style="color: rgba(255,255,255,0.7); font-size: 12px; margin-bottom: 5px;">WebSocket URL:</div>
-                  <code style="color: white; font-size: 14px; word-break: break-all;">${codespaceUrl}</code>
-                </div>
-                <div id="commitStep5Status" style="margin-top: 15px; color: white;"></div>
-                <div id="codespaceDeployStatus5" style="margin-top: 15px; color: white;"></div>
-
-                <!-- Test WebSocket Server Button -->
-                <button
-                  class="btn"
-                  onclick="testSharedWebSocketServer()"
-                  style="margin-top: 15px; padding: 12px 24px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; font-weight: 600;">
-                  🧪 Test Shared WebSocket Server
-                </button>
-                <div id="wsTestStatus" style="margin-top: 15px; color: white; font-size: 13px;"></div>
-              </div>
-            ` : studentDemoMode ? `
+            ${studentDemoMode ? `
               <p style="color: rgba(255,255,255,0.9); margin-bottom: 15px; line-height: 1.6;">
                 In demo mode, we'll simulate deploying your WebSocket server to a cloud environment.
               </p>
