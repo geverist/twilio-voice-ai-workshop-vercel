@@ -500,11 +500,13 @@
       try {
         const iframeWindow = iframe.contentWindow;
         const results = iframeWindow.testResults || [];
+        console.log('State test results extracted:', results.length, 'tests');
         allResults.state = results;
         renderResults('state', results);
       } catch (e) {
         console.error('Error extracting state test results:', e);
         allResults.state = [];
+        renderResults('state', []);
       }
 
       updateSummary();
@@ -530,11 +532,13 @@
       try {
         const iframeWindow = iframe.contentWindow;
         const results = iframeWindow.testResults || [];
+        console.log('API test results extracted:', results.length, 'tests');
         allResults.api = results;
         renderResults('api', results);
       } catch (e) {
         console.error('Error extracting API test results:', e);
         allResults.api = [];
+        renderResults('api', []);
       }
 
       updateSummary();
@@ -560,11 +564,13 @@
       try {
         const iframeWindow = iframe.contentWindow;
         const results = iframeWindow.testResults || [];
+        console.log('UI test results extracted:', results.length, 'tests');
         allResults.ui = results;
         renderResults('ui', results);
       } catch (e) {
         console.error('Error extracting UI test results:', e);
         allResults.ui = [];
+        renderResults('ui', []);
       }
 
       updateSummary();
@@ -590,11 +596,13 @@
       try {
         const iframeWindow = iframe.contentWindow;
         const results = iframeWindow.testResults || [];
+        console.log('Validation test results extracted:', results.length, 'tests');
         allResults.validation = results;
         renderResults('validation', results);
       } catch (e) {
         console.error('Error extracting validation test results:', e);
         allResults.validation = [];
+        renderResults('validation', []);
       }
 
       updateSummary();
