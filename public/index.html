@@ -16423,6 +16423,30 @@ app.get('/health', (req, res) => {
       }
     }
 
+    // Expose key variables and functions to window object for testing
+    if (typeof window !== 'undefined') {
+      window.currentStep = currentStep;
+      window.twilioConnected = twilioConnected;
+      window.openaiConnected = openaiConnected;
+      window.sessionToken = sessionToken;
+      window.STEP_CONDITIONS = STEP_CONDITIONS;
+      window.checkStepComplete = checkStepComplete;
+      window.checkAllConditions = checkAllConditions;
+      window.nextStep = nextStep;
+      window.renderStepContent = renderStepContent;
+      window.setState = setState;
+      window.getState = getState;
+      window.steps = steps;
+
+      // Keep them synchronized
+      window.updateTestVariables = () => {
+        window.currentStep = currentStep;
+        window.twilioConnected = twilioConnected;
+        window.openaiConnected = openaiConnected;
+        window.sessionToken = sessionToken;
+      };
+    }
+
     // Initialize on load
     init();
     updateProgressBar();
