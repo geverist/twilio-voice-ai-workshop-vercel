@@ -16455,6 +16455,11 @@ app.get('/health', (req, res) => {
         window.openaiConnected = openaiConnected;
         window.sessionToken = sessionToken;
       };
+
+      // Helper to reset debounce flags for testing
+      window.resetDebounceFlags = () => {
+        nextStepDebounce = false;
+      };
     }
 
     // Initialize on load

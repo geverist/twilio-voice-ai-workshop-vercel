@@ -426,6 +426,12 @@
       });
 
       it('should advance step when prerequisites met', async () => {
+        // Reset debounce flags that might prevent navigation
+        const resetFunc = getIframeGlobal('resetDebounceFlags');
+        if (typeof resetFunc === 'function') {
+          resetFunc();
+        }
+
         // Set prerequisites for step 0
         callIframeFunction('setState', 'twilioConnected', true);
         callIframeFunction('setState', 'openaiConnected', true);
