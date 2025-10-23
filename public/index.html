@@ -2350,9 +2350,11 @@
       // Generate or restore session token (used for identifying student across workshop)
       if (!sessionToken || sessionToken === 'null' || sessionToken === 'undefined') {
         // Generate a unique session token
-        setState("sessionToken", 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15));
+        sessionToken = 'ws_' + Date.now() + '_' + Math.random().toString(36).substring(2, 15);
         localStorage.setItem('sessionToken', sessionToken);
         console.log('Generated new session token:', sessionToken);
+      } else {
+        console.log('Restored session token from localStorage:', sessionToken);
       }
 
       // Restore GitHub credentials from localStorage if they exist
@@ -2429,8 +2431,11 @@
           authToken: 'demo_token',
           demoMode: true
         };
-        setState("twilioConnected", true);
+        twilioConnected = true;
+        openaiConnected = true; // Auto-connect OpenAI in demo mode
+        openaiApiKey = 'sk-demo-1234567890abcdefghijklmnopqrstuvwxyz1234567890';
         updateDemoModeBanner();
+        console.log('🎭 Demo mode restored - twilioConnected:', twilioConnected);
       }
 
       // Check for saved progress
