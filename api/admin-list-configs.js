@@ -241,15 +241,15 @@ export default async function handler(req, res) {
           `;
           const configColumnNames = configColumns.map(c => c.column_name);
 
-          // Build list of config columns to select
+          // Build list of config columns to select (without sc. prefix - will be added in query)
           const configSelectColumns = [];
           if (configColumnNames.includes('call_direction')) configSelectColumns.push('call_direction');
           if (configColumnNames.includes('use_case_description')) configSelectColumns.push('use_case_description as use_case');
           if (configColumnNames.includes('system_prompt')) configSelectColumns.push('system_prompt');
           if (configColumnNames.includes('tools')) configSelectColumns.push('tools');
-          if (configColumnNames.includes('selected_phone_number')) configSelectColumns.push('sc.selected_phone_number as config_phone');
-          if (configColumnNames.includes('selected_voice')) configSelectColumns.push('sc.selected_voice as config_voice');
-          if (configColumnNames.includes('tts_provider')) configSelectColumns.push('sc.tts_provider as config_tts');
+          if (configColumnNames.includes('selected_phone_number')) configSelectColumns.push('selected_phone_number as config_phone');
+          if (configColumnNames.includes('selected_voice')) configSelectColumns.push('selected_voice as config_voice');
+          if (configColumnNames.includes('tts_provider')) configSelectColumns.push('tts_provider as config_tts');
 
           // Only build conditional selections for columns that exist in student_configs
           const configConditionalSelections = [];
