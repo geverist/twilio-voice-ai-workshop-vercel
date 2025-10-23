@@ -1215,7 +1215,7 @@
 
     // Session token for identifying student across requests (works for both live and demo mode)
     let sessionToken = localStorage.getItem('sessionToken') || null;
-    let ttsProvider = 'amazon-polly'; // Default TTS provider
+    let ttsProvider = 'elevenlabs'; // Default TTS provider
     let elevenlabsApiKey = null; // For ElevenLabs TTS
     let conversationRelayVoice = null; // Selected voice for ConversationRelay
     let ciServiceSid = null; // Conversational Intelligence service (silent background setup)
@@ -1939,7 +1939,7 @@
       twilioServerlessDomain = progress.twilioServerlessDomain || '';
       syncServiceSkipped = progress.syncServiceSkipped || false;
       deployedServiceSid = progress.deployedServiceSid || null;
-      ttsProvider = progress.ttsProvider || 'amazon-polly';
+      ttsProvider = progress.ttsProvider || 'elevenlabs';
       conversationRelayVoice = progress.conversationRelayVoice || null;
       step4Committed = progress.step4Committed || false;
       step4Deployed = progress.step4Deployed || false;
@@ -2165,7 +2165,7 @@
       twilioServerlessDomain = '';
       syncServiceSkipped = false;
       deployedServiceSid = null;
-      ttsProvider = 'amazon-polly';
+      ttsProvider = 'elevenlabs';
       conversationRelayVoice = null;
       step4Committed = false;
       step4Deployed = false;
@@ -10411,8 +10411,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             <div class="form-group">
               <label>TTS Provider</label>
               <select id="ttsProvider" onchange="saveTTSProvider()" style="width: 100%; padding: 10px; background: #1e1e1e; color: #abb2bf; border: 1px solid #3e4451; border-radius: 4px;">
-                <option value="amazon-polly">Amazon Polly (Default - Free, Excellent Quality)</option>
-                <option value="elevenlabs">ElevenLabs (Ultra-Premium Natural Voices)</option>
+                <option value="elevenlabs">ElevenLabs (Default - Ultra-Premium Natural Voices)</option>
+                <option value="amazon-polly">Amazon Polly (Free, Excellent Quality)</option>
                 <option value="google">Google Cloud Text-to-Speech (Premium)</option>
               </select>
             </div>

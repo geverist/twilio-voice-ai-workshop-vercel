@@ -1559,7 +1559,8 @@ student2@example.com,Jane Smith</pre>
                             })()}
                           </div>
                           <div style="margin-top: 5px;">
-                            ${session.hasApiKey ? '<span style="background: #fff3cd; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem;">🔑 Has API Key</span>' : '<span style="color: #999;">No API Key</span>'}
+                            ${session.demoMode ? '<span style="background: #fff3e0; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem; border: 1px solid #ffb300;">🎭 Demo Mode</span> ' : '<span style="background: #e8f5e9; padding: 3px 8px; border-radius: 4px; font-size: 0.85rem; border: 1px solid #4caf50;">✅ Live Mode</span> '}
+                            ${session.hasApiKey ? '<span style="background: #fff3cd; padding: 3px 8px; border-radius: 4px; margin-left: 5px; font-size: 0.85rem;">🔑 Has API Key</span>' : '<span style="color: #999; margin-left: 5px;">No API Key</span>'}
                             ${session.hasSystemPrompt ? '<span style="background: #e3f2fd; padding: 3px 8px; border-radius: 4px; margin-left: 5px; font-size: 0.85rem;">📝 Has Prompt</span>' : ''}
                             ${session.hasTools ? '<span style="background: #e8f5e9; padding: 3px 8px; border-radius: 4px; margin-left: 5px; font-size: 0.85rem;">🔧 Has Tools</span>' : ''}
                           </div>
