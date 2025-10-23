@@ -1483,7 +1483,7 @@
 
         case 4: // Step 5: WebSocket
           if (!step5CodeValidated) {
-            targetSelector = '[onclick="validateCode7()"]';
+            targetSelector = '#validateBtn7';
           } else if (!step5Deployed) {
             targetSelector = '[onclick*="commitStep(5)"]';
           } else {
@@ -2054,7 +2054,7 @@
 
       // Step 5: Add next-action to validate button if not yet validated and on step 5
       if (currentStep === 4 && !step5CodeValidated) {
-        const validateBtn5 = document.querySelector('[onclick="validateCode7()"]');
+        const validateBtn5 = document.getElementById('validateBtn7');
         if (validateBtn5) validateBtn5.classList.add('next-action');
       }
 
@@ -11055,7 +11055,7 @@ ${hintsLine}${intelligenceLine}
             <div class="code-header">
               <span>📝 WebSocket Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success ${step5CodeValidated ? '' : 'next-action'}" style="padding: 6px 12px; font-size: 13px; ${step5CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode7()" ${step5CodeValidated ? 'disabled' : ''}>✓ Validate</button>
+                <button class="btn btn-success" id="validateBtn7" style="padding: 6px 12px; font-size: 13px; ${step5CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode7()" ${step5CodeValidated ? 'disabled' : ''}>✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code7')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode7()">Reset</button>
               </div>
@@ -12037,7 +12037,7 @@ app.get('/health', (req, res) => {
         if (deploySection) deploySection.style.display = 'block';
 
         // Move next-action effect from Validate button to Deploy button
-        const validateBtn = document.querySelector('[onclick="validateCode7()"]');
+        const validateBtn = document.getElementById('validateBtn7');
         if (validateBtn) {
           validateBtn.classList.remove('next-action');
           validateBtn.disabled = true;
@@ -13120,7 +13120,7 @@ app.get('/health', (req, res) => {
         },
         'code7': {
           flag: 'code7Changed',
-          buttonSelector: '[onclick="validateCode7()"]',
+          buttonSelector: '#validateBtn7',
           validatedFlag: 'step5CodeValidated'
         },
         'code8': {
