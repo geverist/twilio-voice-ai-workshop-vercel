@@ -324,12 +324,12 @@
 
   <div class="container">
     <div class="controls">
-      <button class="btn btn-primary" onclick="runAllTests()">▶️ Run All Tests</button>
-      <button class="btn btn-secondary" onclick="runCurrentTab()">▶️ Run Current Tab</button>
-      <button class="btn btn-success" onclick="exportResults()">📋 Export Results</button>
-      <button class="btn btn-secondary" onclick="clearResults()">🗑️ Clear</button>
+      <button class="btn btn-primary" onclick="openTestPage('state')">▶️ Run State Tests</button>
+      <button class="btn btn-primary" onclick="openTestPage('api')">▶️ Run API Tests</button>
+      <button class="btn btn-primary" onclick="openTestPage('ui')">▶️ Run UI Tests</button>
+      <button class="btn btn-primary" onclick="openTestPage('validation')">▶️ Run Validation Tests</button>
       <div style="margin-left: auto;">
-        <span id="status-text" style="color: #666;">Ready</span>
+        <span id="status-text" style="color: #666;">Open individual test pages above</span>
       </div>
     </div>
 
@@ -444,6 +444,27 @@
         content.classList.remove('active');
       });
       document.getElementById(`${tabName}-tab`).classList.add('active');
+    }
+
+    function openTestPage(category) {
+      const testPages = {
+        'state': '/state-management-tests.html',
+        'api': '/api-endpoint-tests.html',
+        'ui': '/ui-interaction-tests.html',
+        'validation': '/data-validation-tests.html'
+      };
+
+      const url = testPages[category];
+      if (url) {
+        window.open(url, '_blank');
+        const categoryNames = {
+          'state': 'state management',
+          'api': 'API endpoint',
+          'ui': 'UI interaction',
+          'validation': 'data validation'
+        };
+        document.getElementById('status-text').textContent = `Opened ${categoryNames[category]} tests in new tab`;
+      }
     }
 
     async function runAllTests() {

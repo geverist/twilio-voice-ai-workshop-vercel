@@ -844,6 +844,10 @@
       } else {
         summaryDiv.style.background = '#dc3545';
       }
+
+      // Signal completion to parent window
+      window.testsComplete = true;
+      console.log('Data validation tests complete:', testResults.length, 'tests');
     }
 
     // Generate text summary for copying/pasting
