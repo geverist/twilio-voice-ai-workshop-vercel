@@ -28,24 +28,73 @@ const wss = new WebSocketServer({ server: httpServer });
 
 console.log(`🚀 WebSocket server starting on ws://localhost:${PORT}`);
 
-wss.on('connection', (ws, req) => {
+wss.on('connection', async (ws, req) => {
   // Parse query parameters from URL
   const url = new URL(req.url, `http://localhost:${PORT}`);
-  const openaiApiKey = url.searchParams.get('apiKey');
-  const sessionId = url.searchParams.get('sessionId') || 'default';
+  const sessionToken = url.searchParams.get('sessionToken');
+  const sessionId = sessionToken || 'default';
 
-  console.log(`[${sessionId}] WebSocket connected`);
+  console.log(`[${sessionId}] WebSocket connected (session: ${sessionToken || 'no-token'})`);
 
-  if (!openaiApiKey) {
-    ws.send(JSON.stringify({
-      type: 'error',
-      message: 'Missing apiKey parameter in connection URL'
-    }));
-    ws.close();
-    return;
+  // Load student's custom AI settings and OpenAI API key
+  let studentSettings = {
+    systemPrompt: 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.',
+    greeting: 'Hello! How can I help you today?',
+    voice: 'alloy',
+    tools: []
+  };
+  let openaiApiKey = null;
+
+  if (sessionToken) {
+    try {
+      // Fetch student settings from Vercel API (includes decrypted OpenAI key)
+      const apiBaseUrl = process.env.VERCEL_API_URL || 'https://voice-ai-workshop.vercel.app';
+      const settingsResponse = await fetch(
+        `${apiBaseUrl}/api/get-student-ai-settings?sessionToken=${encodeURIComponent(sessionToken)}`
+      );
+
+      if (settingsResponse.ok) {
+        const data = await settingsResponse.json();
+        if (data.success && data.settings) {
+          studentSettings = {
+            systemPrompt: data.settings.systemPrompt || studentSettings.systemPrompt,
+            greeting: data.settings.greeting || studentSettings.greeting,
+            voice: data.settings.voice || studentSettings.voice,
+            tools: data.settings.tools || studentSettings.tools
+          };
+          openaiApiKey = data.settings.openaiApiKey;
+          console.log(`[${sessionId}] Loaded custom settings for session ${sessionToken}`);
+
+          if (!openaiApiKey) {
+            console.warn(`[${sessionId}] ⚠️  No OpenAI API key found for student`);
+          }
+        }
+      } else {
+        console.warn(`[${sessionId}] Failed to fetch settings: ${settingsResponse.status}`);
+      }
+    } catch (error) {
+      console.warn(`[${sessionId}] Could not load student settings:`, error.message);
+    }
   }
 
-  // Initialize OpenAI client with student's API key
+  // Fallback to instructor's key if student hasn't configured their own yet
+  if (!openaiApiKey) {
+    openaiApiKey = process.env.OPENAI_API_KEY;
+    if (!openaiApiKey) {
+      console.error(`[${sessionId}] ❌ No OpenAI API key available (neither student nor instructor key found)`);
+      ws.send(JSON.stringify({
+        type: 'error',
+        error: 'No OpenAI API key configured. Please configure your OpenAI API key in the workshop.'
+      }));
+      ws.close();
+      return;
+    }
+    console.log(`[${sessionId}] Using instructor's OpenAI API key (fallback)`);
+  } else {
+    console.log(`[${sessionId}] ✅ Using student's OpenAI API key`);
+  }
+
+  // Initialize OpenAI client with student's API key (or instructor's as fallback)
   const openai = new OpenAI({ apiKey: openaiApiKey });
 
   // Store conversation history
@@ -77,13 +126,13 @@ wss.on('connection', (ws, req) => {
           });
 
           try {
-            // Call OpenAI
+            // Call OpenAI with student's custom system prompt
             const completion = await openai.chat.completions.create({
               model: 'gpt-4o-mini',
               messages: [
                 {
                   role: 'system',
-                  content: 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.'
+                  content: studentSettings.systemPrompt
                 },
                 ...conversationHistory
               ],
@@ -149,8 +198,13 @@ wss.on('connection', (ws, req) => {
 
 httpServer.listen(PORT, () => {
   console.log(`✓ WebSocket server ready!`);
-  console.log(`  - WebSocket: ws://localhost:${PORT}?apiKey=YOUR_KEY&sessionId=test`);
+  console.log(`  - WebSocket: ws://localhost:${PORT}/ws?sessionToken=YOUR_SESSION_TOKEN`);
   console.log(`  - Health check: http://localhost:${PORT}`);
   console.log(`\n💡 Usage:`);
-  console.log(`  Connect with: ws://localhost:${PORT}?apiKey=sk-xxx&sessionId=my-session`);
+  console.log(`  1. Get sessionToken from workshop (Step 1)`);
+  console.log(`  2. Connect with: ws://localhost:${PORT}/ws?sessionToken=ws_xxx`);
+  console.log(`  3. Server will fetch your OpenAI key from database`);
+  console.log(`\n🔑 Environment Variables:`);
+  console.log(`  - VERCEL_API_URL: ${process.env.VERCEL_API_URL || 'https://voice-ai-workshop.vercel.app (default)'}`);
+  console.log(`  - OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✓ Set (fallback)' : '✗ Not set'}`);
 });
