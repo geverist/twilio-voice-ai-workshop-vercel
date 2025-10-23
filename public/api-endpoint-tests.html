@@ -152,7 +152,8 @@
     // TEST FRAMEWORK
     // =========================================================================
 
-    let testResults = [];
+    window.testResults = [];
+    let testResults = window.testResults;
     let currentSuite = null;
 
     function describe(suiteName, fn) {
