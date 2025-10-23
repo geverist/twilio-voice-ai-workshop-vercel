@@ -98,6 +98,10 @@ export default async function handler(req, res) {
         if (columnNames.includes('selected_phone_number')) selectColumns.push('selected_phone_number');
         if (columnNames.includes('selected_voice')) selectColumns.push('selected_voice');
         if (columnNames.includes('tts_provider')) selectColumns.push('tts_provider');
+        if (columnNames.includes('call_direction')) selectColumns.push('call_direction');
+        if (columnNames.includes('use_case')) selectColumns.push('use_case');
+        if (columnNames.includes('system_prompt')) selectColumns.push('system_prompt');
+        if (columnNames.includes('tools')) selectColumns.push('tools');
         // Progress tracking fields
         if (columnNames.includes('demo_mode')) selectColumns.push('demo_mode');
         if (columnNames.includes('current_step')) selectColumns.push('current_step');
@@ -227,6 +231,221 @@ export default async function handler(req, res) {
         });
         students = Object.values(uniqueStudents);
         sessions = result;
+
+        // If student_configs also exists, LEFT JOIN to get additional config data
+        if (tableNames.includes('student_configs')) {
+          const configColumns = await sql`
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'student_configs'
+          `;
+          const configColumnNames = configColumns.map(c => c.column_name);
+
+          // Build list of config columns to select
+          const configSelectColumns = [];
+          if (configColumnNames.includes('call_direction')) configSelectColumns.push('call_direction');
+          if (configColumnNames.includes('use_case_description')) configSelectColumns.push('use_case_description as use_case');
+          if (configColumnNames.includes('system_prompt')) configSelectColumns.push('system_prompt');
+          if (configColumnNames.includes('tools')) configSelectColumns.push('tools');
+          if (configColumnNames.includes('selected_phone_number')) configSelectColumns.push('sc.selected_phone_number as config_phone');
+          if (configColumnNames.includes('selected_voice')) configSelectColumns.push('sc.selected_voice as config_voice');
+          if (configColumnNames.includes('tts_provider')) configSelectColumns.push('sc.tts_provider as config_tts');
+
+          // Only build conditional selections for columns that exist in student_configs
+          const configConditionalSelections = [];
+          if (configColumnNames.includes('openai_api_key')) {
+            configConditionalSelections.push('CASE WHEN sc.openai_api_key IS NOT NULL THEN true ELSE false END as config_has_api_key');
+          }
+          if (configColumnNames.includes('system_prompt')) {
+            configConditionalSelections.push('CASE WHEN sc.system_prompt IS NOT NULL THEN true ELSE false END as config_has_system_prompt');
+          }
+          if (configColumnNames.includes('tools')) {
+            configConditionalSelections.push("CASE WHEN sc.tools IS NOT NULL AND sc.tools::text != '[]' THEN true ELSE false END as config_has_tools");
+          }
+
+          // Add state tracking columns from student_configs
+          if (configColumnNames.includes('current_step')) configSelectColumns.push('current_step');
+          if (configColumnNames.includes('twilio_connected')) configSelectColumns.push('twilio_connected');
+          if (configColumnNames.includes('openai_connected')) configSelectColumns.push('openai_connected');
+          if (configColumnNames.includes('call_direction_chosen')) configSelectColumns.push('call_direction_chosen');
+          if (configColumnNames.includes('services_ready')) configSelectColumns.push('services_ready');
+          if (configColumnNames.includes('step4_code_validated')) configSelectColumns.push('step4_code_validated');
+          if (configColumnNames.includes('step4_committed')) configSelectColumns.push('step4_committed');
+          if (configColumnNames.includes('step4_deployed')) configSelectColumns.push('step4_deployed');
+          if (configColumnNames.includes('step5_code_validated')) configSelectColumns.push('step5_code_validated');
+          if (configColumnNames.includes('step5_committed')) configSelectColumns.push('step5_committed');
+          if (configColumnNames.includes('step5_deployed')) configSelectColumns.push('step5_deployed');
+          if (configColumnNames.includes('step6_code_validated')) configSelectColumns.push('step6_code_validated');
+          if (configColumnNames.includes('step6_committed')) configSelectColumns.push('step6_committed');
+          if (configColumnNames.includes('step6_deployed')) configSelectColumns.push('step6_deployed');
+          if (configColumnNames.includes('system_prompt_saved')) configSelectColumns.push('system_prompt_saved');
+          if (configColumnNames.includes('step7_committed')) configSelectColumns.push('step7_committed');
+          if (configColumnNames.includes('step7_deployed')) configSelectColumns.push('step7_deployed');
+          if (configColumnNames.includes('tools_configured')) configSelectColumns.push('tools_configured');
+          if (configColumnNames.includes('step8_code_validated')) configSelectColumns.push('step8_code_validated');
+          if (configColumnNames.includes('step8_committed')) configSelectColumns.push('step8_committed');
+          if (configColumnNames.includes('step8_deployed')) configSelectColumns.push('step8_deployed');
+          if (configColumnNames.includes('project_deployed')) configSelectColumns.push('project_deployed');
+
+          if (configSelectColumns.length > 0 || configConditionalSelections.length > 0) {
+            const joinQuery = `
+              SELECT
+                ws.session_token,
+                ws.student_email,
+                ws.student_name,
+                ws.selected_phone_number,
+                ws.selected_voice,
+                ws.tts_provider,
+                ws.created_at,
+                ws.updated_at,
+                ws.demo_mode,
+                CASE WHEN ws.openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
+                CASE WHEN ws.system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
+                CASE WHEN ws.tools IS NOT NULL AND ws.tools::text != '[]' THEN true ELSE false END as has_tools
+                ${configSelectColumns.length > 0 ? ', sc.' + configSelectColumns.join(', sc.') : ''}
+                ${configConditionalSelections.length > 0 ? ', ' + configConditionalSelections.join(', ') : ''}
+              FROM workshop_students ws
+              LEFT JOIN student_configs sc ON ws.session_token = sc.session_token
+              ORDER BY ws.created_at DESC
+            `;
+
+            const joinedResult = await sql.unsafe(joinQuery);
+
+            // Also get sessions that exist ONLY in student_configs (not in workshop_students)
+            const orphanConfigsQuery = `
+              SELECT
+                sc.session_token,
+                sc.student_email,
+                sc.student_name,
+                sc.selected_phone_number,
+                sc.selected_voice,
+                sc.tts_provider,
+                sc.call_direction,
+                ${configColumnNames.includes('use_case_description') ? 'sc.use_case_description as use_case' : 'NULL as use_case'},
+                sc.system_prompt,
+                sc.tools,
+                CASE WHEN sc.openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
+                CASE WHEN sc.system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
+                CASE WHEN sc.tools IS NOT NULL AND sc.tools::text != '[]' THEN true ELSE false END as has_tools,
+                false as demo_mode,
+                ${configColumnNames.includes('current_step') ? 'sc.current_step' : '0 as current_step'},
+                ${configColumnNames.includes('twilio_connected') ? 'sc.twilio_connected' : 'false as twilio_connected'},
+                ${configColumnNames.includes('openai_connected') ? 'sc.openai_connected' : 'false as openai_connected'},
+                ${configColumnNames.includes('call_direction_chosen') ? 'sc.call_direction_chosen' : 'false as call_direction_chosen'},
+                ${configColumnNames.includes('services_ready') ? 'sc.services_ready' : 'false as services_ready'},
+                ${configColumnNames.includes('step4_code_validated') ? 'sc.step4_code_validated' : 'false as step4_code_validated'},
+                ${configColumnNames.includes('step4_committed') ? 'sc.step4_committed' : 'false as step4_committed'},
+                ${configColumnNames.includes('step4_deployed') ? 'sc.step4_deployed' : 'false as step4_deployed'},
+                ${configColumnNames.includes('step5_code_validated') ? 'sc.step5_code_validated' : 'false as step5_code_validated'},
+                ${configColumnNames.includes('step5_committed') ? 'sc.step5_committed' : 'false as step5_committed'},
+                ${configColumnNames.includes('step5_deployed') ? 'sc.step5_deployed' : 'false as step5_deployed'},
+                ${configColumnNames.includes('step6_code_validated') ? 'sc.step6_code_validated' : 'false as step6_code_validated'},
+                ${configColumnNames.includes('step6_committed') ? 'sc.step6_committed' : 'false as step6_committed'},
+                ${configColumnNames.includes('step6_deployed') ? 'sc.step6_deployed' : 'false as step6_deployed'},
+                ${configColumnNames.includes('system_prompt_saved') ? 'sc.system_prompt_saved' : 'false as system_prompt_saved'},
+                ${configColumnNames.includes('step7_committed') ? 'sc.step7_committed' : 'false as step7_committed'},
+                ${configColumnNames.includes('step7_deployed') ? 'sc.step7_deployed' : 'false as step7_deployed'},
+                ${configColumnNames.includes('tools_configured') ? 'sc.tools_configured' : 'false as tools_configured'},
+                ${configColumnNames.includes('step8_code_validated') ? 'sc.step8_code_validated' : 'false as step8_code_validated'},
+                ${configColumnNames.includes('step8_committed') ? 'sc.step8_committed' : 'false as step8_committed'},
+                ${configColumnNames.includes('step8_deployed') ? 'sc.step8_deployed' : 'false as step8_deployed'},
+                ${configColumnNames.includes('project_deployed') ? 'sc.project_deployed' : 'false as project_deployed'},
+                sc.created_at,
+                sc.updated_at
+              FROM student_configs sc
+              LEFT JOIN workshop_students ws ON sc.session_token = ws.session_token
+              WHERE ws.session_token IS NULL
+              ORDER BY sc.created_at DESC
+            `;
+
+            const orphanConfigs = await sql.unsafe(orphanConfigsQuery);
+
+            // Merge config data into sessions
+            sessions = [
+              ...joinedResult.map(row => ({
+              session_token: row.session_token,
+              student_email: row.student_email,
+              student_name: row.student_name,
+              selected_phone_number: row.config_phone || row.selected_phone_number,
+              selected_voice: row.config_voice || row.selected_voice,
+              tts_provider: row.config_tts || row.tts_provider,
+              call_direction: row.call_direction,
+              use_case: row.use_case,
+              system_prompt: row.system_prompt,
+              tools: row.tools,
+              has_api_key: row.config_has_api_key !== undefined ? row.config_has_api_key : row.has_api_key,
+              has_system_prompt: row.config_has_system_prompt !== undefined ? row.config_has_system_prompt : row.has_system_prompt,
+              has_tools: row.config_has_tools !== undefined ? row.config_has_tools : row.has_tools,
+              demo_mode: row.demo_mode,
+              current_step: row.current_step,
+              twilio_connected: row.twilio_connected,
+              openai_connected: row.openai_connected,
+              call_direction_chosen: row.call_direction_chosen,
+              services_ready: row.services_ready,
+              step4_code_validated: row.step4_code_validated,
+              step4_committed: row.step4_committed,
+              step4_deployed: row.step4_deployed,
+              step5_code_validated: row.step5_code_validated,
+              step5_committed: row.step5_committed,
+              step5_deployed: row.step5_deployed,
+              step6_code_validated: row.step6_code_validated,
+              step6_committed: row.step6_committed,
+              step6_deployed: row.step6_deployed,
+              system_prompt_saved: row.system_prompt_saved,
+              step7_committed: row.step7_committed,
+              step7_deployed: row.step7_deployed,
+              tools_configured: row.tools_configured,
+              step8_code_validated: row.step8_code_validated,
+              step8_committed: row.step8_committed,
+              step8_deployed: row.step8_deployed,
+              project_deployed: row.project_deployed,
+              created_at: row.created_at,
+              updated_at: row.updated_at
+            })),
+              // Add sessions that exist only in student_configs
+              ...orphanConfigs.map(row => ({
+                session_token: row.session_token,
+                student_email: row.student_email,
+                student_name: row.student_name,
+                selected_phone_number: row.selected_phone_number,
+                selected_voice: row.selected_voice,
+                tts_provider: row.tts_provider,
+                call_direction: row.call_direction,
+                use_case: row.use_case,
+                system_prompt: row.system_prompt,
+                tools: row.tools,
+                has_api_key: row.has_api_key,
+                has_system_prompt: row.has_system_prompt,
+                has_tools: row.has_tools,
+                demo_mode: row.demo_mode,
+                current_step: row.current_step,
+                twilio_connected: row.twilio_connected,
+                openai_connected: row.openai_connected,
+                call_direction_chosen: row.call_direction_chosen,
+                services_ready: row.services_ready,
+                step4_code_validated: row.step4_code_validated,
+                step4_committed: row.step4_committed,
+                step4_deployed: row.step4_deployed,
+                step5_code_validated: row.step5_code_validated,
+                step5_committed: row.step5_committed,
+                step5_deployed: row.step5_deployed,
+                step6_code_validated: row.step6_code_validated,
+                step6_committed: row.step6_committed,
+                step6_deployed: row.step6_deployed,
+                system_prompt_saved: row.system_prompt_saved,
+                step7_committed: row.step7_committed,
+                step7_deployed: row.step7_deployed,
+                tools_configured: row.tools_configured,
+                step8_code_validated: row.step8_code_validated,
+                step8_committed: row.step8_committed,
+                step8_deployed: row.step8_deployed,
+                project_deployed: row.project_deployed,
+                created_at: row.created_at,
+                updated_at: row.updated_at
+              }))
+            ];
+          }
+        }
       } else {
         // Old structure - student_email is PK, no session_token - check columns first
         const workshopColumns = await sql`
@@ -283,8 +502,8 @@ export default async function handler(req, res) {
         }));
       }
     }
-    // Fallback to student_configs if it exists
-    else if (tableNames.includes('student_configs')) {
+    // Query student_configs (always use if exists, might need to JOIN with workshop_students)
+    if ((students.length === 0 && sessions.length === 0) && tableNames.includes('student_configs')) {
       // Check available columns
       const configColumns = await sql`
         SELECT column_name
@@ -301,6 +520,10 @@ export default async function handler(req, res) {
       if (columnNames.includes('selected_phone_number')) selectColumns.push('selected_phone_number');
       if (columnNames.includes('selected_voice')) selectColumns.push('selected_voice');
       if (columnNames.includes('tts_provider')) selectColumns.push('tts_provider');
+      if (columnNames.includes('call_direction')) selectColumns.push('call_direction');
+      if (columnNames.includes('use_case')) selectColumns.push('use_case');
+      if (columnNames.includes('system_prompt')) selectColumns.push('system_prompt');
+      if (columnNames.includes('tools')) selectColumns.push('tools');
       if (columnNames.includes('current_step')) selectColumns.push('current_step');
       if (columnNames.includes('twilio_connected')) selectColumns.push('twilio_connected');
       if (columnNames.includes('openai_connected')) selectColumns.push('openai_connected');
@@ -379,6 +602,10 @@ export default async function handler(req, res) {
         phoneNumber: session.selected_phone_number ?? null,
         voice: session.selected_voice ?? null,
         ttsProvider: session.tts_provider ?? null,
+        callDirection: session.call_direction ?? null,
+        useCase: session.use_case ?? null,
+        systemPrompt: session.system_prompt ?? null,
+        tools: session.tools ?? null,
         hasApiKey: session.has_api_key ?? false,
         hasSystemPrompt: session.has_system_prompt ?? false,
         hasTools: session.has_tools ?? false,
