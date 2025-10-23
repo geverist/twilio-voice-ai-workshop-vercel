@@ -369,6 +369,10 @@
         UI Interactions
         <span class="badge" id="badge-ui" style="display:none"></span>
       </button>
+      <button class="tab" data-tab="validation" onclick="switchTab('validation')">
+        Data Validation
+        <span class="badge" id="badge-validation" style="display:none"></span>
+      </button>
       <button class="tab" data-tab="all" onclick="switchTab('all')">
         All Results
         <span class="badge" id="badge-all" style="display:none"></span>
@@ -390,6 +394,12 @@
     <div id="ui-tab" class="tab-content">
       <div class="test-results" id="ui-results">
         <div class="loading">Loading UI interaction tests</div>
+      </div>
+    </div>
+
+    <div id="validation-tab" class="tab-content">
+      <div class="test-results" id="validation-results">
+        <div class="loading">Loading data validation tests</div>
       </div>
     </div>
 
@@ -415,7 +425,8 @@
     let allResults = {
       state: [],
       api: [],
-      ui: []
+      ui: [],
+      validation: []
     };
     let currentTab = 'state';
 
@@ -447,6 +458,9 @@
       // Run UI tests
       await runUITests();
 
+      // Run validation tests
+      await runValidationTests();
+
       updateAllTab();
       document.getElementById('status-text').textContent = 'All tests complete';
     }
@@ -458,6 +472,8 @@
         await runAPITests();
       } else if (currentTab === 'ui') {
         await runUITests();
+      } else if (currentTab === 'validation') {
+        await runValidationTests();
       } else if (currentTab === 'all') {
         await runAllTests();
       }
@@ -556,6 +572,36 @@
       document.body.removeChild(iframe);
     }
 
+    async function runValidationTests() {
+      document.getElementById('status-text').textContent = 'Running validation tests...';
+      document.getElementById('validation-results').innerHTML = '<div class="loading">Running tests</div>';
+
+      const iframe = document.createElement('iframe');
+      iframe.src = '/data-validation-tests.html';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+
+      await new Promise(resolve => {
+        iframe.onload = () => resolve();
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 10000));
+
+      try {
+        const iframeWindow = iframe.contentWindow;
+        const results = iframeWindow.testResults || [];
+        allResults.validation = results;
+        renderResults('validation', results);
+      } catch (e) {
+        console.error('Error extracting validation test results:', e);
+        allResults.validation = [];
+      }
+
+      updateSummary();
+      updateBadges();
+      document.body.removeChild(iframe);
+    }
+
     function renderResults(category, results) {
       const container = document.getElementById(`${category}-results`);
 
@@ -608,7 +654,7 @@
     }
 
     function updateSummary() {
-      const allTests = [...allResults.state, ...allResults.api, ...allResults.ui];
+      const allTests = [...allResults.state, ...allResults.api, ...allResults.ui, ...allResults.validation];
       const total = allTests.length;
       const passed = allTests.filter(t => t.status === 'pass').length;
       const failed = allTests.filter(t => t.status === 'fail').length;
@@ -625,11 +671,13 @@
       const stateFailed = allResults.state.filter(t => t.status === 'fail').length;
       const apiFailed = allResults.api.filter(t => t.status === 'fail').length;
       const uiFailed = allResults.ui.filter(t => t.status === 'fail').length;
-      const totalFailed = stateFailed + apiFailed + uiFailed;
+      const validationFailed = allResults.validation.filter(t => t.status === 'fail').length;
+      const totalFailed = stateFailed + apiFailed + uiFailed + validationFailed;
 
       updateBadge('state', stateFailed);
       updateBadge('api', apiFailed);
       updateBadge('ui', uiFailed);
+      updateBadge('validation', validationFailed);
       updateBadge('all', totalFailed);
     }
 
@@ -647,7 +695,7 @@
       const allTab = document.getElementById('all-results');
       let html = '';
 
-      ['state', 'api', 'ui'].forEach(category => {
+      ['state', 'api', 'ui', 'validation'].forEach(category => {
         if (allResults[category].length > 0) {
           html += `<h3>${category.toUpperCase()} Tests</h3>`;
           // Render results
@@ -658,7 +706,7 @@
     }
 
     function exportResults() {
-      const allTests = [...allResults.state, ...allResults.api, ...allResults.ui];
+      const allTests = [...allResults.state, ...allResults.api, ...allResults.ui, ...allResults.validation];
       const total = allTests.length;
       const passed = allTests.filter(t => t.status === 'pass').length;
       const failed = allTests.filter(t => t.status === 'fail').length;
@@ -674,7 +722,7 @@
         text += '❌ FAILED TESTS:\n';
         text += '-'.repeat(70) + '\n\n';
 
-        ['state', 'api', 'ui'].forEach(category => {
+        ['state', 'api', 'ui', 'validation'].forEach(category => {
           const categoryFailed = allResults[category].filter(t => t.status === 'fail');
           if (categoryFailed.length > 0) {
             text += `\n${category.toUpperCase()} Tests (${categoryFailed.length} failed):\n`;
@@ -707,10 +755,11 @@
 
     function clearResults() {
       if (confirm('Clear all test results?')) {
-        allResults = { state: [], api: [], ui: [] };
+        allResults = { state: [], api: [], ui: [], validation: [] };
         document.getElementById('state-results').innerHTML = '<div class="loading">Run tests to see results</div>';
         document.getElementById('api-results').innerHTML = '<div class="loading">Run tests to see results</div>';
         document.getElementById('ui-results').innerHTML = '<div class="loading">Run tests to see results</div>';
+        document.getElementById('validation-results').innerHTML = '<div class="loading">Run tests to see results</div>';
         document.getElementById('all-results').innerHTML = '<div class="loading">Run tests to see results</div>';
         updateSummary();
         updateBadges();

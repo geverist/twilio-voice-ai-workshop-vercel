@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Validation Unit Tests</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #0066cc;
+      padding-bottom: 10px;
+    }
+    .test-suite {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-suite h2 {
+      color: #0066cc;
+      margin-top: 0;
+    }
+    .test-case {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 4px solid #ccc;
+      background: #fafafa;
+    }
+    .test-case.pass {
+      border-left-color: #28a745;
+      background: #f0fff4;
+    }
+    .test-case.fail {
+      border-left-color: #dc3545;
+      background: #fff5f5;
+    }
+    .test-case.running {
+      border-left-color: #ffc107;
+      background: #fffbf0;
+    }
+    .test-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .test-result {
+      font-size: 0.9em;
+      color: #666;
+    }
+    .test-error {
+      color: #dc3545;
+      font-family: monospace;
+      font-size: 0.85em;
+      margin-top: 5px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 4px;
+    }
+    .summary {
+      background: #0066cc;
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .summary-item {
+      text-align: center;
+    }
+    .summary-number {
+      font-size: 2em;
+      font-weight: bold;
+    }
+    .summary-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+    .run-tests-btn {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1.1em;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 20px 0;
+    }
+    .run-tests-btn:hover {
+      background: #0052a3;
+    }
+    .run-tests-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Data Validation Unit Tests</h1>
+
+  <button class="run-tests-btn" onclick="runAllTests()">Run All Tests</button>
+  <button class="run-tests-btn" onclick="showTextSummary()" style="background: #6c757d; margin-left: 10px;">📋 Copy Text Summary</button>
+
+  <div class="summary" id="summary">
+    <div class="summary-item">
+      <div class="summary-number" id="total-tests">0</div>
+      <div class="summary-label">Total Tests</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-number" id="passed-tests">0</div>
+      <div class="summary-label">Passed</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-number" id="failed-tests">0</div>
+      <div class="summary-label">Failed</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-number" id="time-elapsed">0ms</div>
+      <div class="summary-label">Time</div>
+    </div>
+  </div>
+
+  <div id="test-results"></div>
+
+  <script>
+    // =========================================================================
+    // VALIDATION FUNCTIONS (Copy from index.html)
+    // =========================================================================
+
+    function validateEmail(email) {
+      if (!email || typeof email !== 'string') {
+        return { valid: false, error: 'Email is required' };
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return { valid: false, error: 'Invalid email format' };
+      }
+      return { valid: true };
+    }
+
+    function validatePhoneNumber(phone) {
+      if (!phone || typeof phone !== 'string') {
+        return { valid: false, error: 'Phone number is required' };
+      }
+      // Twilio format: +[country code][number]
+      const phoneRegex = /^\+[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(phone)) {
+        return { valid: false, error: 'Phone number must be in E.164 format (e.g., +15551234567)' };
+      }
+      return { valid: true };
+    }
+
+    function validateSessionToken(token) {
+      if (!token || typeof token !== 'string') {
+        return { valid: false, error: 'Session token is required' };
+      }
+      if (token.length < 10 || token.length > 200) {
+        return { valid: false, error: 'Session token must be between 10 and 200 characters' };
+      }
+      return { valid: true };
+    }
+
+    function validateApiKey(apiKey, provider) {
+      if (!apiKey || typeof apiKey !== 'string') {
+        return { valid: false, error: `${provider} API key is required` };
+      }
+
+      if (provider === 'OpenAI') {
+        if (!apiKey.startsWith('sk-')) {
+          return { valid: false, error: 'OpenAI API key must start with "sk-"' };
+        }
+        if (apiKey.length < 20) {
+          return { valid: false, error: 'OpenAI API key appears too short' };
+        }
+      }
+
+      if (provider === 'Twilio') {
+        if (apiKey.length !== 32 && !apiKey.startsWith('AC')) {
+          return { valid: false, error: 'Invalid Twilio credential format' };
+        }
+      }
+
+      return { valid: true };
+    }
+
+    function validateURL(url, type = 'URL') {
+      if (!url || typeof url !== 'string') {
+        return { valid: false, error: `${type} is required` };
+      }
+
+      try {
+        const parsed = new URL(url);
+        if (!['http:', 'https:', 'wss:', 'ws:'].includes(parsed.protocol)) {
+          return { valid: false, error: `${type} must use http, https, ws, or wss protocol` };
+        }
+        return { valid: true };
+      } catch (e) {
+        return { valid: false, error: `Invalid ${type} format` };
+      }
+    }
+
+    function validateGitHubRepoURL(url) {
+      if (!url || typeof url !== 'string') {
+        return { valid: false, error: 'GitHub repository URL is required' };
+      }
+
+      const githubRegex = /^https:\/\/github\.com\/[A-Za-z0-9_-]+\/[A-Za-z0-9_-]+$/;
+      if (!githubRegex.test(url)) {
+        return { valid: false, error: 'Must be a valid GitHub repository URL (e.g., https://github.com/username/repo)' };
+      }
+
+      return { valid: true };
+    }
+
+    function validateSystemPrompt(prompt) {
+      if (!prompt || typeof prompt !== 'string') {
+        return { valid: false, error: 'System prompt is required' };
+      }
+
+      const trimmed = prompt.trim();
+      if (trimmed.length === 0) {
+        return { valid: false, error: 'System prompt cannot be empty' };
+      }
+
+      if (trimmed.length < 10) {
+        return { valid: false, error: 'System prompt must be at least 10 characters' };
+      }
+
+      if (trimmed.length > 5000) {
+        return { valid: false, error: 'System prompt cannot exceed 5000 characters' };
+      }
+
+      return { valid: true };
+    }
+
+    function validateToolsArray(tools) {
+      if (!Array.isArray(tools)) {
+        return { valid: false, error: 'Tools must be an array' };
+      }
+
+      for (let i = 0; i < tools.length; i++) {
+        const tool = tools[i];
+
+        if (!tool.type || typeof tool.type !== 'string') {
+          return { valid: false, error: `Tool ${i + 1} must have a valid type` };
+        }
+
+        if (!tool.name || typeof tool.name !== 'string') {
+          return { valid: false, error: `Tool ${i + 1} must have a valid name` };
+        }
+
+        if (tool.type === 'function') {
+          if (!tool.function || typeof tool.function !== 'object') {
+            return { valid: false, error: `Tool ${i + 1} must have a function definition` };
+          }
+
+          if (!tool.function.name || typeof tool.function.name !== 'string') {
+            return { valid: false, error: `Tool ${i + 1} function must have a name` };
+          }
+
+          if (!tool.function.description || typeof tool.function.description !== 'string') {
+            return { valid: false, error: `Tool ${i + 1} function must have a description` };
+          }
+        }
+      }
+
+      return { valid: true };
+    }
+
+    function validateVoiceSettings(settings) {
+      if (!settings || typeof settings !== 'object') {
+        return { valid: false, error: 'Voice settings must be an object' };
+      }
+
+      if (settings.speed !== undefined) {
+        if (typeof settings.speed !== 'number' || settings.speed < 0.5 || settings.speed > 2.0) {
+          return { valid: false, error: 'Voice speed must be between 0.5 and 2.0' };
+        }
+      }
+
+      if (settings.pitch !== undefined) {
+        if (typeof settings.pitch !== 'number' || settings.pitch < -20 || settings.pitch > 20) {
+          return { valid: false, error: 'Voice pitch must be between -20 and 20' };
+        }
+      }
+
+      if (settings.volume !== undefined) {
+        if (typeof settings.volume !== 'number' || settings.volume < 0 || settings.volume > 100) {
+          return { valid: false, error: 'Voice volume must be between 0 and 100' };
+        }
+      }
+
+      return { valid: true };
+    }
+
+    function sanitizeInput(input) {
+      if (typeof input !== 'string') {
+        return input;
+      }
+
+      // Remove HTML tags
+      const withoutTags = input.replace(/<[^>]*>/g, '');
+
+      // Remove script content
+      const withoutScripts = withoutTags.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+      // Trim whitespace
+      return withoutScripts.trim();
+    }
+
+    function validateStepNumber(step) {
+      if (typeof step !== 'number') {
+        return { valid: false, error: 'Step must be a number' };
+      }
+
+      if (!Number.isInteger(step)) {
+        return { valid: false, error: 'Step must be an integer' };
+      }
+
+      if (step < 0 || step > 8) {
+        return { valid: false, error: 'Step must be between 0 and 8' };
+      }
+
+      return { valid: true };
+    }
+
+    // =========================================================================
+    // TEST FRAMEWORK
+    // =========================================================================
+
+    let testResults = [];
+    let currentSuite = null;
+
+    function describe(suiteName, fn) {
+      currentSuite = {
+        name: suiteName,
+        tests: []
+      };
+      fn();
+      return currentSuite;
+    }
+
+    function it(testName, fn) {
+      if (!currentSuite) {
+        throw new Error('Test must be inside a describe block');
+      }
+      currentSuite.tests.push({
+        name: testName,
+        fn: fn,
+        status: 'pending'
+      });
+    }
+
+    function expect(actual) {
+      return {
+        toBe(expected) {
+          if (actual !== expected) {
+            throw new Error(`Expected ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toEqual(expected) {
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Expected ${JSON.stringify(expected)} but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toBeTruthy() {
+          if (!actual) {
+            throw new Error(`Expected truthy value but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toBeFalsy() {
+          if (actual) {
+            throw new Error(`Expected falsy value but got ${JSON.stringify(actual)}`);
+          }
+        },
+        toContain(substring) {
+          if (typeof actual !== 'string' || !actual.includes(substring)) {
+            throw new Error(`Expected "${actual}" to contain "${substring}"`);
+          }
+        }
+      };
+    }
+
+    async function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // =========================================================================
+    // TEST SUITES
+    // =========================================================================
+
+    const testSuites = [];
+
+    // Test Suite 1: Email Validation
+    testSuites.push(describe('Email Validation', () => {
+
+      it('should accept valid email addresses', () => {
+        expect(validateEmail('user@example.com').valid).toBeTruthy();
+        expect(validateEmail('test.user@domain.co.uk').valid).toBeTruthy();
+        expect(validateEmail('name+tag@company.com').valid).toBeTruthy();
+      });
+
+      it('should reject invalid email formats', () => {
+        expect(validateEmail('invalid-email').valid).toBeFalsy();
+        expect(validateEmail('@example.com').valid).toBeFalsy();
+        expect(validateEmail('user@').valid).toBeFalsy();
+        expect(validateEmail('user @example.com').valid).toBeFalsy();
+      });
+
+      it('should reject null or empty emails', () => {
+        expect(validateEmail(null).valid).toBeFalsy();
+        expect(validateEmail('').valid).toBeFalsy();
+        expect(validateEmail(undefined).valid).toBeFalsy();
+      });
+
+      it('should reject non-string inputs', () => {
+        expect(validateEmail(123).valid).toBeFalsy();
+        expect(validateEmail({email: 'test@example.com'}).valid).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 2: Phone Number Validation
+    testSuites.push(describe('Phone Number Validation', () => {
+
+      it('should accept valid E.164 phone numbers', () => {
+        expect(validatePhoneNumber('+15551234567').valid).toBeTruthy();
+        expect(validatePhoneNumber('+447911123456').valid).toBeTruthy();
+        expect(validatePhoneNumber('+61412345678').valid).toBeTruthy();
+      });
+
+      it('should reject phone numbers without + prefix', () => {
+        expect(validatePhoneNumber('15551234567').valid).toBeFalsy();
+        expect(validatePhoneNumber('5551234567').valid).toBeFalsy();
+      });
+
+      it('should reject phone numbers with invalid format', () => {
+        expect(validatePhoneNumber('+1 555 123 4567').valid).toBeFalsy();
+        expect(validatePhoneNumber('+1-555-123-4567').valid).toBeFalsy();
+        expect(validatePhoneNumber('+1(555)1234567').valid).toBeFalsy();
+      });
+
+      it('should reject null or empty phone numbers', () => {
+        expect(validatePhoneNumber(null).valid).toBeFalsy();
+        expect(validatePhoneNumber('').valid).toBeFalsy();
+        expect(validatePhoneNumber(undefined).valid).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 3: Session Token Validation
+    testSuites.push(describe('Session Token Validation', () => {
+
+      it('should accept valid session tokens', () => {
+        expect(validateSessionToken('ws_1234567890_abcdefg').valid).toBeTruthy();
+        expect(validateSessionToken('a'.repeat(50)).valid).toBeTruthy();
+        expect(validateSessionToken('a'.repeat(200)).valid).toBeTruthy();
+      });
+
+      it('should reject tokens that are too short', () => {
+        expect(validateSessionToken('short').valid).toBeFalsy();
+        expect(validateSessionToken('123456789').valid).toBeFalsy();
+      });
+
+      it('should reject tokens that are too long', () => {
+        expect(validateSessionToken('a'.repeat(201)).valid).toBeFalsy();
+        expect(validateSessionToken('a'.repeat(500)).valid).toBeFalsy();
+      });
+
+      it('should reject null or empty tokens', () => {
+        expect(validateSessionToken(null).valid).toBeFalsy();
+        expect(validateSessionToken('').valid).toBeFalsy();
+        expect(validateSessionToken(undefined).valid).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 4: API Key Validation
+    testSuites.push(describe('API Key Validation', () => {
+
+      it('should accept valid OpenAI API keys', () => {
+        expect(validateApiKey('sk-1234567890abcdefghijklmnopqrstuvwxyz', 'OpenAI').valid).toBeTruthy();
+        expect(validateApiKey('sk-proj-abc123xyz789def456', 'OpenAI').valid).toBeTruthy();
+      });
+
+      it('should reject OpenAI keys without sk- prefix', () => {
+        expect(validateApiKey('1234567890abcdefghijklmnopqrstuvwxyz', 'OpenAI').valid).toBeFalsy();
+        expect(validateApiKey('pk-1234567890abcdefghijklmnopqrstuvwxyz', 'OpenAI').valid).toBeFalsy();
+      });
+
+      it('should reject OpenAI keys that are too short', () => {
+        expect(validateApiKey('sk-short', 'OpenAI').valid).toBeFalsy();
+        expect(validateApiKey('sk-12345', 'OpenAI').valid).toBeFalsy();
+      });
+
+      it('should accept valid Twilio credentials', () => {
+        expect(validateApiKey('AC1234567890abcdef1234567890abcd', 'Twilio').valid).toBeTruthy();
+      });
+
+      it('should reject null or empty API keys', () => {
+        expect(validateApiKey(null, 'OpenAI').valid).toBeFalsy();
+        expect(validateApiKey('', 'OpenAI').valid).toBeFalsy();
+        expect(validateApiKey(undefined, 'Twilio').valid).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 5: URL Validation
+    testSuites.push(describe('URL Validation', () => {
+
+      it('should accept valid HTTP/HTTPS URLs', () => {
+        expect(validateURL('https://example.com').valid).toBeTruthy();
+        expect(validateURL('http://localhost:3000').valid).toBeTruthy();
+        expect(validateURL('https://subdomain.example.co.uk/path').valid).toBeTruthy();
+      });
+
+      it('should accept valid WebSocket URLs', () => {
+        expect(validateURL('wss://websocket.example.com').valid).toBeTruthy();
+        expect(validateURL('ws://localhost:8080').valid).toBeTruthy();
+      });
+
+      it('should reject URLs with invalid protocols', () => {
+        expect(validateURL('ftp://example.com').valid).toBeFalsy();
+        expect(validateURL('file:///path/to/file').valid).toBeFalsy();
+        expect(validateURL('javascript:alert(1)').valid).toBeFalsy();
+      });
+
+      it('should reject malformed URLs', () => {
+        expect(validateURL('not-a-url').valid).toBeFalsy();
+        expect(validateURL('htp://example.com').valid).toBeFalsy();
+        expect(validateURL('//example.com').valid).toBeFalsy();
+      });
+
+      it('should reject null or empty URLs', () => {
+        expect(validateURL(null).valid).toBeFalsy();
+        expect(validateURL('').valid).toBeFalsy();
+        expect(validateURL(undefined).valid).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 6: GitHub Repository URL Validation
+    testSuites.push(describe('GitHub Repository URL Validation', () => {
+
+      it('should accept valid GitHub repository URLs', () => {
+        expect(validateGitHubRepoURL('https://github.com/username/repo').valid).toBeTruthy();
+        expect(validateGitHubRepoURL('https://github.com/user-name/repo-name').valid).toBeTruthy();
+        expect(validateGitHubRepoURL('https://github.com/User123/Repo_456').valid).toBeTruthy();
+      });
+
+      it('should reject non-GitHub URLs', () => {
+        expect(validateGitHubRepoURL('https://gitlab.com/username/repo').valid).toBeFalsy();
+        expect(validateGitHubRepoURL('https://bitbucket.org/username/repo').valid).toBeFalsy();
+      });
+
+      it('should reject GitHub URLs with extra paths', () => {
+        expect(validateGitHubRepoURL('https://github.com/username/repo/issues').valid).toBeFalsy();
+        expect(validateGitHubRepoURL('https://github.com/username/repo/tree/main').valid).toBeFalsy();
+      });
+
+      it('should reject malformed GitHub URLs', () => {
+        expect(validateGitHubRepoURL('https://github.com/username').valid).toBeFalsy();
+        expect(validateGitHubRepoURL('https://github.com').valid).toBeFalsy();
+        expect(validateGitHubRepoURL('github.com/username/repo').valid).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 7: System Prompt Validation
+    testSuites.push(describe('System Prompt Validation', () => {
+
+      it('should accept valid system prompts', () => {
+        expect(validateSystemPrompt('You are a helpful assistant.').valid).toBeTruthy();
+        expect(validateSystemPrompt('You are a customer service bot for Acme Corp. Be polite and helpful.').valid).toBeTruthy();
+      });
+
+      it('should reject prompts that are too short', () => {
+        expect(validateSystemPrompt('Short').valid).toBeFalsy();
+        expect(validateSystemPrompt('Hi there').valid).toBeFalsy();
+      });
+
+      it('should reject prompts that are too long', () => {
+        expect(validateSystemPrompt('a'.repeat(5001)).valid).toBeFalsy();
+        expect(validateSystemPrompt('a'.repeat(10000)).valid).toBeFalsy();
+      });
+
+      it('should reject empty or whitespace-only prompts', () => {
+        expect(validateSystemPrompt('').valid).toBeFalsy();
+        expect(validateSystemPrompt('   ').valid).toBeFalsy();
+        expect(validateSystemPrompt('\n\n\n').valid).toBeFalsy();
+      });
+
+      it('should reject null or undefined prompts', () => {
+        expect(validateSystemPrompt(null).valid).toBeFalsy();
+        expect(validateSystemPrompt(undefined).valid).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 8: Tools Array Validation
+    testSuites.push(describe('Tools Array Validation', () => {
+
+      it('should accept valid tools array', () => {
+        const validTools = [
+          {
+            type: 'function',
+            name: 'get_weather',
+            function: {
+              name: 'get_weather',
+              description: 'Get the current weather',
+              parameters: {}
+            }
+          }
+        ];
+        expect(validateToolsArray(validTools).valid).toBeTruthy();
+      });
+
+      it('should accept empty tools array', () => {
+        expect(validateToolsArray([]).valid).toBeTruthy();
+      });
+
+      it('should reject non-array inputs', () => {
+        expect(validateToolsArray(null).valid).toBeFalsy();
+        expect(validateToolsArray('tools').valid).toBeFalsy();
+        expect(validateToolsArray({}).valid).toBeFalsy();
+      });
+
+      it('should reject tools without required fields', () => {
+        const invalidTools = [
+          {
+            // Missing type and name
+            function: { name: 'test', description: 'test' }
+          }
+        ];
+        expect(validateToolsArray(invalidTools).valid).toBeFalsy();
+      });
+
+      it('should reject function tools without function definition', () => {
+        const invalidTools = [
+          {
+            type: 'function',
+            name: 'test'
+            // Missing function object
+          }
+        ];
+        expect(validateToolsArray(invalidTools).valid).toBeFalsy();
+      });
+
+      it('should reject function tools without name or description', () => {
+        const invalidTools = [
+          {
+            type: 'function',
+            name: 'test',
+            function: {
+              name: 'test'
+              // Missing description
+            }
+          }
+        ];
+        expect(validateToolsArray(invalidTools).valid).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 9: Voice Settings Validation
+    testSuites.push(describe('Voice Settings Validation', () => {
+
+      it('should accept valid voice settings', () => {
+        expect(validateVoiceSettings({ speed: 1.0, pitch: 0, volume: 80 }).valid).toBeTruthy();
+        expect(validateVoiceSettings({ speed: 0.5, pitch: -10, volume: 100 }).valid).toBeTruthy();
+        expect(validateVoiceSettings({}).valid).toBeTruthy(); // Empty settings are valid
+      });
+
+      it('should reject invalid speed values', () => {
+        expect(validateVoiceSettings({ speed: 0.4 }).valid).toBeFalsy();
+        expect(validateVoiceSettings({ speed: 2.1 }).valid).toBeFalsy();
+        expect(validateVoiceSettings({ speed: -1 }).valid).toBeFalsy();
+      });
+
+      it('should reject invalid pitch values', () => {
+        expect(validateVoiceSettings({ pitch: -21 }).valid).toBeFalsy();
+        expect(validateVoiceSettings({ pitch: 21 }).valid).toBeFalsy();
+        expect(validateVoiceSettings({ pitch: 100 }).valid).toBeFalsy();
+      });
+
+      it('should reject invalid volume values', () => {
+        expect(validateVoiceSettings({ volume: -1 }).valid).toBeFalsy();
+        expect(validateVoiceSettings({ volume: 101 }).valid).toBeFalsy();
+        expect(validateVoiceSettings({ volume: 200 }).valid).toBeFalsy();
+      });
+
+      it('should reject non-object inputs', () => {
+        expect(validateVoiceSettings(null).valid).toBeFalsy();
+        expect(validateVoiceSettings('settings').valid).toBeFalsy();
+        expect(validateVoiceSettings([]).valid).toBeFalsy();
+      });
+
+    }));
+
+    // Test Suite 10: Input Sanitization
+    testSuites.push(describe('Input Sanitization', () => {
+
+      it('should remove HTML tags from input', () => {
+        expect(sanitizeInput('<script>alert("xss")</script>Hello')).toBe('Hello');
+        expect(sanitizeInput('<p>Test</p>')).toBe('Test');
+        expect(sanitizeInput('<a href="evil.com">Click</a>')).toBe('Click');
+      });
+
+      it('should remove script tags and content', () => {
+        expect(sanitizeInput('Before<script>malicious()</script>After')).toBe('BeforeAfter');
+        expect(sanitizeInput('<script src="evil.js"></script>Text')).toBe('Text');
+      });
+
+      it('should trim whitespace', () => {
+        expect(sanitizeInput('  Hello  ')).toBe('Hello');
+        expect(sanitizeInput('\n\nTest\n\n')).toBe('Test');
+      });
+
+      it('should handle non-string inputs gracefully', () => {
+        expect(sanitizeInput(123)).toBe(123);
+        expect(sanitizeInput(null)).toBe(null);
+        expect(sanitizeInput(undefined)).toBe(undefined);
+      });
+
+      it('should preserve safe text', () => {
+        expect(sanitizeInput('Normal text input')).toBe('Normal text input');
+        expect(sanitizeInput('Email: test@example.com')).toBe('Email: test@example.com');
+      });
+
+    }));
+
+    // Test Suite 11: Step Number Validation
+    testSuites.push(describe('Step Number Validation', () => {
+
+      it('should accept valid step numbers (0-8)', () => {
+        expect(validateStepNumber(0).valid).toBeTruthy();
+        expect(validateStepNumber(4).valid).toBeTruthy();
+        expect(validateStepNumber(8).valid).toBeTruthy();
+      });
+
+      it('should reject negative step numbers', () => {
+        expect(validateStepNumber(-1).valid).toBeFalsy();
+        expect(validateStepNumber(-5).valid).toBeFalsy();
+      });
+
+      it('should reject step numbers greater than 8', () => {
+        expect(validateStepNumber(9).valid).toBeFalsy();
+        expect(validateStepNumber(100).valid).toBeFalsy();
+      });
+
+      it('should reject non-integer values', () => {
+        expect(validateStepNumber(4.5).valid).toBeFalsy();
+        expect(validateStepNumber(1.1).valid).toBeFalsy();
+      });
+
+      it('should reject non-number inputs', () => {
+        expect(validateStepNumber('4').valid).toBeFalsy();
+        expect(validateStepNumber(null).valid).toBeFalsy();
+        expect(validateStepNumber(undefined).valid).toBeFalsy();
+      });
+
+    }));
+
+    // =========================================================================
+    // TEST RUNNER
+    // =========================================================================
+
+    async function runAllTests() {
+      const startTime = Date.now();
+      testResults = [];
+
+      const resultsDiv = document.getElementById('test-results');
+      resultsDiv.innerHTML = '';
+
+      let totalTests = 0;
+      let passedTests = 0;
+      let failedTests = 0;
+
+      for (const suite of testSuites) {
+        const suiteDiv = document.createElement('div');
+        suiteDiv.className = 'test-suite';
+        suiteDiv.innerHTML = `<h2>${suite.name}</h2>`;
+        resultsDiv.appendChild(suiteDiv);
+
+        for (const test of suite.tests) {
+          totalTests++;
+
+          const testDiv = document.createElement('div');
+          testDiv.className = 'test-case running';
+          testDiv.innerHTML = `
+            <div class="test-name">${test.name}</div>
+            <div class="test-result">Running...</div>
+          `;
+          suiteDiv.appendChild(testDiv);
+
+          try {
+            await test.fn();
+            testDiv.className = 'test-case pass';
+            testDiv.querySelector('.test-result').textContent = '✅ PASS';
+            passedTests++;
+            test.status = 'pass';
+            test.suite = suite.name;
+          } catch (error) {
+            testDiv.className = 'test-case fail';
+            testDiv.querySelector('.test-result').innerHTML = `
+              ❌ FAIL
+              <div class="test-error">${error.message}</div>
+            `;
+            failedTests++;
+            test.status = 'fail';
+            test.error = error.message;
+            test.suite = suite.name;
+          }
+
+          testResults.push(test);
+        }
+      }
+
+      const endTime = Date.now();
+      const elapsed = endTime - startTime;
+
+      document.getElementById('total-tests').textContent = totalTests;
+      document.getElementById('passed-tests').textContent = passedTests;
+      document.getElementById('failed-tests').textContent = failedTests;
+      document.getElementById('time-elapsed').textContent = `${elapsed}ms`;
+
+      // Update summary color
+      const summaryDiv = document.getElementById('summary');
+      if (failedTests === 0) {
+        summaryDiv.style.background = '#28a745';
+      } else {
+        summaryDiv.style.background = '#dc3545';
+      }
+    }
+
+    // Generate text summary for copying/pasting
+    function showTextSummary() {
+      if (testResults.length === 0) {
+        alert('Please run tests first!');
+        return;
+      }
+
+      const totalTests = testResults.length;
+      const passedTests = testResults.filter(t => t.status === 'pass').length;
+      const failedTests = testResults.filter(t => t.status === 'fail').length;
+
+      let summary = '🧪 DATA VALIDATION TEST RESULTS\n';
+      summary += '='.repeat(60) + '\n\n';
+      summary += `Total Tests:  ${totalTests}\n`;
+      summary += `Passed:       ${passedTests} ✅\n`;
+      summary += `Failed:       ${failedTests} ❌\n\n`;
+
+      if (failedTests > 0) {
+        summary += '❌ FAILED TESTS:\n';
+        summary += '-'.repeat(60) + '\n\n';
+
+        const suiteMap = {};
+        testResults.forEach(test => {
+          if (test.status === 'fail') {
+            if (!suiteMap[test.suite]) {
+              suiteMap[test.suite] = [];
+            }
+            suiteMap[test.suite].push(test);
+          }
+        });
+
+        Object.keys(suiteMap).forEach(suiteName => {
+          summary += `${suiteName}:\n`;
+          suiteMap[suiteName].forEach(test => {
+            summary += `  ❌ ${test.name}\n`;
+            summary += `     ${test.error}\n\n`;
+          });
+        });
+      } else {
+        summary += '✅ ALL TESTS PASSED!\n';
+      }
+
+      summary += '='.repeat(60);
+
+      // Show in a textarea modal for easy copying
+      const modal = document.createElement('div');
+      modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999;';
+
+      const content = document.createElement('div');
+      content.style.cssText = 'background: white; padding: 30px; border-radius: 8px; max-width: 800px; width: 90%;';
+
+      const title = document.createElement('h2');
+      title.textContent = 'Test Results Summary';
+      title.style.marginTop = '0';
+
+      const textarea = document.createElement('textarea');
+      textarea.value = summary;
+      textarea.style.cssText = 'width: 100%; height: 400px; font-family: monospace; font-size: 0.9em; padding: 15px; border: 1px solid #ccc; border-radius: 4px; margin: 15px 0;';
+      textarea.readOnly = true;
+
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = '📋 Copy to Clipboard';
+      copyBtn.style.cssText = 'background: #0066cc; color: white; border: none; padding: 12px 24px; font-size: 1em; border-radius: 4px; cursor: pointer; margin-right: 10px;';
+      copyBtn.onclick = () => {
+        textarea.select();
+        document.execCommand('copy');
+        copyBtn.textContent = '✅ Copied!';
+        setTimeout(() => { copyBtn.textContent = '📋 Copy to Clipboard'; }, 2000);
+      };
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Close';
+      closeBtn.style.cssText = 'background: #6c757d; color: white; border: none; padding: 12px 24px; font-size: 1em; border-radius: 4px; cursor: pointer;';
+      closeBtn.onclick = () => document.body.removeChild(modal);
+
+      content.appendChild(title);
+      content.appendChild(textarea);
+      content.appendChild(copyBtn);
+      content.appendChild(closeBtn);
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+
+      textarea.select();
+    }
+
+    // Auto-run tests on page load
+    window.addEventListener('load', () => {
+      setTimeout(() => runAllTests(), 500);
+    });
+  </script>
+</body>
+</html>
