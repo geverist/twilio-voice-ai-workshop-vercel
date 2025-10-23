@@ -288,20 +288,31 @@ export default async function handler(req, res) {
           if (configColumnNames.includes('project_deployed')) configSelectColumns.push('project_deployed');
 
           if (configSelectColumns.length > 0 || configConditionalSelections.length > 0) {
+            // Build dynamic SELECT for workshop_students columns that actually exist
+            const wsSelectColumns = ['ws.session_token', 'ws.student_email'];
+            if (columnNames.includes('student_name')) wsSelectColumns.push('ws.student_name');
+            if (columnNames.includes('created_at')) wsSelectColumns.push('ws.created_at');
+            if (columnNames.includes('updated_at')) wsSelectColumns.push('ws.updated_at');
+            if (columnNames.includes('demo_mode')) wsSelectColumns.push('ws.demo_mode');
+            if (columnNames.includes('selected_phone_number')) wsSelectColumns.push('ws.selected_phone_number');
+            if (columnNames.includes('selected_voice')) wsSelectColumns.push('ws.selected_voice');
+            if (columnNames.includes('tts_provider')) wsSelectColumns.push('ws.tts_provider');
+
+            const wsConditionalSelections = [];
+            if (columnNames.includes('openai_api_key')) {
+              wsConditionalSelections.push('CASE WHEN ws.openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key');
+            }
+            if (columnNames.includes('system_prompt')) {
+              wsConditionalSelections.push('CASE WHEN ws.system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt');
+            }
+            if (columnNames.includes('tools')) {
+              wsConditionalSelections.push("CASE WHEN ws.tools IS NOT NULL AND ws.tools::text != '[]' THEN true ELSE false END as has_tools");
+            }
+
             const joinQuery = `
               SELECT
-                ws.session_token,
-                ws.student_email,
-                ws.student_name,
-                ws.selected_phone_number,
-                ws.selected_voice,
-                ws.tts_provider,
-                ws.created_at,
-                ws.updated_at,
-                ws.demo_mode,
-                CASE WHEN ws.openai_api_key IS NOT NULL THEN true ELSE false END as has_api_key,
-                CASE WHEN ws.system_prompt IS NOT NULL THEN true ELSE false END as has_system_prompt,
-                CASE WHEN ws.tools IS NOT NULL AND ws.tools::text != '[]' THEN true ELSE false END as has_tools
+                ${wsSelectColumns.join(', ')}
+                ${wsConditionalSelections.length > 0 ? ', ' + wsConditionalSelections.join(', ') : ''}
                 ${configSelectColumns.length > 0 ? ', sc.' + configSelectColumns.join(', sc.') : ''}
                 ${configConditionalSelections.length > 0 ? ', ' + configConditionalSelections.join(', ') : ''}
               FROM workshop_students ws
