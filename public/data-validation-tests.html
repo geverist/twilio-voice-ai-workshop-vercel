@@ -277,7 +277,7 @@
     }
 
     function validateVoiceSettings(settings) {
-      if (!settings || typeof settings !== 'object') {
+      if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
         return { valid: false, error: 'Voice settings must be an object' };
       }
 
@@ -307,14 +307,14 @@
         return input;
       }
 
-      // Remove HTML tags
-      const withoutTags = input.replace(/<[^>]*>/g, '');
+      // First remove script tags AND their content (simple greedy match)
+      let sanitized = input.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '');
 
-      // Remove script content
-      const withoutScripts = withoutTags.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+      // Then remove all remaining HTML tags
+      sanitized = sanitized.replace(/<[^>]*>/g, '');
 
       // Trim whitespace
-      return withoutScripts.trim();
+      return sanitized.trim();
     }
 
     function validateStepNumber(step) {
