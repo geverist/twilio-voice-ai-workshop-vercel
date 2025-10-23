@@ -30,11 +30,14 @@ function getEncryptionKey() {
     throw new Error('ENCRYPTION_KEY environment variable not set. Generate with: node -e "console.log(crypto.randomBytes(32).toString(\'hex\'))"');
   }
 
-  if (key.length !== 64) {
-    throw new Error('ENCRYPTION_KEY must be 64 hex characters (32 bytes). Generate with: node -e "console.log(crypto.randomBytes(32).toString(\'hex\'))"');
+  // Trim whitespace and newlines
+  const trimmedKey = key.trim();
+
+  if (trimmedKey.length !== 64) {
+    throw new Error(`ENCRYPTION_KEY must be 64 hex characters (32 bytes). Current length: ${trimmedKey.length}. Generate with: node -e "console.log(crypto.randomBytes(32).toString('hex'))"`);
   }
 
-  return Buffer.from(key, 'hex');
+  return Buffer.from(trimmedKey, 'hex');
 }
 
 /**
