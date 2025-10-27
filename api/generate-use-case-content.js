@@ -53,19 +53,17 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: `You are a helpful assistant that generates customized content for a Twilio Voice AI workshop.
-The workshop teaches developers how to build voice AI applications with Twilio ConversationRelay and OpenAI.
-Based on the user's use case description, generate relevant examples, prompt suggestions, and IVR greetings.
-Return your response as valid JSON only, with no markdown formatting or code blocks.`
+            content: `You are a system prompt generator for voice AI applications. You MUST follow the template structure exactly. Your job is to take a user's use case and customize ONLY the role description and example interactions while keeping all the guidelines and sections identical to the template.`
           },
           {
             role: 'user',
-            content: `The student wants to build: "${useCaseDescription}"
+            content: `Generate a system prompt for this use case: "${useCaseDescription}"
 Call direction: ${callDirection}
 
-Generate a "systemPrompt" that follows this EXACT structure but customized for their use case:
+You MUST use this EXACT template structure. Copy ALL sections and guidelines word-for-word. ONLY customize the parts in [brackets]:
 
-You are a helpful assistant [describe their specific role based on the use case].
+---TEMPLATE START---
+You are a helpful assistant [CUSTOMIZE THIS: describe their specific role based on: ${useCaseDescription}].
 
 # Voice Conversation Guidelines
 - Keep responses BRIEF (1-2 sentences max)
@@ -84,32 +82,34 @@ You are a helpful assistant [describe their specific role based on the use case]
 # Example Interactions
 
 GOOD Response:
-User: [example question relevant to their use case]
-You: [brief 1-2 sentence response]
+User: [CUSTOMIZE: Create a realistic question for this use case: ${useCaseDescription}]
+You: [CUSTOMIZE: 1-2 sentence brief response]
 
 BAD Response (too long):
-User: [same question]
-You: [verbose multi-sentence response showing what NOT to do]
+User: [SAME question as above]
+You: [CUSTOMIZE: Verbose 4-5 sentence response showing what NOT to do]
 
 Remember: In voice conversations, brevity is key. Keep it natural and conversational.
+---TEMPLATE END---
 
-IMPORTANT INSTRUCTIONS:
-- Keep the EXACT section headings: "# Voice Conversation Guidelines", "# Response Style", "# Example Interactions"
-- Keep the same guidelines bullet points word-for-word
-- ONLY customize: the opening line, and the example User/You interactions to match their use case
-- Make the examples realistic and specific to what they described
-- Show contrast between brief (GOOD) and verbose (BAD) responses
+CRITICAL REQUIREMENTS:
+- Copy the EXACT section headings: "# Voice Conversation Guidelines", "# Response Style", "# Example Interactions"
+- Copy ALL bullet points under "Voice Conversation Guidelines" word-for-word
+- Copy ALL bullet points under "Response Style" word-for-word
+- Keep "GOOD Response:" and "BAD Response (too long):" labels exactly as shown
+- Keep the final "Remember:" line exactly as shown
+- ONLY customize: opening role description and the example User/You interactions
 
 Also generate:
-2. "ivrGreeting": A friendly greeting message for the ${callDirection} call (1-2 sentences)
-3. "exampleQuestions": Array of 3-4 example questions/scenarios users might encounter
-4. "suggestedVoice": Recommended voice type
+- "ivrGreeting": Friendly ${callDirection} greeting (1-2 sentences)
+- "exampleQuestions": Array of 3-4 realistic questions
+- "suggestedVoice": Voice type recommendation
 
-Return ONLY valid JSON with these keys (systemPrompt, ivrGreeting, exampleQuestions, suggestedVoice). No markdown.`
+Return ONLY valid JSON: {"systemPrompt": "...", "ivrGreeting": "...", "exampleQuestions": [...], "suggestedVoice": "..."}`
           }
         ],
-        temperature: 0.7,
-        max_tokens: 1000
+        temperature: 0.3,
+        max_tokens: 1500
       })
     });
 
