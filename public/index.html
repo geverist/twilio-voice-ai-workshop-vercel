@@ -3833,6 +3833,12 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
         // Show loading state
         showStatus('step2Status', 'info', '🤖 Generating custom content with AI... This may take a few seconds.');
         console.log('🤖 Generating custom content for use case...');
+        console.log('📊 API Call Details:', {
+          useCaseDescription: useCaseDescription.substring(0, 100),
+          callDirection,
+          hasOpenAIKey: !!openaiApiKey,
+          openaiKeyPrefix: openaiApiKey?.substring(0, 7)
+        });
 
         const response = await fetch('/api/generate-use-case-content', {
           method: 'POST',
@@ -3846,9 +3852,12 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
           })
         });
 
+        console.log('📡 API Response Status:', response.status, response.statusText);
+
         if (!response.ok) {
           const error = await response.json();
           console.error('❌ Failed to generate content:', error);
+          console.error('❌ Full error details:', JSON.stringify(error, null, 2));
 
           // Fallback: Use template-based content when API fails
           const roleDescription = callDirection === 'inbound'
@@ -3908,7 +3917,9 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
         generatedContent = data.content;
         saveProgressToStorage();
 
-        console.log('✅ Generated content:', generatedContent);
+        console.log('✅ Generated content successfully!');
+        console.log('📝 System Prompt Preview:', generatedContent.systemPrompt?.substring(0, 200) + '...');
+        console.log('👋 IVR Greeting:', generatedContent.ivrGreeting);
         console.log(`📊 Used ${data.usageTokens} tokens`);
 
         // Show success message with token usage
