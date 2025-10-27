@@ -5979,7 +5979,6 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
                 <input
                   type="checkbox"
                   id="enableWelcomeGreeting"
-                  checked
                   onchange="toggleWelcomeGreeting()"
                   style="width: 20px; height: 20px; margin-right: 12px; cursor: pointer;"
                 />
@@ -5990,7 +5989,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
               </p>
             </div>
 
-            <div id="greetingInputSection" style="margin-top: 15px;">
+            <div id="greetingInputSection" style="margin-top: 15px; display: none;">
               <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #0d122b;">
                 Greeting Message
               </label>
@@ -6006,7 +6005,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
               </p>
             </div>
 
-            <div id="noGreetingNotice" style="display: none; margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+            <div id="noGreetingNotice" style="margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
               <p style="margin: 0; color: #856404; font-size: 14px;">
                 <strong>ℹ️ No Greeting Mode:</strong> The AI will remain silent and wait for the caller to speak first. This is useful for inbound calls where the caller already knows why they're calling.
               </p>
