@@ -846,8 +846,11 @@
         <button class="btn-icon" onclick="saveProgress()">💾 Save Progress</button>
         <button class="btn-icon" onclick="loadProgress()">📂 Load Progress</button>
         <button class="btn-icon" onclick="exportProject()">📦 Export Project</button>
+        <button class="btn-icon" onclick="openUseCases()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">🎯 Use Cases</button>
       </div>
       <div class="toolbar-right">
+        <button class="btn-icon" onclick="openConversationHistory()" title="View your conversation history">💬 History</button>
+        <button class="btn-icon" onclick="openVXMLConverter()" title="Convert VXML IVR to AI prompt">🔄 VXML</button>
         <button class="btn-icon" disabled style="opacity: 0.5; cursor: not-allowed; background: #2c313c; color: #666;" title="Collaborate With Your Team">👥 Collaborate</button>
         <button class="btn-icon" onclick="openPlayground()">🎓 What is CR?</button>
         <button class="btn-icon" onclick="toggleDebugger()">🐛 Debugger</button>
@@ -1212,10 +1215,15 @@
     // Railway variables
     let railwayToken = null; // Railway API token
     let railwayProjectId = null; // Railway project ID
+    let railwayUrl = ''; // Railway deployment URL
+
+    // GitHub variables
+    let githubRepoUrl = ''; // GitHub repository URL
 
     // Session token for identifying student across requests (works for both live and demo mode)
     let sessionToken = localStorage.getItem('sessionToken') || null;
     let ttsProvider = 'elevenlabs'; // Default TTS provider
+    let voiceLanguage = 'en-US'; // Default voice language
     let elevenlabsApiKey = null; // For ElevenLabs TTS
     let conversationRelayVoice = null; // Selected voice for ConversationRelay
     let ciServiceSid = null; // Conversational Intelligence service (silent background setup)
@@ -1472,10 +1480,29 @@
 
         case 2: // currentStep 2 = Step 3: Services
           if (!selectedPhoneNumber) {
+            // First priority: Select a phone number
             targetSelector = '.phone-option';
           } else if (!servicesReady) {
-            targetSelector = '[onclick*="createMessagingService"]';
-          } else {
+            // Phone selected but services not ready - highlight service creation
+            // Check what's missing: messaging service or sync service
+            const messagingCard = document.querySelector('.service-card:nth-child(2) .service-status span');
+            const hasMessaging = messagingCard && messagingCard.textContent.includes('✅');
+
+            if (!hasMessaging) {
+              // Need to create messaging service
+              targetSelector = '[onclick*="createMessagingService"]';
+            } else {
+              // Messaging is ready, must need Sync (or skip)
+              const syncCard = document.querySelector('.service-card:nth-child(3) .service-status span');
+              const hasSync = syncCard && syncCard.textContent.includes('✅');
+
+              if (!hasSync && !syncServiceSkipped) {
+                // Highlight either provision or skip sync button
+                targetSelector = '[onclick*="provisionSync"]';
+              }
+            }
+          } else if (servicesReady && selectedPhoneNumber) {
+            // Everything ready - highlight next button
             targetSelector = '#nextBtn3';
           }
           break;
@@ -2008,6 +2035,11 @@
     }
 
     function restoreButtonStates() {
+      // Clear all next-action highlights first to prevent duplicates
+      document.querySelectorAll('.next-action').forEach(el => {
+        el.classList.remove('next-action');
+      });
+
       // Step 1: Enable next button if both Twilio and OpenAI are connected
       if (currentStep === 0 && twilioConnected && openaiConnected) {
         const nextBtn1 = document.getElementById('nextBtn1');
@@ -2612,6 +2644,11 @@
             if (ttsSelect) ttsSelect.value = ttsProvider;
             if (voiceSelect && conversationRelayVoice) voiceSelect.value = conversationRelayVoice;
 
+            // Update TTS provider display to match default selection
+            if (typeof saveTTSProvider === 'function') {
+              saveTTSProvider();
+            }
+
             // Auto-update code with preset settings
             updateConversationRelayCode();
           }, 0);
@@ -2696,14 +2733,16 @@
           nextButton = document.getElementById('nextBtn1');
         }
       } else if (currentStep === 1) {
-        // Step 2: Direction - highlight selection
-        const selectedDirection = document.querySelector('input[name="direction"]:checked');
-        if (!selectedDirection) {
-          // Highlight first option to get them started
-          const firstOption = document.querySelector('.direction-option');
-          if (firstOption) firstOption.classList.add('next-action');
-        } else {
+        // Step 2: Use Case - check if both use case and direction are provided
+        if (useCaseDescription && useCaseDescription.trim() && callDirectionChosen) {
+          // Both requirements met - highlight Next button
           nextButton = document.getElementById('nextBtn2');
+        } else if (!useCaseDescription || !useCaseDescription.trim()) {
+          // Need use case description - highlight the textarea
+          nextButton = document.getElementById('useCaseDescription');
+        } else if (!callDirectionChosen) {
+          // Have description, need direction - highlight outbound card
+          nextButton = document.getElementById('outboundCard');
         }
       } else if (currentStep === 2) {
         // Step 3: Services - guide through phone → messaging → sync/skip → next
@@ -2731,6 +2770,22 @@
           // All services ready - highlight Next button
           nextButton = document.getElementById('nextBtn3');
         }
+      } else if (currentStep === 4) {
+        // Step 5: WebSocket Handler - uses validateCode7, deployCodespaceBtn5, nextBtn7
+        const validateBtn = document.querySelector('[onclick="validateCode7()"]');
+        const deployBtn = document.getElementById('deployCodespaceBtn5');
+        const nextBtn = document.getElementById('nextBtn7');
+
+        if (nextBtn && !nextBtn.disabled) {
+          // Already deployed - highlight next button
+          nextButton = nextBtn;
+        } else if (step5CodeValidated && deployBtn && !deployBtn.disabled) {
+          // Code validated, ready to deploy - highlight deploy button
+          nextButton = deployBtn;
+        } else if (validateBtn && !validateBtn.disabled) {
+          // Need to validate first - highlight validate button
+          nextButton = validateBtn;
+        }
       } else if (currentStep === 5) {
         // Step 6: ConversationRelay - uses validateCode8, commitStep6Btn, nextBtn8
         const validateBtn = document.querySelector('[onclick="validateCode8()"]');
@@ -2747,8 +2802,9 @@
           // Need to validate first - highlight validate button
           nextButton = validateBtn;
         }
-      } else if (currentStep >= 3 && currentStep <= 7) {
-        // Code editing steps - highlight based on validation state
+      } else if (currentStep === 3 || currentStep === 6 || currentStep === 7) {
+        // Code editing steps (4, 7, 8) - highlight based on validation state
+        // Note: Steps 5 and 6 (currentStep 4 and 5) have special handling above
         const stepNum = currentStep + 1;
         const testBtn = document.querySelector(`[onclick*="testCode${stepNum}"]`);
         const nextBtn = document.getElementById(`nextBtn${stepNum}`);
@@ -3449,6 +3505,11 @@
       if (twilioConnected && !openaiConnected) {
         // Twilio is connected but OpenAI is not - highlight OpenAI button
         setTimeout(() => {
+          // Clear all existing next-action highlights first
+          document.querySelectorAll('.next-action').forEach(el => {
+            el.classList.remove('next-action');
+          });
+
           const connectOpenAIBtn = document.querySelector('[onclick*="connectOpenAI"]');
           if (connectOpenAIBtn) {
             connectOpenAIBtn.classList.add('next-action');
@@ -3504,6 +3565,11 @@
             // Don't block progress - just log the error
           }
         }
+
+        // Clear all existing next-action highlights first
+        document.querySelectorAll('.next-action').forEach(el => {
+          el.classList.remove('next-action');
+        });
 
         const nextBtn = document.getElementById('nextBtn1');
         if (nextBtn) {
@@ -3630,6 +3696,11 @@
         const nextBtn = document.getElementById('nextBtn2');
         if (nextBtn) {
           if (useCaseDescription && callDirectionChosen) {
+            // Clear all existing next-action highlights first
+            document.querySelectorAll('.next-action').forEach(el => {
+              el.classList.remove('next-action');
+            });
+
             nextBtn.disabled = false;
             nextBtn.classList.add('next-action'); // Add glow effect
             console.log('✅ Next button enabled (use case + direction selected)');
@@ -3779,12 +3850,58 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
           const error = await response.json();
           console.error('❌ Failed to generate content:', error);
 
+          // Fallback: Use template-based content when API fails
+          const roleDescription = callDirection === 'inbound'
+            ? `helping customers who call about: ${useCaseDescription}`
+            : `making calls to users for: ${useCaseDescription}`;
+
+          generatedContent = {
+            systemPrompt: `You are a helpful assistant ${roleDescription}.
+
+# Voice Conversation Guidelines
+- Keep responses BRIEF (1-2 sentences max)
+- Be conversational and natural
+- Avoid lists, bullet points, or structured formatting
+- Don't say "as an AI" or mention you're artificial
+- If you don't know something, say so briefly
+- Respond quickly - every second matters in voice
+- Use casual language, contractions, and natural speech patterns
+
+# Response Style
+- Short and direct
+- Friendly but professional
+- Natural and human-like
+
+# Example Interactions
+
+GOOD Response:
+User: "Can you help me with this?"
+You: "Of course! What would you like help with?"
+
+BAD Response (too long):
+User: "Can you help me with this?"
+You: "I'd be absolutely delighted to help you with whatever you need assistance with today. I have a wide range of capabilities and knowledge at my disposal, so please feel free to ask me anything and I'll do my very best to provide you with the most comprehensive and helpful answer possible."
+
+Remember: In voice conversations, brevity is key. Keep it natural and conversational.`,
+            ivrGreeting: callDirection === 'inbound'
+              ? `Hi! Thanks for calling. I'm here to help with ${useCaseDescription}. How can I assist you?`
+              : `Hello! I'm calling about ${useCaseDescription}. Do you have a moment to chat?`,
+            exampleQuestions: [
+              `How can I help with ${useCaseDescription}?`,
+              'Can you tell me more about what you need?',
+              'What specific aspect would you like to know about?'
+            ],
+            suggestedVoice: 'friendly'
+          };
+
+          saveProgressToStorage();
+
           // Show user-friendly error message
           showStatus('step2Status', 'warning',
-            '⚠️ AI content generation failed. Using default workshop content instead. ' +
+            '⚠️ AI content generation failed. Using template-based content instead. ' +
             (error.error ? `(${error.error})` : '')
           );
-          return false;
+          return true; // Return true since we have fallback content
         }
 
         const data = await response.json();
@@ -3811,11 +3928,57 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
       } catch (error) {
         console.error('❌ Error generating content:', error);
 
+        // Fallback: Use template-based content when API fails
+        const roleDescription = callDirection === 'inbound'
+          ? `helping customers who call about: ${useCaseDescription}`
+          : `making calls to users for: ${useCaseDescription}`;
+
+        generatedContent = {
+          systemPrompt: `You are a helpful assistant ${roleDescription}.
+
+# Voice Conversation Guidelines
+- Keep responses BRIEF (1-2 sentences max)
+- Be conversational and natural
+- Avoid lists, bullet points, or structured formatting
+- Don't say "as an AI" or mention you're artificial
+- If you don't know something, say so briefly
+- Respond quickly - every second matters in voice
+- Use casual language, contractions, and natural speech patterns
+
+# Response Style
+- Short and direct
+- Friendly but professional
+- Natural and human-like
+
+# Example Interactions
+
+GOOD Response:
+User: "Can you help me with this?"
+You: "Of course! What would you like help with?"
+
+BAD Response (too long):
+User: "Can you help me with this?"
+You: "I'd be absolutely delighted to help you with whatever you need assistance with today. I have a wide range of capabilities and knowledge at my disposal, so please feel free to ask me anything and I'll do my very best to provide you with the most comprehensive and helpful answer possible."
+
+Remember: In voice conversations, brevity is key. Keep it natural and conversational.`,
+          ivrGreeting: callDirection === 'inbound'
+            ? `Hi! Thanks for calling. I'm here to help with ${useCaseDescription}. How can I assist you?`
+            : `Hello! I'm calling about ${useCaseDescription}. Do you have a moment to chat?`,
+          exampleQuestions: [
+            `How can I help with ${useCaseDescription}?`,
+            'Can you tell me more about what you need?',
+            'What specific aspect would you like to know about?'
+          ],
+          suggestedVoice: 'friendly'
+        };
+
+        saveProgressToStorage();
+
         // Show user-friendly error message
         showStatus('step2Status', 'warning',
-          '⚠️ AI content generation failed. Using default workshop content instead. Check your internet connection and OpenAI API key.'
+          '⚠️ AI content generation failed. Using template-based content instead. Check your internet connection and OpenAI API key.'
         );
-        return false;
+        return true; // Return true since we have fallback content
       }
     }
 
@@ -3843,6 +4006,11 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
         if (nextBtn) {
           // Only enable if use case description is also provided
           if (useCaseDescription && useCaseDescription.trim()) {
+            // Clear all existing next-action highlights first
+            document.querySelectorAll('.next-action').forEach(el => {
+              el.classList.remove('next-action');
+            });
+
             nextBtn.disabled = false;
             nextBtn.classList.add('next-action'); // Add glow effect
             console.log('✅ Next button enabled for call direction:', direction);
@@ -4179,10 +4347,11 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
           const nextBtn3 = document.getElementById('nextBtn3');
           if (nextBtn3) {
             nextBtn3.disabled = false;
-            nextBtn3.classList.add('next-action'); // Add glow effect
           }
           showStatus('step3Status', 'success', '🎉 All required services are ready!');
           updateProgressBar();
+          // Let highlightNextAction() determine if this button should have next-action
+          highlightNextAction();
         } else if (hasPhone) {
           showStatus('step3Status', 'info', 'ℹ️ Please select a phone number or purchase a new one to continue.');
         }
@@ -4210,10 +4379,11 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
           const nextBtn3 = document.getElementById('nextBtn3');
           if (nextBtn3) {
             nextBtn3.disabled = false;
-            nextBtn3.classList.add('next-action'); // Add glow effect
           }
           showStatus('step3Status', 'success', '🎉 All required services are ready!');
           updateProgressBar();
+          // Let highlightNextAction() determine if this button should have next-action
+          highlightNextAction();
         }
       } else {
         selectedPhoneNumber = null;
@@ -4897,7 +5067,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
             <div id="commitStep4Status" style="margin-top: 15px;"></div>
           </div>
 
-          <div id="step4TestSection" class="service-card" style="margin-top: 20px; background: linear-gradient(135deg, #98c379 0%, #2c313c 100%); display: ${step4Deployed ? 'block' : 'none'};">
+          <div id="step4TestSection" class="service-card" style="margin-top: 20px; background: linear-gradient(135deg, #98c379 0%, #2c313c 100%); display: none;">
             ${isOutbound ? `
               <h4 style="color: white; margin-bottom: 15px;">📞 Test Your IVR Live!</h4>
               <p style="color: #e5e5e5; margin-bottom: 10px;">
@@ -4914,7 +5084,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
                        style="width: 100%; padding: 12px; background: #2c313c; color: #abb2bf; border: 1px solid #3e4451; border-radius: 4px; font-size: 14px;">
                 <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Enter YOUR number to receive the test call</p>
               </div>
-              <button class="btn btn-primary next-action" id="makeLiveTestCallBtn" onclick="makeLiveTestCall()" style="width: 100%; background: white; color: #2c313c; font-weight: 600;">
+              <button class="btn btn-primary" id="makeLiveTestCallBtn" onclick="makeLiveTestCall()" style="width: 100%; background: white; color: #2c313c; font-weight: 600;">
                 📞 Make Live Test Call
               </button>
               <div id="liveTestStatus" style="margin-top: 15px;"></div>
@@ -4938,7 +5108,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
                   📋 Copy Number
                 </button>
               </div>
-              <button class="btn btn-primary next-action" id="monitorInboundCallsBtn" onclick="monitorInboundCalls()" style="width: 100%; background: white; color: #2c313c; font-weight: 600;">
+              <button class="btn btn-primary" id="monitorInboundCallsBtn" onclick="monitorInboundCalls()" style="width: 100%; background: white; color: #2c313c; font-weight: 600;">
                 🔍 Monitor for Incoming Calls
               </button>
               <div id="inboundTestStatus" style="margin-top: 15px;"></div>
@@ -5167,14 +5337,19 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
           // (Test section will show after deployment via step4Deployed flag)
           if (deploySection) deploySection.style.display = 'block';
 
-          // Move next-action effect from Validate button to Commit button
+          // Clear all existing next-action highlights first
+          document.querySelectorAll('.next-action').forEach(el => {
+            el.classList.remove('next-action');
+          });
+
+          // Disable the validate button
           const validateBtn = document.querySelector('[onclick="validateCode4()"]');
           if (validateBtn) {
-            validateBtn.classList.remove('next-action');
             validateBtn.disabled = true;
             validateBtn.style.opacity = '0.5';
           }
 
+          // Add next-action to commit button
           const commitBtn = document.getElementById('commitStep4Btn');
           if (commitBtn) commitBtn.classList.add('next-action');
 
@@ -5367,14 +5542,16 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
           // Mark test as completed and enable Next button
           step4LiveTestCompleted = true;
+
+          // Clear all highlights first
+          clearHighlights();
+
+          // Then add next-action to Next button
           const nextBtn = document.getElementById('nextBtn4');
           if (nextBtn) {
             nextBtn.disabled = false;
             nextBtn.classList.add('next-action'); // Move effect to Next button
           }
-
-          // Remove effect from test button
-          clearHighlights();
 
           // Update progress
           saveProgressToStorage();
@@ -5425,14 +5602,16 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
           // Mark test as completed and enable Next button
           step4LiveTestCompleted = true;
+
+          // Clear all highlights first
+          clearHighlights();
+
+          // Then add next-action to Next button
           const nextBtn = document.getElementById('nextBtn4');
           if (nextBtn) {
             nextBtn.disabled = false;
             nextBtn.classList.add('next-action'); // Move effect to Next button
           }
-
-          // Remove effect from test button
-          clearHighlights();
 
           // Update progress
           saveProgressToStorage();
@@ -5478,14 +5657,16 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
           // Mark test as completed
           step4LiveTestCompleted = true;
+
+          // Clear all highlights first
+          clearHighlights();
+
+          // Then add next-action to Next button
           const nextBtn = document.getElementById('nextBtn4');
           if (nextBtn) {
             nextBtn.disabled = false;
             nextBtn.classList.add('next-action'); // Move effect to Next button
           }
-
-          // Remove effect from test button
-          clearHighlights();
 
           saveProgressToStorage();
           updateProgressBar();
@@ -5548,14 +5729,16 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
             // Mark test as completed
             step4LiveTestCompleted = true;
+
+            // Clear all highlights first
+            clearHighlights();
+
+            // Then add next-action to Next button
             const nextBtn = document.getElementById('nextBtn4');
             if (nextBtn) {
               nextBtn.disabled = false;
               nextBtn.classList.add('next-action'); // Move effect to Next button
             }
-
-            // Remove effect from test button
-            clearHighlights();
 
             saveProgressToStorage();
             updateProgressBar();
@@ -5758,7 +5941,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
             </div>
 
             <div class="button-group" style="margin-top: 15px;">
-              <button class="btn btn-success next-action" onclick="saveSystemPrompt()">💾 Save Prompt</button>
+              <button class="btn btn-success" onclick="saveSystemPrompt()">💾 Save Prompt</button>
               <button class="btn btn-primary" onclick="scoreSystemPrompt()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">📊 Score This Prompt</button>
             </div>
 
@@ -6052,26 +6235,23 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
       showStatus('systemPromptStatus', 'success', '✅ System prompt saved! Deploy it below or skip to next step.');
       saveProgressToStorage();
 
-      // Move next-action effect from Save Prompt button to Commit button
-      const saveBtn = document.querySelector('[onclick="saveSystemPrompt()"]');
-      if (saveBtn) {
-        saveBtn.classList.remove('next-action');
-      }
+      // Clear all existing next-action highlights first
+      document.querySelectorAll('.next-action').forEach(el => {
+        el.classList.remove('next-action');
+      });
 
       // Enable Next button immediately - deployment is optional
       const nextBtn = document.getElementById('nextBtn9');
-      if (nextBtn) nextBtn.disabled = false;
+      if (nextBtn) {
+        nextBtn.disabled = false;
+        // Add next-action to Next button since it's the recommended next step
+        nextBtn.classList.add('next-action');
+      }
 
-      // Show the deploy section and add next-action to Commit button
+      // Show the deploy section (but don't highlight commit button - next button is better choice)
       const deploySection = document.getElementById('step7DeploySection');
       if (deploySection) {
         deploySection.style.display = 'block';
-
-        // Add next-action to Commit button
-        const commitBtn = document.getElementById('commitStep7Btn');
-        if (commitBtn) {
-          commitBtn.classList.add('next-action');
-        }
 
         setTimeout(() => {
           deploySection.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -8052,108 +8232,143 @@ case 'send_whatsapp':
             ` : ''}
           </div>
 
-          <!-- Dynamic Admin Panel Based on Use Case -->
-          <div class="service-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin: 30px 0;">
-            <h3 style="color: white; margin: 0 0 15px 0;">📊 Your AI Admin Dashboard</h3>
+          <!-- View Conversation History -->
+          <div class="service-card" style="background: linear-gradient(135deg, #4fc1ff 0%, #1a73e8 100%); color: white;">
+            <h3 style="color: white; margin-bottom: 15px;">💬 Review Your Conversations</h3>
             <p style="color: rgba(255,255,255,0.95); margin-bottom: 20px; line-height: 1.6;">
-              ${useCaseDescription ?
-                `Based on your use case: "<em>${useCaseDescription.substring(0, 100)}${useCaseDescription.length > 100 ? '...' : ''}</em>"` :
-                'Manage and monitor your Voice AI system'}
+              View full transcripts of all your AI phone calls. See what users asked, how your AI responded, and identify areas for improvement.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 15px; border-radius: 8px;">
+                <div style="font-size: 28px; margin-bottom: 8px;">📊</div>
+                <h4 style="color: white; margin: 0 0 8px 0;">Call Analytics</h4>
+                <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 0;">Track call volume, duration, and turn counts</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 15px; border-radius: 8px;">
+                <div style="font-size: 28px; margin-bottom: 8px;">💬</div>
+                <h4 style="color: white; margin: 0 0 8px 0;">Full Transcripts</h4>
+                <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 0;">Read every message exchanged during calls</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 15px; border-radius: 8px;">
+                <div style="font-size: 28px; margin-bottom: 8px;">🔍</div>
+                <h4 style="color: white; margin: 0 0 8px 0;">Debug & Improve</h4>
+                <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 0;">Find issues and refine your AI prompts</p>
+              </div>
+            </div>
+            <button class="btn" onclick="openConversationHistory()" style="width: 100%; padding: 15px; font-size: 16px; font-weight: 600; background: white; color: #1a73e8;">
+              📖 View All Conversations →
+            </button>
+            <div style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 13px;">
+              💡 <strong>Pro Tip:</strong> Review conversations after test calls to see exactly how your AI responded. Use this to refine your system prompt and improve responses!
+            </div>
+          </div>
+
+          <!-- Hero Section: Your AI Admin Dashboard -->
+          <div style="margin: 40px 0; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; text-align: center; border: 3px solid #5a67d8; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
+            <div style="font-size: 72px; margin-bottom: 20px;">🚀</div>
+            <h2 style="color: white; margin: 0 0 15px 0; font-size: 2rem;">You've Built a Production-Ready Voice AI Platform</h2>
+            <p style="color: rgba(255,255,255,0.95); font-size: 1.1rem; margin: 0 0 30px 0; line-height: 1.8; max-width: 800px; margin-left: auto; margin-right: auto;">
+              Unlike platforms like Retell.ai or Vapi that lock you into their ecosystem, you <strong>own this entire stack</strong>.
+              Manage everything from your admin dashboard - switch AI providers, change voices, update prompts, and configure
+              ConversationRelay settings - all without vendor lock-in.
             </p>
 
-            <div id="adminPanelContent" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+            <button
+              class="btn"
+              onclick="openAdminPanel()"
+              style="font-size: 1.3rem; padding: 20px 50px; background: white; color: #667eea; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.3); transition: transform 0.2s, box-shadow 0.2s;"
+              onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.4)'"
+              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'">
+              📊 Open Your Admin Dashboard →
+            </button>
+
+            <div style="margin-top: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 900px; margin-left: auto; margin-right: auto;">
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);">
+                <div style="font-size: 32px; margin-bottom: 10px;">🤖</div>
+                <h4 style="color: white; margin: 0 0 8px 0; font-size: 1rem;">AI Configuration</h4>
+                <p style="color: rgba(255,255,255,0.85); font-size: 13px; margin: 0;">Switch between OpenAI, Claude, Gemini - you choose</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);">
+                <div style="font-size: 32px; margin-bottom: 10px;">🔊</div>
+                <h4 style="color: white; margin: 0 0 8px 0; font-size: 1rem;">Voice Control</h4>
+                <p style="color: rgba(255,255,255,0.85); font-size: 13px; margin: 0;">Select from ElevenLabs, Google, Deepgram, or Amazon</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);">
+                <div style="font-size: 32px; margin-bottom: 10px;">📝</div>
+                <h4 style="color: white; margin: 0 0 8px 0; font-size: 1rem;">Live Prompts</h4>
+                <p style="color: rgba(255,255,255,0.85); font-size: 13px; margin: 0;">Update system prompts & greetings instantly</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2);">
+                <div style="font-size: 32px; margin-bottom: 10px;">🛠️</div>
+                <h4 style="color: white; margin: 0 0 8px 0; font-size: 1rem;">Function Calling</h4>
+                <p style="color: rgba(255,255,255,0.85); font-size: 13px; margin: 0;">Add custom tools and capabilities on the fly</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- What You Can Build Next -->
+          <div class="instructions">
+            <h3 style="font-size: 1.5rem; margin-bottom: 20px;">🎯 Build on Your Foundation</h3>
+            <p style="color: #666; margin-bottom: 25px; font-size: 1.05rem;">
+              You now have everything you need to build sophisticated voice AI applications. Here are ideas based on your use case:
+              ${useCaseDescription ? `"<em>${useCaseDescription.substring(0, 150)}${useCaseDescription.length > 150 ? '...' : ''}</em>"` : ''}
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
               ${renderAdminPanelCards()}
             </div>
           </div>
 
-          <!-- Next Steps & Resources -->
-          <div class="instructions">
-            <h3>🎯 What's Next?</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 15px;">
+          <!-- Additional Resources -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 30px 0;">
+            <div style="padding: 25px; border: 2px solid #667eea; border-radius: 12px; background: linear-gradient(135deg, #f0f4ff 0%, #e8edff 100%);">
+              <h4 style="margin: 0 0 15px 0; color: #667eea; font-size: 1.2rem;">📈 Monitor & Analyze</h4>
+              <p style="color: #666; font-size: 14px; margin-bottom: 15px; line-height: 1.6;">
+                Track call analytics, review transcripts, and gain insights with Twilio's Voice Intelligence.
+              </p>
+              <button onclick="window.open('https://console.twilio.com/us1/monitor/voice-insights', '_blank')" class="btn btn-secondary" style="width: 100%; margin-bottom: 10px;">
+                Open Voice Insights
+              </button>
+              <a href="https://www.twilio.com/docs/voice/intelligence" target="_blank" style="color: #667eea; text-decoration: none; font-size: 13px; display: block; text-align: center;">
+                Learn about Conversational Intelligence →
+              </a>
+            </div>
 
-              <div style="padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px;">
-                <h4 style="margin: 0 0 10px 0;">🎨 Customize Your AI</h4>
-                <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
-                  You've already configured your AI throughout the workshop! View your settings anytime in Steps 6-8.
-                </p>
-                <button onclick="navigateToStep(5)" class="btn btn-secondary" style="padding: 8px 16px;">
-                  View Settings
-                </button>
-              </div>
+            <div style="padding: 25px; border: 2px solid #10b981; border-radius: 12px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+              <h4 style="margin: 0 0 15px 0; color: #10b981; font-size: 1.2rem;">🎨 Customize Everything</h4>
+              <p style="color: #666; font-size: 14px; margin-bottom: 15px; line-height: 1.6;">
+                All your configuration is saved. Jump back to any step to adjust your AI, prompts, or functions.
+              </p>
+              <button onclick="navigateToStep(5)" class="btn" style="width: 100%; background: #10b981;">
+                View Configuration Steps
+              </button>
+            </div>
 
-              <div style="padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px;">
-                <h4 style="margin: 0 0 10px 0;">📊 Monitor Performance</h4>
-                <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
-                  Track call metrics, review transcripts, and analyze conversation quality.
-                </p>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                  <button onclick="window.open('https://console.twilio.com/us1/monitor/voice-insights', '_blank')" class="btn btn-secondary" style="padding: 8px 16px;">
-                    Voice Insights
-                  </button>
-                </div>
-                <div style="margin-top: 15px; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #4fc1ff;">
-                  <h5 style="margin: 0 0 8px 0; color: #333; font-size: 14px;">🧠 Conversational Intelligence</h5>
-                  <p style="color: #666; font-size: 13px; margin: 0 0 10px 0;">
-                    Advanced AI analytics for deeper insights: sentiment analysis, topic detection, keyword extraction, and call scoring.
-                  </p>
-                  <a href="https://www.twilio.com/docs/voice/intelligence" target="_blank" style="color: #4fc1ff; text-decoration: none; font-size: 13px;">
-                    📚 Learn about Conversational Intelligence →
-                  </a>
-                </div>
-              </div>
-
-              <div style="padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px;">
-                <h4 style="margin: 0 0 10px 0;">📚 Learn More</h4>
-                <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
-                  Explore advanced features like call recording, analytics, and integrations.
-                </p>
-                <button onclick="window.open('https://www.twilio.com/docs/voice', '_blank')" class="btn btn-secondary" style="padding: 8px 16px;">
-                  Twilio Voice Docs
-                </button>
-              </div>
-
+            <div style="padding: 25px; border: 2px solid #f59e0b; border-radius: 12px; background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);">
+              <h4 style="margin: 0 0 15px 0; color: #f59e0b; font-size: 1.2rem;">💡 Production Tips</h4>
+              <ul style="margin: 0; padding-left: 20px; color: #92400e; font-size: 13px; line-height: 1.8;">
+                <li>Add call recording for compliance</li>
+                <li>Implement voicemail detection</li>
+                <li>Set up CRM integrations</li>
+                <li>Monitor costs and usage</li>
+                <li>Add multi-language support</li>
+              </ul>
             </div>
           </div>
 
-          <!-- Enhancements to Consider -->
-          <div class="instructions" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px;">
-            <h3 style="margin: 0 0 10px 0;">💡 Production Enhancements to Consider</h3>
-            <ul style="margin-left: 20px; line-height: 1.8; color: #856404;">
-              <li><strong>Call Recording:</strong> Record calls for quality assurance and training</li>
-              <li><strong>Voicemail Detection:</strong> Handle answering machines gracefully</li>
-              <li><strong>Call Queues:</strong> Implement hold music and queue management</li>
-              <li><strong>Analytics Dashboard:</strong> Build custom dashboards for call metrics</li>
-              <li><strong>Multi-language Support:</strong> Add support for multiple languages</li>
-              <li><strong>CRM Integration:</strong> Connect to Salesforce, HubSpot, etc.</li>
-              <li><strong>Fallback Handlers:</strong> Graceful degradation when AI fails</li>
-              <li><strong>Cost Monitoring:</strong> Track and alert on API usage costs</li>
-            </ul>
-          </div>
-
-          <!-- Workshop Complete - Feedback Button -->
-          <div style="margin-top: 30px; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; text-align: center; border: 3px solid #5a67d8;">
+          <!-- Workshop Complete - Feedback -->
+          <div style="margin-top: 40px; padding: 30px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; text-align: center; border: 3px solid #059669;">
             <h3 style="color: white; margin: 0 0 15px 0; font-size: 1.5rem;">🎉 Workshop Complete!</h3>
-            <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin: 0 0 25px 0; line-height: 1.6;">
-              Thank you for completing the Twilio Voice AI Workshop!<br>
-              You've built a production-ready AI voice assistant from scratch.
+            <p style="color: rgba(255,255,255,0.95); font-size: 1.05rem; margin: 0 0 25px 0; line-height: 1.6; max-width: 700px; margin-left: auto; margin-right: auto;">
+              You've built a complete Voice AI platform with full control over every component. No vendor lock-in, no limitations -
+              just pure customizable power at your fingertips.
             </p>
-            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
-              <button
-                class="btn"
-                onclick="showFeedbackModal()"
-                style="font-size: 1.1rem; padding: 15px 40px; background: white; color: #667eea; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
-                💬 Share Your Feedback
-              </button>
-              <button
-                class="btn"
-                onclick="openAdminPanel()"
-                style="font-size: 1.1rem; padding: 15px 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); margin-right: 15px;">
-                📊 Open Admin Dashboard
-              </button>
-            </div>
-            <p style="color: rgba(255,255,255,0.8); font-size: 0.9rem; margin: 0;">
-              Manage your Voice AI system settings, prompts, and tools!
-            </p>
+            <button
+              class="btn"
+              onclick="showFeedbackModal()"
+              style="font-size: 1.1rem; padding: 15px 40px; background: white; color: #10b981; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+              💬 Share Your Feedback
+            </button>
           </div>
 
         </div>
@@ -9351,15 +9566,10 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             deployedServiceSid = 'ZS' + Math.random().toString(36).substring(7);
             twilioServerlessDomain = 'demo-workshop-' + Math.random().toString(36).substring(7) + '.twil.io';
 
-            // Remove next-action from validate and commit buttons to prevent flash
-            const validateBtn = document.querySelector('[onclick="validateCode4()"]');
-            if (validateBtn) {
-              validateBtn.classList.remove('next-action');
-            }
-            const commitBtn = document.getElementById('commitStep4Btn');
-            if (commitBtn) {
-              commitBtn.classList.remove('next-action');
-            }
+            // Clear all existing next-action highlights first
+            document.querySelectorAll('.next-action').forEach(el => {
+              el.classList.remove('next-action');
+            });
 
             // Show the test section after deployment (demo mode)
             const testSection = document.getElementById('step4TestSection');
@@ -9369,9 +9579,18 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
                 testSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }, 500);
             }
+
+            // Add next-action to the test call button
+            const testCallBtn = document.getElementById('makeLiveTestCallBtn');
+            if (testCallBtn) testCallBtn.classList.add('next-action');
           } else if (stepNumber === 6) {
             step6Committed = true;
             step6Deployed = true;
+
+            // Clear all existing next-action highlights first
+            document.querySelectorAll('.next-action').forEach(el => {
+              el.classList.remove('next-action');
+            });
 
             // Show the test section after deploying ConversationRelay (demo mode)
             const testSection = document.getElementById('step6TestCallSection');
@@ -9381,6 +9600,10 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
                 testSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }, 500);
             }
+
+            // Add next-action to the test call button
+            const testCallBtn6 = document.getElementById('makeLiveTestCallBtn6');
+            if (testCallBtn6) testCallBtn6.classList.add('next-action');
           }
 
           saveProgressToStorage();
@@ -9468,11 +9691,10 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             showStatus(statusId, 'success', '✅ Custom prompt updated successfully!');
             console.log('✅ Step 7 deployed, step7Deployed =', step7Deployed);
 
-            // Move next-action effect from Commit button to Next button
-            const commitBtn = document.getElementById('commitStep7Btn');
-            if (commitBtn) {
-              commitBtn.classList.remove('next-action');
-            }
+            // Clear all existing next-action highlights first
+            document.querySelectorAll('.next-action').forEach(el => {
+              el.classList.remove('next-action');
+            });
 
             // Enable Next button and add next-action effect
             const nextBtn9 = document.getElementById('nextBtn9');
@@ -9863,10 +10085,12 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             }
           }
 
-          // Move next-action effect from Commit button to Make Live Test Call button
-          const commitBtn = document.getElementById('commitStep4Btn');
-          if (commitBtn) commitBtn.classList.remove('next-action');
+          // Clear all existing next-action highlights first
+          document.querySelectorAll('.next-action').forEach(el => {
+            el.classList.remove('next-action');
+          });
 
+          // Add next-action to the test call button
           const testCallBtn = document.getElementById('makeLiveTestCallBtn');
           if (testCallBtn) testCallBtn.classList.add('next-action');
         }
@@ -9880,10 +10104,12 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           showStatus(statusId, 'success', '✅ WebSocket handler deployed successfully!');
           console.log('✅ Step 5 deployed, step5Deployed =', step5Deployed);
 
-          // Move next-action from commit button to Next button on Step 5
-          const commitBtn = document.getElementById('commitStep5Btn');
-          if (commitBtn) commitBtn.classList.remove('next-action');
+          // Clear all existing next-action highlights first
+          document.querySelectorAll('.next-action').forEach(el => {
+            el.classList.remove('next-action');
+          });
 
+          // Add next-action to Next button
           const nextBtn = document.getElementById('nextBtn7');
           if (nextBtn) {
             nextBtn.disabled = false;
@@ -9962,6 +10188,11 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             }, 500);
           }
 
+          // Clear all existing next-action highlights first
+          document.querySelectorAll('.next-action').forEach(el => {
+            el.classList.remove('next-action');
+          });
+
           // Enable Next button and add next-action effect
           const nextBtn8 = document.getElementById('nextBtn8');
           if (nextBtn8) {
@@ -10020,11 +10251,10 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           showStatus(statusId, 'success', '✅ Tools configured successfully!');
           console.log('✅ Step 8 deployed, toolsConfigured =', toolsConfigured);
 
-          // Move next-action effect from Commit button to Save & Continue button
-          const commitBtn = document.getElementById('commitStep8Btn');
-          if (commitBtn) {
-            commitBtn.classList.remove('next-action');
-          }
+          // Clear all existing next-action highlights first
+          document.querySelectorAll('.next-action').forEach(el => {
+            el.classList.remove('next-action');
+          });
 
           // Add next-action to Save & Continue button (nextBtn10)
           const nextBtn10 = document.getElementById('nextBtn10');
@@ -10826,7 +11056,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary ${step6Deployed ? 'next-action' : ''}" id="nextBtn8" onclick="nextStep()" ${step6Deployed || step6CodeValidated ? '' : 'disabled'}>
+            <button class="btn btn-primary" id="nextBtn8" onclick="nextStep()" ${step6Deployed || step6CodeValidated ? '' : 'disabled'}>
               Next: Deploy Your System →
             </button>
           </div>
@@ -10948,14 +11178,19 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         showStatus('step6Status', 'success', '✅ Perfect! ConversationRelay TwiML is valid. Deploy it below!');
         updateProgressBar();
 
-        // Move next-action effect from Validate button to Deploy button
+        // Clear all existing next-action highlights first
+        document.querySelectorAll('.next-action').forEach(el => {
+          el.classList.remove('next-action');
+        });
+
+        // Disable the validate button
         const validateBtn = document.querySelector('[onclick="validateCode8()"]');
         if (validateBtn) {
-          validateBtn.classList.remove('next-action');
           validateBtn.disabled = true;
           validateBtn.style.opacity = '0.5';
         }
 
+        // Add next-action to deploy button
         const deployBtn = document.getElementById('commitStep6Btn');
         if (deployBtn) deployBtn.classList.add('next-action');
 
@@ -11061,10 +11296,14 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         showStatus('step9Status', 'success', '✅ Excellent! Your WebSocket handler with tools and knowledge base is complete!');
         updateProgressBar();
 
-        // Move next-action effect from Validate button to Commit button
+        // Clear all existing next-action highlights first
+        document.querySelectorAll('.next-action').forEach(el => {
+          el.classList.remove('next-action');
+        });
+
+        // Disable the validate button
         const validateBtn = document.querySelector('[onclick="validateCode9()"]');
         if (validateBtn) {
-          validateBtn.classList.remove('next-action');
           validateBtn.disabled = true;
           validateBtn.style.opacity = '0.5';
         }
@@ -11351,7 +11590,7 @@ ${hintsLine}${intelligenceLine}
             <div class="code-header">
               <span>📝 WebSocket Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success ${step5CodeValidated ? '' : 'next-action'}" id="validateBtn7" style="padding: 6px 12px; font-size: 13px; ${step5CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode7()" ${step5CodeValidated ? 'disabled' : ''}>✓ Validate</button>
+                <button class="btn btn-success" id="validateBtn7" style="padding: 6px 12px; font-size: 13px; ${step5CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode7()" ${step5CodeValidated ? 'disabled' : ''}>✓ Validate</button>
                 <button class="btn-copy" onclick="copyCode('code7')">📋 Copy Code</button>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode7()">Reset</button>
               </div>
@@ -11596,7 +11835,7 @@ app.get('/health', (req, res) => {
                 </ol>
               </div>
               <button
-                class="btn btn-success next-action"
+                class="btn btn-success"
                 id="deployCodespaceBtn5"
                 onclick="simulateCodespaceDeployment()"
                 style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
@@ -11625,7 +11864,7 @@ app.get('/health', (req, res) => {
                 </div>
 
                 <button
-                  class="btn btn-success next-action"
+                  class="btn btn-success"
                   id="deployCodespaceBtn5"
                   onclick="deployLiveWebSocketServer()"
                   style="font-size: 1.1rem; padding: 15px 30px; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); width: 100%;">
@@ -11656,7 +11895,7 @@ app.get('/health', (req, res) => {
 
                   <!-- Test WebSocket Server Button -->
                   <button
-                    class="btn next-action"
+                    class="btn"
                     onclick="testSharedWebSocketServer()"
                     style="padding: 12px 24px; background: white; color: #667eea; border: none; font-weight: 600; width: 100%;">
                     🧪 Test My WebSocket Server
@@ -12448,14 +12687,19 @@ app.get('/health', (req, res) => {
         const deploySection = document.getElementById('step5DeploySection');
         if (deploySection) deploySection.style.display = 'block';
 
-        // Move next-action effect from Validate button to Deploy button
+        // Clear all existing next-action highlights first
+        document.querySelectorAll('.next-action').forEach(el => {
+          el.classList.remove('next-action');
+        });
+
+        // Disable the validate button
         const validateBtn = document.getElementById('validateBtn7');
         if (validateBtn) {
-          validateBtn.classList.remove('next-action');
           validateBtn.disabled = true;
           validateBtn.style.opacity = '0.5';
         }
 
+        // Add next-action to deploy button
         const deployBtn = document.getElementById('deployCodespaceBtn5');
         if (deployBtn) deployBtn.classList.add('next-action');
 
@@ -13386,6 +13630,11 @@ app.get('/health', (req, res) => {
         return;
       }
 
+      // In demo mode, update progress bar after setting flags
+      if (studentDemoMode) {
+        updateProgressBar();
+      }
+
       if (currentStep < steps.length - 1) {
 
         // Celebrate milestones
@@ -13402,6 +13651,7 @@ app.get('/health', (req, res) => {
         renderStepContent();
         window.scrollTo(0, 0);
         saveProgressToStorage(); // Auto-save after navigation
+        updateProgressBar(); // Ensure progress bar updates after navigation
 
         // Epic celebration on completion
         if (currentStep === steps.length - 1) {
@@ -13421,6 +13671,64 @@ app.get('/health', (req, res) => {
     }
 
     function checkPrerequisites() {
+      // In demo mode, automatically set flags as user progresses
+      if (studentDemoMode) {
+        switch(currentStep) {
+          case 0: // Step 1 -> 2
+            setState("twilioConnected", true);
+            setState("openaiConnected", true);
+            break;
+          case 1: // Step 2 -> 3
+            setState("callDirectionChosen", true);
+            callDirectionChosen = true;
+            useCaseDescription = useCaseDescription || 'Demo use case - exploring the workshop';
+            break;
+          case 2: // Step 3 -> 4
+            setState("servicesReady", true);
+            servicesReady = true;
+            selectedPhoneNumber = selectedPhoneNumber || '+15555551234';
+            break;
+          case 3: // Step 4 -> 5
+            setState("step4CodeValidated", true);
+            setState("step4Deployed", true);
+            step4CodeValidated = true;
+            step4Deployed = true;
+            basicTwimlCreated = true;
+            break;
+          case 4: // Step 5 -> 6
+            setState("step5CodeValidated", true);
+            setState("step5Deployed", true);
+            step5CodeValidated = true;
+            step5Deployed = true;
+            websocketBuilt = true;
+            break;
+          case 5: // Step 6 -> 7
+            setState("step6CodeValidated", true);
+            setState("step6Deployed", true);
+            step6CodeValidated = true;
+            step6Deployed = true;
+            conversationRelayCreated = true;
+            break;
+          case 6: // Step 7 -> 8
+            setState("systemPromptSaved", true);
+            setState("step7Deployed", true);
+            systemPromptSaved = true;
+            step7Deployed = true;
+            promptEngineeringComplete = true;
+            break;
+          case 7: // Step 8 -> 9
+            setState("step8CodeValidated", true);
+            setState("step8Deployed", true);
+            step8CodeValidated = true;
+            step8Deployed = true;
+            toolsConfigured = true;
+            break;
+        }
+        // In demo mode, always allow progression
+        return { canProceed: true };
+      }
+
+      // Normal mode - check prerequisites
       switch(currentStep) {
         case 0: // currentStep 0 = Step 1: Setup
           if (!twilioConnected) {
@@ -14286,6 +14594,10 @@ app.get('/health', (req, res) => {
         {
           q: 'How do I add custom functionality?',
           a: 'Use OpenAI function calling to connect to your database or APIs. Implement Sync for conversation state. Add webhooks for events like call recording.'
+        },
+        {
+          q: 'What are the new features (Use Cases, History, VXML)?',
+          a: '<strong>🎯 Use Cases:</strong> Browse and activate pre-built templates (Customer Support, Appointment Booking, etc.)<br><br><strong>💬 Conversation History:</strong> View all past AI conversations with full transcripts and analytics<br><br><strong>🔄 VXML Converter:</strong> Upload legacy VoiceXML IVR systems and automatically convert them to AI prompts using GPT-4<br><br><strong>🔗 Webhook Tools:</strong> Connect function tools to external APIs by adding webhook_url to your tool definitions'
         }
       ];
 
@@ -14301,6 +14613,28 @@ app.get('/health', (req, res) => {
                 </div>
               </div>
             `).join('')}
+          </div>
+        </div>
+
+        <div class="service-card" style="margin-top: 20px;">
+          <h3>✨ Workshop Features</h3>
+          <div style="margin: 15px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <button class="btn btn-primary" onclick="openUseCases()" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <span>🎯</span>
+              <span>Browse Use Cases</span>
+            </button>
+            <button class="btn btn-primary" onclick="openConversationHistory()" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <span>💬</span>
+              <span>View History</span>
+            </button>
+            <button class="btn btn-primary" onclick="openVXMLConverter()" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <span>🔄</span>
+              <span>Convert VXML</span>
+            </button>
+            <button class="btn btn-primary" onclick="window.open('/WEBHOOK_TOOLS.md', '_blank')" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <span>🔗</span>
+              <span>Webhook Docs</span>
+            </button>
           </div>
         </div>
 
@@ -14437,14 +14771,14 @@ app.get('/health', (req, res) => {
 
       // Auto-fill context information
       const completedStepsCount = steps.filter((_, index) => {
-        if (index === 0) return step1Completed;
-        if (index === 1) return step2Completed;
-        if (index === 2) return step3Completed;
-        if (index === 3) return step4Committed;
-        if (index === 4) return step5Committed;
-        if (index === 5) return step6Committed;
-        if (index === 6) return step7Committed;
-        if (index === 7) return step8Committed;
+        if (index === 0) return twilioConnected && openaiConnected; // Step 1: Setup
+        if (index === 1) return callDirectionChosen; // Step 2: Use Case
+        if (index === 2) return servicesReady; // Step 3: Services
+        if (index === 3) return step4Committed; // Step 4: Basic TwiML
+        if (index === 4) return step5Committed; // Step 5: WebSocket
+        if (index === 5) return step6Committed; // Step 6: ConversationRelay
+        if (index === 6) return step7Committed; // Step 7: Prompt Engineering
+        if (index === 7) return step8Committed; // Step 8: Tools
         return false;
       }).length;
 
@@ -14559,6 +14893,30 @@ app.get('/health', (req, res) => {
     // =========================================================================
     // CONVERSATIONRELAY PLAYGROUND
     // =========================================================================
+
+    // Navigation functions for new features
+    function openUseCases() {
+      const sessionToken = localStorage.getItem('sessionToken');
+      if (!sessionToken) {
+        alert('⚠️ Please complete Step 1 (Connect Accounts) first to use this feature.');
+        return;
+      }
+      window.open(`/use-cases.html?sessionToken=${encodeURIComponent(sessionToken)}`, '_blank');
+    }
+
+    function openConversationHistory() {
+      const sessionToken = localStorage.getItem('sessionToken');
+      if (!sessionToken) {
+        alert('⚠️ Please complete Step 1 (Connect Accounts) first to use this feature.');
+        return;
+      }
+      window.open(`/conversation-history.html?sessionToken=${encodeURIComponent(sessionToken)}`, '_blank');
+    }
+
+    function openVXMLConverter() {
+      const sessionToken = localStorage.getItem('sessionToken');
+      window.open(`/vxml-converter.html${sessionToken ? '?sessionToken=' + encodeURIComponent(sessionToken) : ''}`, '_blank');
+    }
 
     function openPlayground() {
       // Open in new window

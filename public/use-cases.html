@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Use Case Templates | Twilio Voice AI Workshop</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #F22F46 0%, #0d122b 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #F22F46 0%, #0d122b 100%);
+      padding: 40px;
+      color: white;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      opacity: 0.95;
+      font-size: 1.1rem;
+    }
+
+    .back-link {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+
+    .back-link:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .use-case-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+
+    .use-case-card {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 30px;
+      border: 2px solid #e0e0e0;
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .use-case-card:hover {
+      border-color: #F22F46;
+      box-shadow: 0 4px 12px rgba(242, 47, 70, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .use-case-card.selected {
+      border-color: #F22F46;
+      background: #fff5f6;
+      box-shadow: 0 4px 12px rgba(242, 47, 70, 0.3);
+    }
+
+    .use-case-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+
+    .use-case-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #0d122b;
+      margin-bottom: 10px;
+    }
+
+    .use-case-category {
+      display: inline-block;
+      background: #e0e0e0;
+      color: #666;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      margin-bottom: 15px;
+    }
+
+    .use-case-description {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .use-case-details {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .use-case-card.selected .use-case-details {
+      display: block;
+    }
+
+    .use-case-details h4 {
+      color: #0d122b;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+
+    .use-case-details pre {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .use-case-tools {
+      margin-top: 15px;
+    }
+
+    .tool-badge {
+      display: inline-block;
+      background: #e3f2fd;
+      color: #1976d2;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .button {
+      background: #F22F46;
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    .button:hover {
+      background: #d11f3a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(242, 47, 70, 0.3);
+    }
+
+    .button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .button.secondary {
+      background: #6c757d;
+    }
+
+    .button.secondary:hover {
+      background: #5a6268;
+    }
+
+    .alert {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .alert.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+
+    .alert.error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+
+    .alert.info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+
+    .customization-panel {
+      background: #f8f9fa;
+      padding: 30px;
+      border-radius: 12px;
+      margin-top: 30px;
+      display: none;
+    }
+
+    .customization-panel.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #F22F46;
+    }
+
+    .form-group textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .hint {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .selected-badge {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #28a745;
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+      .use-case-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header" style="position: relative;">
+      <a href="/" class="back-link">← Back to Workshop</a>
+      <h1>🎯 Use Case Templates</h1>
+      <p>Choose a pre-configured use case or customize your AI assistant</p>
+    </div>
+
+    <div class="content">
+      <!-- Alert Messages -->
+      <div id="alertSuccess" class="alert success"></div>
+      <div id="alertError" class="alert error"></div>
+      <div id="alertInfo" class="alert info"></div>
+
+      <!-- Use Case Grid -->
+      <div id="useCaseGrid" class="use-case-grid">
+        <div style="text-align: center; color: #999;">Loading use cases...</div>
+      </div>
+
+      <!-- Customization Panel -->
+      <div id="customizationPanel" class="customization-panel">
+        <h2 style="margin-bottom: 20px; color: #0d122b;">✏️ Customize Your Use Case</h2>
+
+        <div class="form-group">
+          <label for="customSystemPrompt">System Prompt</label>
+          <textarea id="customSystemPrompt" placeholder="Customize the AI's behavior and personality..."></textarea>
+          <div class="hint">Define how your AI assistant should behave and respond</div>
+        </div>
+
+        <div class="form-group">
+          <label for="customGreeting">Greeting Message</label>
+          <input type="text" id="customGreeting" placeholder="Hello! How can I help you today?" />
+          <div class="hint">The first message callers will hear</div>
+        </div>
+
+        <div class="form-group">
+          <label for="customVoice">Voice</label>
+          <select id="customVoice">
+            <option value="alloy">Alloy (Neutral)</option>
+            <option value="echo">Echo (Male)</option>
+            <option value="fable">Fable (British Male)</option>
+            <option value="onyx">Onyx (Deep Male)</option>
+            <option value="nova">Nova (Female)</option>
+            <option value="shimmer">Shimmer (Soft Female)</option>
+          </select>
+          <div class="hint">Choose the voice for text-to-speech</div>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-top: 30px;">
+          <button class="button" onclick="activateUseCase(true)" id="activateBtn">
+            🚀 Activate Use Case
+          </button>
+          <button class="button secondary" onclick="resetCustomization()">
+            Reset
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let useCases = [];
+    let selectedUseCase = null;
+    let sessionToken = null;
+
+    // Get session token from URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    sessionToken = urlParams.get('sessionToken') || localStorage.getItem('sessionToken');
+
+    if (!sessionToken) {
+      showAlert('error', '❌ No session found. Please start from the workshop page.');
+    }
+
+    // Load use cases on page load
+    loadUseCases();
+
+    async function loadUseCases() {
+      try {
+        const response = await fetch('/api/use-cases-list');
+        const data = await response.json();
+
+        if (!data.success) {
+          showAlert('error', `❌ ${data.error || 'Failed to load use cases'}`);
+          return;
+        }
+
+        useCases = data.useCases || [];
+        renderUseCases();
+
+      } catch (error) {
+        console.error('Error loading use cases:', error);
+        showAlert('error', `❌ Error: ${error.message}`);
+      }
+    }
+
+    function renderUseCases() {
+      const grid = document.getElementById('useCaseGrid');
+
+      if (useCases.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; color: #999;">No use cases available</div>';
+        return;
+      }
+
+      grid.innerHTML = useCases.map(useCase => {
+        const tools = JSON.parse(useCase.sampleTools || '[]');
+        return `
+          <div class="use-case-card" onclick="selectUseCase('${useCase.id}')">
+            <div class="use-case-icon">${useCase.icon}</div>
+            <div class="use-case-category">${useCase.category}</div>
+            <div class="use-case-title">${useCase.displayName}</div>
+            <div class="use-case-description">${useCase.description}</div>
+
+            <div class="use-case-details">
+              <h4>System Prompt:</h4>
+              <pre>${useCase.systemPrompt.substring(0, 200)}${useCase.systemPrompt.length > 200 ? '...' : ''}</pre>
+
+              <h4 style="margin-top: 15px;">Greeting:</h4>
+              <pre>${useCase.greeting}</pre>
+
+              ${tools.length > 0 ? `
+                <div class="use-case-tools">
+                  <h4>Sample Tools:</h4>
+                  ${tools.map(tool => `
+                    <span class="tool-badge">🔧 ${tool.function?.name || 'Unknown'}</span>
+                  `).join('')}
+                </div>
+              ` : ''}
+
+              <button class="button" onclick="activateUseCase(false); event.stopPropagation();">
+                ✨ Use This Template
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectUseCase(useCaseId) {
+      selectedUseCase = useCases.find(uc => uc.id === useCaseId);
+
+      if (!selectedUseCase) return;
+
+      // Remove selected class from all cards
+      document.querySelectorAll('.use-case-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+
+      // Add selected class to clicked card
+      event.currentTarget.classList.add('selected');
+
+      // Populate customization panel with template values
+      document.getElementById('customSystemPrompt').value = selectedUseCase.systemPrompt;
+      document.getElementById('customGreeting').value = selectedUseCase.greeting;
+      document.getElementById('customVoice').value = selectedUseCase.voice;
+
+      // Show customization panel
+      document.getElementById('customizationPanel').classList.add('active');
+
+      // Scroll to customization panel
+      document.getElementById('customizationPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function activateUseCase(useCustomizations) {
+      if (!selectedUseCase) {
+        showAlert('error', '❌ Please select a use case first');
+        return;
+      }
+
+      if (!sessionToken) {
+        showAlert('error', '❌ No session token found. Please start from the workshop page.');
+        return;
+      }
+
+      const button = document.getElementById('activateBtn');
+      button.disabled = true;
+      button.textContent = 'Activating...';
+
+      try {
+        const customizations = useCustomizations ? {
+          systemPrompt: document.getElementById('customSystemPrompt').value,
+          greeting: document.getElementById('customGreeting').value,
+          voice: document.getElementById('customVoice').value
+        } : null;
+
+        const response = await fetch('/api/use-case-activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken,
+            useCaseTemplateId: selectedUseCase.id,
+            customizations
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          showAlert('error', `❌ ${data.error || 'Failed to activate use case'}`);
+          button.disabled = false;
+          button.textContent = '🚀 Activate Use Case';
+          return;
+        }
+
+        showAlert('success', `✅ ${data.message}`);
+
+        // Redirect back to workshop after 2 seconds
+        setTimeout(() => {
+          window.location.href = '/?sessionToken=' + sessionToken;
+        }, 2000);
+
+      } catch (error) {
+        console.error('Error activating use case:', error);
+        showAlert('error', `❌ Error: ${error.message}`);
+        button.disabled = false;
+        button.textContent = '🚀 Activate Use Case';
+      }
+    }
+
+    function resetCustomization() {
+      if (selectedUseCase) {
+        document.getElementById('customSystemPrompt').value = selectedUseCase.systemPrompt;
+        document.getElementById('customGreeting').value = selectedUseCase.greeting;
+        document.getElementById('customVoice').value = selectedUseCase.voice;
+        showAlert('info', 'ℹ️ Customizations reset to template defaults');
+      }
+    }
+
+    function showAlert(type, message) {
+      const alertElement = document.getElementById(`alert${type.charAt(0).toUpperCase() + type.slice(1)}`);
+      alertElement.textContent = message;
+      alertElement.style.display = 'block';
+
+      setTimeout(() => {
+        alertElement.style.display = 'none';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

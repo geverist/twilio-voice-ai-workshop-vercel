@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VXML to AI Prompt Converter | Twilio Voice AI Workshop</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #F22F46 0%, #0d122b 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #F22F46 0%, #0d122b 100%);
+      padding: 40px;
+      color: white;
+      text-align: center;
+      position: relative;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      opacity: 0.95;
+      font-size: 1.1rem;
+    }
+
+    .back-link {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+
+    .back-link:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .converter-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+
+    .panel {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 25px;
+      border: 2px solid #e0e0e0;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .panel-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #0d122b;
+    }
+
+    .file-upload-area {
+      border: 3px dashed #e0e0e0;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      background: white;
+      transition: all 0.3s;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .file-upload-area:hover,
+    .file-upload-area.dragover {
+      border-color: #F22F46;
+      background: #fff5f6;
+    }
+
+    .file-upload-icon {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+
+    .code-editor {
+      width: 100%;
+      min-height: 400px;
+      padding: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+      font-size: 13px;
+      resize: vertical;
+      background: white;
+    }
+
+    .code-editor:focus {
+      outline: none;
+      border-color: #F22F46;
+    }
+
+    .button {
+      background: #F22F46;
+      color: white;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+
+    .button:hover:not(:disabled) {
+      background: #d11f3a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(242, 47, 70, 0.3);
+    }
+
+    .button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .button.secondary {
+      background: #6c757d;
+    }
+
+    .button.secondary:hover:not(:disabled) {
+      background: #5a6268;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .alert {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .alert.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+
+    .alert.error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+
+    .alert.info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+
+    .result-section {
+      display: none;
+      animation: fadeIn 0.5s;
+    }
+
+    .result-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .analysis-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .analysis-card h4 {
+      color: #0d122b;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+
+    .analysis-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+
+    .analysis-item strong {
+      color: #F22F46;
+    }
+
+    .tool-card {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border-left: 4px solid #1976d2;
+    }
+
+    .tool-card h5 {
+      color: #1976d2;
+      margin-bottom: 8px;
+    }
+
+    .copy-button {
+      background: #28a745;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .copy-button:hover {
+      background: #218838;
+    }
+
+    .sample-vxml-link {
+      color: #F22F46;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .sample-vxml-link:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 1024px) {
+      .converter-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <a href="/" class="back-link">← Back to Workshop</a>
+      <h1>🔄 VXML to AI Prompt Converter</h1>
+      <p>Upload your VoiceXML IVR and convert it to an AI-powered conversation</p>
+    </div>
+
+    <div class="content">
+      <!-- Alert Messages -->
+      <div id="alertSuccess" class="alert success"></div>
+      <div id="alertError" class="alert error"></div>
+      <div id="alertInfo" class="alert info"></div>
+
+      <!-- Converter Grid -->
+      <div class="converter-grid">
+        <!-- Input Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">📄 VXML Input</h3>
+          </div>
+
+          <!-- File Upload -->
+          <div class="file-upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <div class="file-upload-icon">📁</div>
+            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">
+              Drop VXML file here or click to browse
+            </div>
+            <div style="color: #666; font-size: 0.9rem;">
+              Supports .vxml, .xml, or .txt files
+            </div>
+            <input type="file" id="fileInput" accept=".vxml,.xml,.txt" style="display: none;" onchange="handleFileSelect(event)">
+          </div>
+
+          <!-- Or paste VXML -->
+          <div style="text-align: center; margin: 20px 0; color: #666;">
+            <strong>— OR —</strong>
+          </div>
+
+          <textarea
+            id="vxmlInput"
+            class="code-editor"
+            placeholder="Paste your VoiceXML code here...
+
+Example:
+<?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?>
+<vxml version=&quot;2.1&quot;>
+  <form>
+    <block>
+      <prompt>Welcome to our customer service line.</prompt>
+    </block>
+    ...
+  </form>
+</vxml>"
+          ></textarea>
+
+          <div class="button-group">
+            <button class="button" onclick="convertVXML()" id="convertBtn">
+              🔄 Convert to Prompt
+            </button>
+            <button class="button secondary" onclick="loadSampleVXML()">
+              📝 Load Sample
+            </button>
+          </div>
+
+          <div style="margin-top: 15px; text-align: center; font-size: 0.9rem; color: #666;">
+            Need help? <a href="#" class="sample-vxml-link" onclick="loadSampleVXML(); return false;">Try a sample VXML</a>
+          </div>
+        </div>
+
+        <!-- Output Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">✨ AI Prompt Output</h3>
+          </div>
+
+          <div id="loadingState" style="display: none; text-align: center; padding: 60px 20px;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">⏳</div>
+            <div style="font-size: 1.2rem; color: #666;">Analyzing VXML...</div>
+            <div style="font-size: 0.9rem; color: #999; margin-top: 10px;">This may take a few moments</div>
+          </div>
+
+          <div id="emptyState" style="text-align: center; padding: 60px 20px; color: #999;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">🎯</div>
+            <div style="font-size: 1.1rem;">Upload or paste VXML to get started</div>
+            <div style="font-size: 0.9rem; margin-top: 10px;">Your AI prompt will appear here</div>
+          </div>
+
+          <div id="resultSection" class="result-section">
+            <!-- System Prompt -->
+            <div class="analysis-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h4>🤖 System Prompt</h4>
+                <button class="copy-button" onclick="copyToClipboard('systemPromptOutput')">📋 Copy</button>
+              </div>
+              <textarea id="systemPromptOutput" class="code-editor" style="min-height: 250px;" readonly></textarea>
+            </div>
+
+            <!-- Greeting -->
+            <div class="analysis-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h4>👋 Greeting Message</h4>
+                <button class="copy-button" onclick="copyToClipboard('greetingOutput')">📋 Copy</button>
+              </div>
+              <input type="text" id="greetingOutput" class="code-editor" style="min-height: auto; padding: 12px;" readonly />
+            </div>
+
+            <!-- Suggested Tools -->
+            <div class="analysis-card" id="toolsCard" style="display: none;">
+              <h4>🔧 Suggested Function Tools</h4>
+              <div id="toolsList"></div>
+            </div>
+
+            <!-- VXML Analysis -->
+            <div class="analysis-card" id="analysisCard" style="display: none;">
+              <h4>📊 VXML Analysis</h4>
+              <div id="analysisContent"></div>
+            </div>
+
+            <!-- Apply Button -->
+            <button class="button" onclick="applyToWorkshop()" id="applyBtn">
+              ✅ Apply to Workshop
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let conversionResult = null;
+    let sessionToken = null;
+    let openaiApiKey = null;
+
+    // Get session token and API key from URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    sessionToken = urlParams.get('sessionToken') || localStorage.getItem('sessionToken');
+    openaiApiKey = localStorage.getItem('openaiApiKey');
+
+    // Drag and drop handlers
+    const dropZone = document.getElementById('dropZone');
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        readFile(file);
+      }
+    });
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (file) {
+        readFile(file);
+      }
+    }
+
+    function readFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('vxmlInput').value = e.target.result;
+        showAlert('success', `✅ File loaded: ${file.name}`);
+      };
+      reader.onerror = () => {
+        showAlert('error', '❌ Error reading file');
+      };
+      reader.readAsText(file);
+    }
+
+    async function convertVXML() {
+      const vxmlContent = document.getElementById('vxmlInput').value.trim();
+
+      if (!vxmlContent) {
+        showAlert('error', '❌ Please provide VXML content');
+        return;
+      }
+
+      if (!openaiApiKey && !sessionToken) {
+        showAlert('error', '❌ OpenAI API key required. Please configure your API key in the workshop first.');
+        return;
+      }
+
+      const convertBtn = document.getElementById('convertBtn');
+      convertBtn.disabled = true;
+      convertBtn.textContent = '⏳ Converting...';
+
+      // Show loading state
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('resultSection').classList.remove('active');
+      document.getElementById('loadingState').style.display = 'block';
+
+      try {
+        const response = await fetch('/api/convert-vxml-to-prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            vxmlContent,
+            openaiApiKey
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          showAlert('error', `❌ ${data.error || 'Conversion failed'}`);
+          document.getElementById('loadingState').style.display = 'none';
+          document.getElementById('emptyState').style.display = 'block';
+          return;
+        }
+
+        conversionResult = data;
+        displayResults(data);
+        showAlert('success', '✅ VXML successfully converted to AI prompt!');
+
+      } catch (error) {
+        console.error('Error converting VXML:', error);
+        showAlert('error', `❌ Error: ${error.message}`);
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+      } finally {
+        convertBtn.disabled = false;
+        convertBtn.textContent = '🔄 Convert to Prompt';
+      }
+    }
+
+    function displayResults(data) {
+      document.getElementById('loadingState').style.display = 'none';
+
+      // Display system prompt
+      document.getElementById('systemPromptOutput').value = data.systemPrompt || '';
+
+      // Display greeting
+      document.getElementById('greetingOutput').value = data.greeting || '';
+
+      // Display suggested tools
+      if (data.suggestedTools && data.suggestedTools.length > 0) {
+        const toolsList = document.getElementById('toolsList');
+        toolsList.innerHTML = data.suggestedTools.map(tool => `
+          <div class="tool-card">
+            <h5>🔧 ${tool.name}</h5>
+            <div style="color: #666; margin-bottom: 8px;">${tool.description}</div>
+            <div style="font-size: 0.85rem; color: #999;">💡 ${tool.reasoning}</div>
+          </div>
+        `).join('');
+        document.getElementById('toolsCard').style.display = 'block';
+      } else {
+        document.getElementById('toolsCard').style.display = 'none';
+      }
+
+      // Display VXML analysis
+      if (data.vxmlAnalysis) {
+        const analysis = data.vxmlAnalysis;
+        const analysisContent = document.getElementById('analysisContent');
+        analysisContent.innerHTML = `
+          ${analysis.purpose ? `
+            <div class="analysis-item">
+              <strong>Purpose:</strong> ${analysis.purpose}
+            </div>
+          ` : ''}
+          ${analysis.tone ? `
+            <div class="analysis-item">
+              <strong>Tone:</strong> ${analysis.tone}
+            </div>
+          ` : ''}
+          ${analysis.menuOptions && analysis.menuOptions.length > 0 ? `
+            <div class="analysis-item">
+              <strong>Menu Options:</strong>
+              <ul style="margin-top: 8px; padding-left: 20px;">
+                ${analysis.menuOptions.map(opt => `<li>${opt}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          ${analysis.specialFeatures && analysis.specialFeatures.length > 0 ? `
+            <div class="analysis-item">
+              <strong>Special Features:</strong>
+              <ul style="margin-top: 8px; padding-left: 20px;">
+                ${analysis.specialFeatures.map(feat => `<li>${feat}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+        `;
+        document.getElementById('analysisCard').style.display = 'block';
+      } else {
+        document.getElementById('analysisCard').style.display = 'none';
+      }
+
+      // Show result section
+      document.getElementById('resultSection').classList.add('active');
+    }
+
+    function copyToClipboard(elementId) {
+      const element = document.getElementById(elementId);
+      element.select();
+      document.execCommand('copy');
+      showAlert('success', '✅ Copied to clipboard!');
+    }
+
+    function applyToWorkshop() {
+      if (!conversionResult) {
+        showAlert('error', '❌ No conversion result available');
+        return;
+      }
+
+      if (!sessionToken) {
+        showAlert('error', '❌ No session found. Please start from the workshop page.');
+        return;
+      }
+
+      // Store the prompt in localStorage
+      localStorage.setItem('vxml_converted_prompt', conversionResult.systemPrompt);
+      localStorage.setItem('vxml_converted_greeting', conversionResult.greeting);
+
+      showAlert('success', '✅ Prompt saved! Redirecting to workshop...');
+
+      // Redirect back to workshop
+      setTimeout(() => {
+        window.location.href = '/?sessionToken=' + sessionToken + '&applyVXML=true';
+      }, 1500);
+    }
+
+    function loadSampleVXML() {
+      const sampleVXML = `<?xml version="1.0" encoding="UTF-8"?>
+<vxml version="2.1">
+  <form id="mainMenu">
+    <block>
+      <prompt>
+        Welcome to Acme Customer Service.
+        For account information, press 1.
+        For technical support, press 2.
+        For billing inquiries, press 3.
+        To speak with a representative, press 0.
+      </prompt>
+    </block>
+
+    <field name="menuChoice" type="digits">
+      <prompt>Please make your selection.</prompt>
+
+      <filled>
+        <if cond="menuChoice == '1'">
+          <prompt>Transferring you to account information.</prompt>
+          <goto next="#accountInfo"/>
+        <elseif cond="menuChoice == '2'"/>
+          <prompt>Transferring you to technical support.</prompt>
+          <goto next="#techSupport"/>
+        <elseif cond="menuChoice == '3'"/>
+          <prompt>Transferring you to billing.</prompt>
+          <goto next="#billing"/>
+        <elseif cond="menuChoice == '0'"/>
+          <prompt>Please hold while we connect you to a representative.</prompt>
+          <goto next="#transfer"/>
+        <else/>
+          <prompt>Sorry, that is not a valid option. Please try again.</prompt>
+          <clear namelist="menuChoice"/>
+        </if>
+      </filled>
+
+      <noinput>
+        <prompt>I didn't hear your selection. Please press a number.</prompt>
+      </noinput>
+
+      <nomatch>
+        <prompt>I didn't understand that. Please press 1, 2, 3, or 0.</prompt>
+      </nomatch>
+    </field>
+  </form>
+
+  <form id="accountInfo">
+    <block>
+      <prompt>
+        You have reached account information.
+        Your account balance is $250.00.
+        Your next payment is due on January 15th.
+        To return to the main menu, press 9.
+      </prompt>
+    </block>
+  </form>
+
+  <form id="techSupport">
+    <block>
+      <prompt>
+        You have reached technical support.
+        Please describe your issue after the tone.
+      </prompt>
+      <record name="issue" beep="true" maxtime="30s" finalsilence="2s"/>
+      <prompt>Thank you. A technician will call you back within 2 hours.</prompt>
+    </block>
+  </form>
+</vxml>`;
+
+      document.getElementById('vxmlInput').value = sampleVXML;
+      showAlert('info', 'ℹ️ Sample VXML loaded. Click "Convert to Prompt" to see the result.');
+    }
+
+    function showAlert(type, message) {
+      const alertElement = document.getElementById(`alert${type.charAt(0).toUpperCase() + type.slice(1)}`);
+      alertElement.textContent = message;
+      alertElement.style.display = 'block';
+
+      setTimeout(() => {
+        alertElement.style.display = 'none';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>

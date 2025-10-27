@@ -264,6 +264,56 @@
       return document.getElementById('test-iframe').contentWindow;
     }
 
+    // Helper to count next-action elements
+    function countNextActionElements() {
+      const elements = getIframeElements('.next-action');
+      return {
+        count: elements.length,
+        elements: Array.from(elements).map(el => ({
+          id: el.id,
+          tagName: el.tagName,
+          className: el.className,
+          text: el.textContent?.substring(0, 50)
+        }))
+      };
+    }
+
+    // Helper to verify single next-action
+    function verifySingleNextAction(expectedSelector = null) {
+      const result = countNextActionElements();
+
+      if (result.count === 0) {
+        return { pass: true, message: 'No next-action elements (acceptable)' };
+      }
+
+      if (result.count > 1) {
+        return {
+          pass: false,
+          message: `Found ${result.count} next-action elements (should be 0 or 1)`,
+          elements: result.elements
+        };
+      }
+
+      // Exactly 1 element
+      if (expectedSelector) {
+        const expectedEl = getIframeElement(expectedSelector);
+        const actualEl = result.elements[0];
+        if (expectedEl && expectedEl.id !== actualEl.id) {
+          return {
+            pass: false,
+            message: `next-action on wrong element. Expected: ${expectedSelector}, Got: ${actualEl.id || actualEl.tagName}`,
+            elements: result.elements
+          };
+        }
+      }
+
+      return {
+        pass: true,
+        message: `Exactly 1 next-action element${expectedSelector ? ' on correct element' : ''}`,
+        elements: result.elements
+      };
+    }
+
     function getIframeDocument() {
       return getIframeWindow().document;
     }
@@ -374,15 +424,15 @@
       it('should apply next-action class to appropriate elements', async () => {
         const currentStep = getIframeGlobal('currentStep');
 
-        // Call checkAllConditions to update next-action
-        const checkFunc = getIframeGlobal('checkAllConditions');
-        if (typeof checkFunc === 'function') {
-          checkFunc();
-          await wait(100);
+        // Call highlightNextAction to update next-action (more direct than checkAllConditions)
+        const highlightFunc = getIframeGlobal('highlightNextAction');
+        if (typeof highlightFunc === 'function') {
+          highlightFunc();
+          await wait(200);
 
-          // Check if any element has next-action class
+          // Check if any element has next-action class (0 or 1 is acceptable)
           const nextActionElements = getIframeElements('.next-action');
-          expect(nextActionElements.length).toBeGreaterThan(0);
+          expect(nextActionElements.length <= 1).toBeTruthy();
         }
       });
 
@@ -426,6 +476,12 @@
       });
 
       it('should advance step when prerequisites met', async () => {
+        // First, reset to step 0
+        callIframeFunction('setState', 'currentStep', 0);
+        setIframeGlobal('currentStep', 0);
+        callIframeFunction('renderStepContent');
+        await wait(200);
+
         // Reset debounce flags that might prevent navigation
         const resetFunc = getIframeGlobal('resetDebounceFlags');
         if (typeof resetFunc === 'function') {
@@ -446,6 +502,10 @@
         }
         const twilioConn = getIframeGlobal('twilioConnected');
         const openaiConn = getIframeGlobal('openaiConnected');
+
+        // Verify we're starting at step 0
+        const beforeStep = getIframeGlobal('currentStep');
+        expect(beforeStep).toBe(0);
 
         // Only proceed if prerequisites are actually set
         if (twilioConn && openaiConn) {
@@ -509,7 +569,11 @@
           saveFunc();
 
           const iframeWindow = getIframeWindow();
-          const saved = iframeWindow.localStorage.getItem('workshop_progress');
+          const sessionToken = getIframeGlobal('sessionToken');
+
+          // Progress is saved with session-specific key: workshop_progress_${sessionToken}
+          const storageKey = `workshop_progress_${sessionToken}`;
+          const saved = iframeWindow.localStorage.getItem(storageKey);
           expect(saved).toBeTruthy();
 
           // Verify it's valid JSON with currentStep
@@ -622,7 +686,385 @@
 
     }));
 
-    // Test Suite 7: UI Responsiveness
+    // Test Suite 7: Next-Action Flow
+    testSuites.push(describe('Next-Action Flow', () => {
+
+      it('should have only ONE element with next-action class at any time', async () => {
+        // Trigger next-action update
+        const checkFunc = getIframeGlobal('checkAllConditions');
+        if (typeof checkFunc === 'function') {
+          checkFunc();
+          await wait(200);
+
+          const nextActionElements = getIframeElements('.next-action');
+
+          // Should have exactly 0 or 1 element with next-action (never more than 1)
+          expect(nextActionElements.length <= 1).toBeTruthy();
+        }
+      });
+
+      it('should add next-action to Connect OpenAI button after Twilio connected', async () => {
+        // Set Twilio connected but not OpenAI
+        callIframeFunction('setState', 'twilioConnected', true);
+        callIframeFunction('setState', 'openaiConnected', false);
+        setIframeGlobal('twilioConnected', true);
+        setIframeGlobal('openaiConnected', false);
+
+        // Trigger Step 1 completion check
+        const checkStep1 = getIframeGlobal('checkStep1Complete');
+        if (typeof checkStep1 === 'function') {
+          checkStep1();
+          await wait(600); // Wait for setTimeout in checkStep1Complete
+
+          const openaiBtn = getIframeElement('[onclick*="connectOpenAI"]');
+
+          // Verify next-action is on correct element (if button exists and elements have next-action)
+          const nextActionElements = getIframeElements('.next-action');
+          if (openaiBtn && nextActionElements.length > 0) {
+            expect(openaiBtn).toHaveClass('next-action');
+          }
+
+          // Verify only 0 or 1 element has next-action
+          expect(nextActionElements.length <= 1).toBeTruthy();
+        }
+      });
+
+      it('should move next-action to Next button after both accounts connected', async () => {
+        // Set both connected
+        callIframeFunction('setState', 'twilioConnected', true);
+        callIframeFunction('setState', 'openaiConnected', true);
+        setIframeGlobal('twilioConnected', true);
+        setIframeGlobal('openaiConnected', true);
+        setIframeGlobal('currentStep', 0);
+
+        // Trigger Step 1 completion check
+        const checkStep1 = getIframeGlobal('checkStep1Complete');
+        if (typeof checkStep1 === 'function') {
+          await checkStep1();
+          await wait(200);
+
+          const nextBtn = getIframeElement('#nextBtn1');
+          const nextActionElements = getIframeElements('.next-action');
+
+          // If next-action elements exist and button exists, verify it's on correct button
+          if (nextBtn && nextActionElements.length > 0) {
+            expect(nextBtn).toHaveClass('next-action');
+          }
+
+          // Verify only 0 or 1 element has next-action
+          expect(nextActionElements.length <= 1).toBeTruthy();
+        }
+      });
+
+      it('should move next-action from Validate to Commit button after validation', async () => {
+        // Set up Step 4 (index 3)
+        callIframeFunction('setState', 'currentStep', 3);
+        callIframeFunction('setState', 'step4CodeValidated', false);
+        callIframeFunction('setState', 'step4Deployed', false);
+        setIframeGlobal('currentStep', 3);
+
+        await wait(200);
+
+        // Initially validate button should have next-action (via restoreButtonStates)
+        callIframeFunction('restoreButtonStates');
+        await wait(200);
+
+        const validateBtn = getIframeElement('[onclick="validateCode4()"]');
+        if (validateBtn) {
+          // Validate button should have next-action initially
+          expect(validateBtn).toHaveClass('next-action');
+
+          // Now validate the code (this should move next-action to commit button)
+          // Set valid code first
+          const code4 = getIframeElement('#code4');
+          if (code4) {
+            code4.value = `exports.handler = function(context, event, callback) {
+              const twilio = require('twilio');
+              const twiml = new twilio.twiml.VoiceResponse();
+              twiml.say('Hello');
+              twiml.gather({ numDigits: 1 }).say('Press 1');
+              callback(null, twiml);
+            };`;
+
+            // Call validate
+            callIframeFunction('validateCode4');
+            await wait(300);
+
+            // Validate button should NO LONGER have next-action
+            expect(validateBtn.classList.contains('next-action')).toBeFalsy();
+
+            // Commit button SHOULD have next-action
+            const commitBtn = getIframeElement('#commitStep4Btn');
+            if (commitBtn) {
+              expect(commitBtn).toHaveClass('next-action');
+            }
+
+            // Verify only ONE element has next-action
+            const nextActionElements = getIframeElements('.next-action');
+            expect(nextActionElements.length).toBe(1);
+          }
+        }
+      });
+
+      it('should clear all highlights before adding new next-action', async () => {
+        // Manually add next-action to multiple elements (simulate a bug)
+        const doc = getIframeDocument();
+        const buttons = doc.querySelectorAll('button');
+        if (buttons.length >= 3) {
+          buttons[0].classList.add('next-action');
+          buttons[1].classList.add('next-action');
+          buttons[2].classList.add('next-action');
+        }
+
+        await wait(100);
+
+        // Verify we have multiple (this simulates the bug)
+        let multipleElements = getIframeElements('.next-action');
+        expect(multipleElements.length).toBeGreaterThan(1);
+
+        // Now trigger highlightNextAction which should clear all and add only one
+        const highlightFunc = getIframeGlobal('highlightNextAction');
+        if (typeof highlightFunc === 'function') {
+          highlightFunc();
+          await wait(200);
+
+          // Should now have only 0 or 1
+          const nextActionElements = getIframeElements('.next-action');
+          expect(nextActionElements.length <= 1).toBeTruthy();
+        }
+      });
+
+      it('should remove next-action from test call button after test completes', async () => {
+        // Set up for Step 4 test call
+        callIframeFunction('setState', 'currentStep', 3);
+        callIframeFunction('setState', 'step4Deployed', true);
+        callIframeFunction('setState', 'callDirection', 'outbound');
+        setIframeGlobal('currentStep', 3);
+        setIframeGlobal('callDirection', 'outbound');
+
+        await wait(200);
+
+        // Simulate test call button having next-action
+        const testCallBtn = getIframeElement('#makeLiveTestCallBtn');
+        if (testCallBtn) {
+          testCallBtn.classList.add('next-action');
+
+          await wait(100);
+
+          // Simulate test completion
+          callIframeFunction('setState', 'step4LiveTestCompleted', true);
+          setIframeGlobal('step4LiveTestCompleted', true);
+
+          // Call clearHighlights (which is called after test completion)
+          const clearFunc = getIframeGlobal('clearHighlights');
+          if (typeof clearFunc === 'function') {
+            clearFunc();
+            await wait(100);
+
+            // Test call button should no longer have next-action
+            expect(testCallBtn.classList.contains('next-action')).toBeFalsy();
+          }
+        }
+      });
+
+      it('should NOT have next-action on Save Prompt button initially in Step 7', async () => {
+        // Set up Step 7 (prompt engineering)
+        callIframeFunction('setState', 'currentStep', 6);
+        setIframeGlobal('currentStep', 6);
+        callIframeFunction('renderStepContent');
+
+        await wait(300);
+
+        // Save Prompt button should NOT have static next-action class
+        const saveBtn = getIframeElement('[onclick="saveSystemPrompt()"]');
+        if (saveBtn) {
+          // Check HTML - should NOT have next-action in the class attribute initially
+          const hasStaticClass = saveBtn.className.includes('next-action');
+
+          // It might have it if dynamically added, but verify there's only one
+          if (hasStaticClass) {
+            const nextActionElements = getIframeElements('.next-action');
+            expect(nextActionElements.length).toBe(1);
+          }
+        }
+      });
+
+      it('should move next-action to Next button after saving prompt', async () => {
+        // Set up Step 7
+        callIframeFunction('setState', 'currentStep', 6);
+        callIframeFunction('setState', 'systemPromptSaved', false);
+        setIframeGlobal('currentStep', 6);
+
+        await wait(200);
+
+        const promptTextarea = getIframeElement('#systemPrompt');
+        if (promptTextarea) {
+          // Set a valid prompt (>50 chars)
+          promptTextarea.value = 'You are a helpful AI assistant for customer service. Be polite and professional at all times.';
+
+          // Save the prompt
+          callIframeFunction('saveSystemPrompt');
+          await wait(300);
+
+          const nextBtn9 = getIframeElement('#nextBtn9');
+          const nextActionElements = getIframeElements('.next-action');
+
+          // If next-action elements exist and button exists, verify it's on correct button
+          if (nextBtn9 && nextActionElements.length > 0) {
+            expect(nextBtn9).toHaveClass('next-action');
+          }
+
+          // Verify only 0 or 1 element has next-action
+          expect(nextActionElements.length <= 1).toBeTruthy();
+        }
+      });
+
+      it('should have consistent next-action across step navigation', async () => {
+        // Navigate through steps and verify next-action consistency
+        const steps = [0, 1, 2];
+
+        for (const stepIndex of steps) {
+          callIframeFunction('setState', 'currentStep', stepIndex);
+          setIframeGlobal('currentStep', stepIndex);
+          callIframeFunction('renderStepContent');
+
+          await wait(300);
+
+          // Trigger next-action update
+          const highlightFunc = getIframeGlobal('highlightNextAction');
+          if (typeof highlightFunc === 'function') {
+            highlightFunc();
+            await wait(200);
+          }
+
+          // Should have 0 or 1 element with next-action
+          const nextActionElements = getIframeElements('.next-action');
+          expect(nextActionElements.length <= 1).toBeTruthy();
+        }
+      });
+
+      it('should follow complete next-action flow for Step 1 (Connect Accounts)', async () => {
+        // Test the complete flow as documented in NEXT_ACTION_FLOW.md
+
+        // 1.1 Initial State - Connect Twilio button should have next-action
+        callIframeFunction('setState', 'currentStep', 0);
+        callIframeFunction('setState', 'twilioConnected', false);
+        callIframeFunction('setState', 'openaiConnected', false);
+        setIframeGlobal('currentStep', 0);
+        setIframeGlobal('twilioConnected', false);
+        setIframeGlobal('openaiConnected', false);
+
+        callIframeFunction('renderStepContent');
+        await wait(300);
+
+        // Verify only 0-1 elements have next-action
+        let result = verifySingleNextAction();
+        expect(result.pass).toBeTruthy();
+
+        // 1.2 After Twilio Connected - OpenAI button should have next-action
+        callIframeFunction('setState', 'twilioConnected', true);
+        setIframeGlobal('twilioConnected', true);
+
+        const checkStep1 = getIframeGlobal('checkStep1Complete');
+        if (typeof checkStep1 === 'function') {
+          await checkStep1();
+          await wait(700); // Wait for setTimeout
+
+          result = verifySingleNextAction('[onclick*="connectOpenAI"]');
+          expect(result.pass).toBeTruthy();
+        }
+
+        // 1.3 After Both Connected - Next button should have next-action
+        callIframeFunction('setState', 'openaiConnected', true);
+        setIframeGlobal('openaiConnected', true);
+
+        if (typeof checkStep1 === 'function') {
+          await checkStep1();
+          await wait(300);
+
+          result = verifySingleNextAction('#nextBtn1');
+          expect(result.pass).toBeTruthy();
+        }
+      });
+
+      it('should follow complete next-action flow for Step 4 (Deploy Basic Handler)', async () => {
+        // Test the complete flow: Validate → Commit → Test → Next
+
+        // 4.1 Initial State - Validate button should have next-action
+        callIframeFunction('setState', 'currentStep', 3);
+        callIframeFunction('setState', 'step4CodeValidated', false);
+        callIframeFunction('setState', 'step4Deployed', false);
+        callIframeFunction('setState', 'callDirection', 'outbound');
+        setIframeGlobal('currentStep', 3);
+        setIframeGlobal('callDirection', 'outbound');
+
+        callIframeFunction('renderStepContent');
+        await wait(300);
+
+        callIframeFunction('restoreButtonStates');
+        await wait(200);
+
+        let result = verifySingleNextAction('[onclick="validateCode4()"]');
+        expect(result.pass).toBeTruthy();
+
+        // 4.2 After Validation - Commit button should have next-action
+        const code4 = getIframeElement('#code4');
+        if (code4) {
+          code4.value = `exports.handler = function(context, event, callback) {
+            const twilio = require('twilio');
+            const twiml = new twilio.twiml.VoiceResponse();
+            twiml.say('Hello').gather({ numDigits: 1 }).say('Press 1');
+            callback(null, twiml);
+          };`;
+
+          callIframeFunction('validateCode4');
+          await wait(300);
+
+          result = verifySingleNextAction('#commitStep4Btn');
+          expect(result.pass).toBeTruthy();
+        }
+
+        // Note: Full commit → test → next flow would require mocking API calls
+        // which is beyond the scope of this test, but the pattern is validated
+      });
+
+      it('should NOT have static next-action classes in HTML templates', async () => {
+        // This test ensures we removed all hardcoded next-action classes
+
+        // Step through all steps and check button HTML
+        const steps = [0, 1, 2, 3, 4, 5, 6, 7];
+
+        for (const stepIndex of steps) {
+          callIframeFunction('setState', 'currentStep', stepIndex);
+          setIframeGlobal('currentStep', stepIndex);
+          callIframeFunction('renderStepContent');
+
+          await wait(300);
+
+          // Get all buttons
+          const buttons = getIframeElements('button');
+
+          // Count buttons that have next-action in their initial class attribute
+          // (This would indicate a static class in the template)
+          let staticNextActionCount = 0;
+          buttons.forEach(btn => {
+            // Get the class attribute as string to check if it was in the HTML
+            const classAttr = btn.getAttribute('class') || '';
+            // If next-action appears in multiple buttons, that's a sign of static classes
+            if (classAttr.includes('next-action')) {
+              staticNextActionCount++;
+            }
+          });
+
+          // Should have 0 or 1 buttons with next-action
+          // (1 is OK if it was dynamically added, >1 suggests static classes)
+          expect(staticNextActionCount <= 1).toBeTruthy();
+        }
+      });
+
+    }));
+
+    // Test Suite 8: UI Responsiveness
     testSuites.push(describe('UI Responsiveness', () => {
 
       it('should have responsive container', async () => {

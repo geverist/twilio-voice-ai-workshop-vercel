@@ -172,13 +172,28 @@
       margin-top: 10px;
     }
 
-    input[type="text"] {
+    input[type="text"], input[type="number"] {
       width: 100%;
       padding: 10px;
       border: 2px solid #e0e0e0;
       border-radius: 6px;
       font-size: 14px;
       margin-top: 10px;
+    }
+
+    .config-select {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    .config-select:hover {
+      border-color: #667eea;
     }
 
     .loading {
@@ -223,10 +238,11 @@
     <div id="mainContent" style="display: none;">
       <div class="tabs">
         <button class="tab active" onclick="showTab('overview')">📊 Overview</button>
-        <button class="tab" onclick="showTab('analytics')">📈 Call Analytics</button>
-        <button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
+        <button class="tab" onclick="showTab('ai-config')">🤖 AI Configuration</button>
+        <button class="tab" onclick="showTab('conversationrelay')">☎️ ConversationRelay</button>
         <button class="tab" onclick="showTab('prompts')">📝 Prompts</button>
         <button class="tab" onclick="showTab('functions')">🛠️ Functions</button>
+        <button class="tab" onclick="showTab('analytics')">📈 Analytics</button>
       </div>
 
       <div id="overview" class="tab-content active">
@@ -264,6 +280,196 @@
               <p>Check Twilio Console</p>
               <button class="btn" onclick="window.open('https://console.twilio.com/us1/monitor/logs/calls', '_blank')">Open Logs</button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ai-config" class="tab-content">
+        <div class="panel">
+          <h2>🤖 AI Configuration</h2>
+          <p style="color: #666; margin-bottom: 30px;">
+            Control every aspect of your AI voice assistant - no third-party platforms needed. You own the entire stack.
+          </p>
+
+          <div class="settings-grid">
+            <!-- AI Provider Selection -->
+            <div class="setting-card">
+              <h3>🧠 AI Provider</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Choose your large language model provider</p>
+              <select id="aiProviderSelect" class="config-select" onchange="updateAIProvider()">
+                <option value="openai">OpenAI (GPT-4, GPT-3.5)</option>
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="google">Google (Gemini)</option>
+                <option value="azure">Azure OpenAI</option>
+              </select>
+              <div style="margin-top: 10px; padding: 10px; background: #f0f9ff; border-radius: 6px; font-size: 12px; color: #0369a1;">
+                💡 Currently using: <strong id="currentAIProvider">OpenAI</strong>
+              </div>
+            </div>
+
+            <!-- TTS Provider Selection -->
+            <div class="setting-card">
+              <h3>🔊 Text-to-Speech Provider</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Select your voice synthesis provider</p>
+              <select id="ttsProviderSelect" class="config-select" onchange="updateTTSProvider()">
+                <option value="elevenlabs">ElevenLabs (Ultra-realistic)</option>
+                <option value="google">Google TTS (Reliable)</option>
+                <option value="deepgram">Deepgram Aura (Low-latency)</option>
+                <option value="amazon">Amazon Polly (Cost-effective)</option>
+              </select>
+              <div style="margin-top: 10px; padding: 10px; background: #f0f9ff; border-radius: 6px; font-size: 12px; color: #0369a1;">
+                💡 Current: <strong id="currentTTSProvider">--</strong>
+              </div>
+            </div>
+
+            <!-- Voice Selection -->
+            <div class="setting-card">
+              <h3>🎙️ Voice Selection</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Choose the voice personality</p>
+              <select id="voiceSelect" class="config-select" onchange="updateVoice()">
+                <!-- Dynamically populated based on TTS provider -->
+              </select>
+              <button class="btn" onclick="previewVoice()" style="width: 100%; margin-top: 10px;">
+                🔊 Preview Voice
+              </button>
+            </div>
+
+            <!-- AI Model Selection -->
+            <div class="setting-card">
+              <h3>⚡ AI Model</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Select the specific model version</p>
+              <select id="aiModelSelect" class="config-select" onchange="updateAIModel()">
+                <!-- Dynamically populated based on AI provider -->
+              </select>
+              <div style="margin-top: 10px; padding: 10px; background: #fef3c7; border-radius: 6px; font-size: 12px; color: #92400e;">
+                ⚠️ More powerful models cost more but provide better responses
+              </div>
+            </div>
+
+            <!-- Temperature Control -->
+            <div class="setting-card">
+              <h3>🌡️ AI Temperature</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Control response creativity (0 = focused, 2 = creative)</p>
+              <input type="range" id="temperatureSlider" min="0" max="2" step="0.1" value="0.7"
+                     style="width: 100%; margin: 10px 0;" oninput="updateTemperature(this.value)">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+                <span>Focused (0)</span>
+                <span id="temperatureValue" style="font-weight: bold; color: #667eea;">0.7</span>
+                <span>Creative (2)</span>
+              </div>
+              <button class="btn" onclick="saveTemperature()" style="width: 100%; margin-top: 10px;">
+                💾 Save Temperature
+              </button>
+            </div>
+
+            <!-- Max Response Length -->
+            <div class="setting-card">
+              <h3>📏 Max Response Tokens</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Limit AI response length (for voice, keep under 150)</p>
+              <input type="number" id="maxTokensInput" min="50" max="500" value="150"
+                     style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px;">
+              <button class="btn" onclick="saveMaxTokens()" style="width: 100%; margin-top: 10px;">
+                💾 Save Max Tokens
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; color: white;">
+            <h3 style="color: white; margin: 0 0 10px 0;">✨ Why This Matters</h3>
+            <p style="color: rgba(255,255,255,0.95); font-size: 14px; line-height: 1.6; margin: 0;">
+              Unlike platforms like Retell.ai or Vapi, YOU control every aspect of your AI stack. Switch providers, adjust settings, and optimize costs - all without vendor lock-in. This is your foundation to build upon.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div id="conversationrelay" class="tab-content">
+        <div class="panel">
+          <h2>☎️ ConversationRelay Configuration</h2>
+          <p style="color: #666; margin-bottom: 30px;">
+            Twilio's ConversationRelay connects your AI to phone calls. Fine-tune these settings for optimal performance.
+          </p>
+
+          <div class="settings-grid">
+            <!-- WebSocket Configuration -->
+            <div class="setting-card">
+              <h3>🔌 WebSocket Endpoint</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Your deployed WebSocket server URL</p>
+              <div class="setting-value" id="websocketUrlDisplay">--</div>
+              <button class="btn btn-secondary" onclick="testWebSocketConnection()" style="width: 100%; margin-top: 10px;">
+                🔍 Test Connection
+              </button>
+            </div>
+
+            <!-- Voice Activity Detection -->
+            <div class="setting-card">
+              <h3>🎤 Voice Activity Detection</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Detect when caller stops speaking</p>
+              <select id="vadSelect" class="config-select" onchange="updateVAD()">
+                <option value="auto">Auto (Recommended)</option>
+                <option value="aggressive">Aggressive (Fast response)</option>
+                <option value="conservative">Conservative (Less interruption)</option>
+              </select>
+            </div>
+
+            <!-- Interruption Handling -->
+            <div class="setting-card">
+              <h3>⚡ Interruption Handling</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Allow callers to interrupt AI mid-sentence</p>
+              <label style="display: flex; align-items: center; gap: 10px; margin: 15px 0; cursor: pointer;">
+                <input type="checkbox" id="interruptibleCheckbox" onchange="updateInterruptible()"
+                       style="width: 20px; height: 20px; cursor: pointer;">
+                <span style="font-size: 14px;">Enable Interruptions (Natural conversations)</span>
+              </label>
+            </div>
+
+            <!-- STT Provider -->
+            <div class="setting-card">
+              <h3>🎧 Speech-to-Text Provider</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">How caller speech is transcribed</p>
+              <select id="sttProviderSelect" class="config-select" onchange="updateSTTProvider()">
+                <option value="google">Google STT (High accuracy)</option>
+                <option value="deepgram">Deepgram (Low latency)</option>
+                <option value="amazon">Amazon Transcribe</option>
+                <option value="azure">Azure Speech</option>
+              </select>
+            </div>
+
+            <!-- Audio Format -->
+            <div class="setting-card">
+              <h3>🔊 Audio Encoding</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Audio format for ConversationRelay</p>
+              <select id="audioFormatSelect" class="config-select" onchange="updateAudioFormat()">
+                <option value="mulaw">μ-law (8kHz, Default)</option>
+                <option value="pcm16">PCM 16-bit (16kHz, Higher quality)</option>
+              </select>
+            </div>
+
+            <!-- Barge-in Sensitivity -->
+            <div class="setting-card">
+              <h3>⚡ Barge-in Sensitivity</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">How easily caller can interrupt (0-100)</p>
+              <input type="range" id="bargeInSlider" min="0" max="100" step="5" value="50"
+                     style="width: 100%; margin: 10px 0;" oninput="updateBargeInDisplay(this.value)">
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: #666;">
+                <span>Low</span>
+                <span id="bargeInValue" style="font-weight: bold; color: #667eea;">50</span>
+                <span>High</span>
+              </div>
+              <button class="btn" onclick="saveBargeInSensitivity()" style="width: 100%; margin-top: 10px;">
+                💾 Save Sensitivity
+              </button>
+            </div>
+          </div>
+
+          <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
+            <h4 style="color: #333; margin: 0 0 10px 0;">📚 Learn More</h4>
+            <p style="color: #666; font-size: 14px; margin: 0 0 10px 0;">
+              These settings control how Twilio's ConversationRelay manages real-time voice conversations with your AI.
+            </p>
+            <button class="btn btn-secondary" onclick="window.open('https://www.twilio.com/docs/voice/twiml/stream', '_blank')">
+              View ConversationRelay Docs
+            </button>
           </div>
         </div>
       </div>
@@ -310,11 +516,17 @@
               <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Description</label>
               <textarea id="newFunctionDescription" placeholder="What does this function do? Be specific so the AI knows when to use it." style="min-height: 80px;"></textarea>
 
+              <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Webhook URL (Optional)</label>
+              <input type="text" id="newFunctionWebhookUrl" placeholder="https://your-api.com/webhooks/your-function (leave empty for simulated mode)" style="margin-top: 0;">
+
               <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Parameters (JSON Schema)</label>
               <textarea id="newFunctionParameters" placeholder='{"type": "object", "properties": {"date": {"type": "string", "description": "Date to check"}}, "required": ["date"]}' style="min-height: 120px; font-family: monospace;"></textarea>
 
               <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; font-size: 13px; color: #856404;">
                 💡 <strong>Tip:</strong> Parameters use JSON Schema format. Define what inputs your function needs.
+              </div>
+              <div style="margin-top: 10px; padding: 10px; background: #e0f2fe; border-radius: 6px; font-size: 13px; color: #075985;">
+                🔗 <strong>Webhook URL:</strong> Optional HTTPS endpoint for external tool execution. See <a href="/WEBHOOK_TOOLS.md" target="_blank" style="color: #0369a1; text-decoration: underline;">WEBHOOK_TOOLS.md</a> for details.
               </div>
 
               <button class="btn" onclick="addFunction()" style="margin-top: 15px; margin-right: 10px;">
@@ -494,6 +706,36 @@
       document.getElementById('systemPromptEditor').value = config.systemPrompt || '';
       document.getElementById('ivrGreetingEditor').value = config.ivrGreeting || '';
 
+      // Initialize AI Configuration controls
+      const aiProvider = config.aiProvider || 'openai';
+      const ttsProvider = config.ttsProvider || 'elevenlabs';
+
+      document.getElementById('aiProviderSelect').value = aiProvider;
+      document.getElementById('ttsProviderSelect').value = ttsProvider;
+      document.getElementById('currentTTSProvider').textContent = getTTSProviderName(ttsProvider);
+
+      populateAIModels(aiProvider);
+      populateVoices(ttsProvider);
+
+      if (config.aiModel) document.getElementById('aiModelSelect').value = config.aiModel;
+      if (config.selectedVoice) document.getElementById('voiceSelect').value = config.selectedVoice;
+      if (config.aiTemperature) {
+        document.getElementById('temperatureSlider').value = config.aiTemperature;
+        document.getElementById('temperatureValue').textContent = config.aiTemperature;
+      }
+      if (config.aiMaxTokens) document.getElementById('maxTokensInput').value = config.aiMaxTokens;
+
+      // Initialize ConversationRelay controls
+      document.getElementById('websocketUrlDisplay').textContent = config.websocketUrl || 'Not deployed';
+      if (config.vadMode) document.getElementById('vadSelect').value = config.vadMode;
+      if (config.interruptible !== undefined) document.getElementById('interruptibleCheckbox').checked = config.interruptible;
+      if (config.sttProvider) document.getElementById('sttProviderSelect').value = config.sttProvider;
+      if (config.audioFormat) document.getElementById('audioFormatSelect').value = config.audioFormat;
+      if (config.bargeInSensitivity) {
+        document.getElementById('bargeInSlider').value = config.bargeInSensitivity;
+        document.getElementById('bargeInValue').textContent = config.bargeInSensitivity;
+      }
+
       // Render functions list
       renderFunctions();
     }
@@ -573,7 +815,21 @@
 
     function renderFunctions() {
       const functionsList = document.getElementById('functionsList');
-      const tools = config.tools || [];
+
+      // Ensure tools is always an array
+      let tools = config.tools || [];
+      if (typeof tools === 'string') {
+        try {
+          tools = JSON.parse(tools);
+        } catch (e) {
+          console.error('Failed to parse tools:', e);
+          tools = [];
+        }
+      }
+      if (!Array.isArray(tools)) {
+        console.error('tools is not an array:', typeof tools, tools);
+        tools = [];
+      }
 
       if (tools.length === 0) {
         functionsList.innerHTML = `
@@ -594,6 +850,16 @@
             <div style="flex: 1;">
               <h3 style="margin: 0 0 5px 0; color: #667eea;">${func.name || 'Unnamed Function'}</h3>
               <p style="color: #666; font-size: 13px; margin: 0;">${func.description || 'No description'}</p>
+              ${func.webhook_url ? `
+                <div style="margin-top: 8px; padding: 8px; background: #e0f2fe; border-radius: 4px; border-left: 3px solid #0369a1;">
+                  <div style="font-size: 11px; color: #075985; font-weight: 600; margin-bottom: 3px;">🔗 WEBHOOK URL</div>
+                  <div style="font-size: 11px; color: #0c4a6e; font-family: monospace; word-break: break-all;">${func.webhook_url}</div>
+                </div>
+              ` : `
+                <div style="margin-top: 8px; padding: 6px; background: #fef3c7; border-radius: 4px; font-size: 11px; color: #92400e;">
+                  ⚠️ Simulated mode (no webhook configured)
+                </div>
+              `}
             </div>
             <div style="display: flex; gap: 10px;">
               <button class="btn-secondary" onclick="editFunction(${index})" style="padding: 6px 12px; font-size: 12px; cursor: pointer; background: #667eea; color: white; border: none; border-radius: 4px;">
@@ -618,6 +884,7 @@
     async function addFunction() {
       const name = document.getElementById('newFunctionName').value.trim();
       const description = document.getElementById('newFunctionDescription').value.trim();
+      const webhookUrl = document.getElementById('newFunctionWebhookUrl').value.trim();
       const parametersText = document.getElementById('newFunctionParameters').value.trim();
 
       // Validation
@@ -655,6 +922,11 @@
           }
         }
       };
+
+      // Add webhook_url if provided
+      if (webhookUrl) {
+        newFunction.function.webhook_url = webhookUrl;
+      }
 
       // Add to tools array
       const updatedTools = [...(config.tools || []), newFunction];
@@ -730,6 +1002,7 @@
       // Populate form with existing values
       document.getElementById('newFunctionName').value = tool.function.name || '';
       document.getElementById('newFunctionDescription').value = tool.function.description || '';
+      document.getElementById('newFunctionWebhookUrl').value = tool.function.webhook_url || '';
       document.getElementById('newFunctionParameters').value = JSON.stringify(tool.function.parameters, null, 2);
 
       // Delete the old one (will be re-added when they save)
@@ -742,6 +1015,7 @@
     function clearFunctionForm() {
       document.getElementById('newFunctionName').value = '';
       document.getElementById('newFunctionDescription').value = '';
+      document.getElementById('newFunctionWebhookUrl').value = '';
       document.getElementById('newFunctionParameters').value = '';
     }
 
@@ -943,6 +1217,221 @@
         'canceled': '🛑'
       };
       return emojis[status] || '❓';
+    }
+
+    // =========================================================================
+    // AI CONFIGURATION TAB
+    // =========================================================================
+
+    function updateAIProvider() {
+      const provider = document.getElementById('aiProviderSelect').value;
+      document.getElementById('currentAIProvider').textContent =
+        provider === 'openai' ? 'OpenAI' :
+        provider === 'anthropic' ? 'Anthropic (Claude)' :
+        provider === 'google' ? 'Google (Gemini)' :
+        provider === 'azure' ? 'Azure OpenAI' : provider;
+
+      // Update available models based on provider
+      populateAIModels(provider);
+
+      // Save to database
+      saveConfigField('aiProvider', provider);
+    }
+
+    function populateAIModels(provider) {
+      const modelSelect = document.getElementById('aiModelSelect');
+      const models = {
+        'openai': [
+          { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (Recommended)' },
+          { value: 'gpt-4', label: 'GPT-4 (Most capable)' },
+          { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo (Fastest)' }
+        ],
+        'anthropic': [
+          { value: 'claude-3-opus', label: 'Claude 3 Opus (Most capable)' },
+          { value: 'claude-3-sonnet', label: 'Claude 3 Sonnet (Balanced)' },
+          { value: 'claude-3-haiku', label: 'Claude 3 Haiku (Fastest)' }
+        ],
+        'google': [
+          { value: 'gemini-pro', label: 'Gemini Pro' },
+          { value: 'gemini-pro-vision', label: 'Gemini Pro Vision' }
+        ],
+        'azure': [
+          { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+          { value: 'gpt-35-turbo', label: 'GPT-3.5 Turbo' }
+        ]
+      };
+
+      modelSelect.innerHTML = (models[provider] || []).map(m =>
+        `<option value="${m.value}">${m.label}</option>`
+      ).join('');
+    }
+
+    function updateAIModel() {
+      const model = document.getElementById('aiModelSelect').value;
+      saveConfigField('aiModel', model);
+    }
+
+    function updateTTSProvider() {
+      const provider = document.getElementById('ttsProviderSelect').value;
+      document.getElementById('currentTTSProvider').textContent = getTTSProviderName(provider);
+
+      // Update available voices based on provider
+      populateVoices(provider);
+
+      // Save to database
+      saveConfigField('ttsProvider', provider);
+    }
+
+    function populateVoices(provider) {
+      const voiceSelect = document.getElementById('voiceSelect');
+      const voices = {
+        'elevenlabs': [
+          { value: 'rachel', label: 'Rachel (Warm, friendly)' },
+          { value: 'domi', label: 'Domi (Professional)' },
+          { value: 'bella', label: 'Bella (Soft, calm)' },
+          { value: 'antoni', label: 'Antoni (Deep, authoritative)' }
+        ],
+        'google': [
+          { value: 'en-US-Neural2-A', label: 'Neural2-A (Male)' },
+          { value: 'en-US-Neural2-C', label: 'Neural2-C (Female)' },
+          { value: 'en-US-Neural2-D', label: 'Neural2-D (Male)' },
+          { value: 'en-US-Neural2-F', label: 'Neural2-F (Female)' }
+        ],
+        'deepgram': [
+          { value: 'aura-asteria-en', label: 'Asteria (Warm)' },
+          { value: 'aura-luna-en', label: 'Luna (Professional)' },
+          { value: 'aura-stella-en', label: 'Stella (Friendly)' },
+          { value: 'aura-athena-en', label: 'Athena (Authoritative)' }
+        ],
+        'amazon': [
+          { value: 'Joanna', label: 'Joanna (Female, US)' },
+          { value: 'Matthew', label: 'Matthew (Male, US)' },
+          { value: 'Salli', label: 'Salli (Female, US)' },
+          { value: 'Joey', label: 'Joey (Male, US)' }
+        ]
+      };
+
+      voiceSelect.innerHTML = (voices[provider] || []).map(v =>
+        `<option value="${v.value}">${v.label}</option>`
+      ).join('');
+    }
+
+    function updateVoice() {
+      const voice = document.getElementById('voiceSelect').value;
+      saveConfigField('selectedVoice', voice);
+    }
+
+    function previewVoice() {
+      alert('🔊 Voice preview feature coming soon! For now, make a test call to hear your selected voice.');
+    }
+
+    function updateTemperature(value) {
+      document.getElementById('temperatureValue').textContent = value;
+    }
+
+    function saveTemperature() {
+      const temperature = parseFloat(document.getElementById('temperatureSlider').value);
+      saveConfigField('aiTemperature', temperature);
+      alert(`✅ AI temperature set to ${temperature}`);
+    }
+
+    function saveMaxTokens() {
+      const maxTokens = parseInt(document.getElementById('maxTokensInput').value);
+      saveConfigField('aiMaxTokens', maxTokens);
+      alert(`✅ Max response tokens set to ${maxTokens}`);
+    }
+
+    // =========================================================================
+    // CONVERSATIONRELAY CONFIGURATION TAB
+    // =========================================================================
+
+    function testWebSocketConnection() {
+      const wsUrl = config.websocketUrl || '';
+      if (!wsUrl) {
+        alert('❌ No WebSocket URL configured. Deploy your WebSocket server first!');
+        return;
+      }
+
+      alert(`🔍 Testing connection to:\n${wsUrl}\n\nCheck your browser console for results.`);
+
+      // Attempt WebSocket connection test
+      try {
+        const ws = new WebSocket(wsUrl);
+        ws.onopen = () => {
+          console.log('✅ WebSocket connection successful!');
+          alert('✅ WebSocket connection successful!');
+          ws.close();
+        };
+        ws.onerror = (error) => {
+          console.error('❌ WebSocket connection failed:', error);
+          alert('❌ WebSocket connection failed. Check console for details.');
+        };
+      } catch (error) {
+        console.error('❌ WebSocket test error:', error);
+        alert('❌ Failed to test WebSocket: ' + error.message);
+      }
+    }
+
+    function updateVAD() {
+      const vad = document.getElementById('vadSelect').value;
+      saveConfigField('vadMode', vad);
+      alert(`✅ Voice Activity Detection set to: ${vad}`);
+    }
+
+    function updateInterruptible() {
+      const interruptible = document.getElementById('interruptibleCheckbox').checked;
+      saveConfigField('interruptible', interruptible);
+      alert(`✅ Interruptions ${interruptible ? 'enabled' : 'disabled'}`);
+    }
+
+    function updateSTTProvider() {
+      const sttProvider = document.getElementById('sttProviderSelect').value;
+      saveConfigField('sttProvider', sttProvider);
+      alert(`✅ Speech-to-Text provider set to: ${sttProvider}`);
+    }
+
+    function updateAudioFormat() {
+      const format = document.getElementById('audioFormatSelect').value;
+      saveConfigField('audioFormat', format);
+      alert(`✅ Audio encoding set to: ${format}`);
+    }
+
+    function updateBargeInDisplay(value) {
+      document.getElementById('bargeInValue').textContent = value;
+    }
+
+    function saveBargeInSensitivity() {
+      const sensitivity = parseInt(document.getElementById('bargeInSlider').value);
+      saveConfigField('bargeInSensitivity', sensitivity);
+      alert(`✅ Barge-in sensitivity set to: ${sensitivity}`);
+    }
+
+    // =========================================================================
+    // HELPER FUNCTIONS
+    // =========================================================================
+
+    async function saveConfigField(fieldName, value) {
+      try {
+        const response = await fetch(`${API_BASE}/api/student-config-update`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN,
+            [fieldName]: value
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          config[fieldName] = value;
+          console.log(`✅ Saved ${fieldName}:`, value);
+        } else {
+          console.error(`❌ Failed to save ${fieldName}:`, data.error);
+        }
+      } catch (error) {
+        console.error(`❌ Error saving ${fieldName}:`, error);
+      }
     }
 
     loadConfig();

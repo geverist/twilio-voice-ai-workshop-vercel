@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversation History | Twilio Voice AI Workshop</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #F22F46 0%, #0d122b 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #F22F46 0%, #0d122b 100%);
+      padding: 40px;
+      color: white;
+      text-align: center;
+      position: relative;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .back-link {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+
+    .back-link:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      border: 2px solid #e0e0e0;
+    }
+
+    .stat-card .number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #F22F46;
+      margin-bottom: 5px;
+    }
+
+    .stat-card .label {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .conversation-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .conversation-card {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 25px;
+      border: 2px solid #e0e0e0;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .conversation-card:hover {
+      border-color: #F22F46;
+      box-shadow: 0 4px 12px rgba(242, 47, 70, 0.2);
+    }
+
+    .conversation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .conversation-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #0d122b;
+    }
+
+    .conversation-time {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .conversation-meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .conversation-status {
+      display: inline-block;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-completed {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-active {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .conversation-detail {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .conversation-card.expanded .conversation-detail {
+      display: block;
+    }
+
+    .message {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .message.user {
+      background: #e3f2fd;
+      border-left: 4px solid #1976d2;
+    }
+
+    .message.assistant {
+      background: #f3e5f5;
+      border-left: 4px solid #9c27b0;
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .message-role {
+      font-weight: 600;
+    }
+
+    .message-content {
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .button {
+      background: #F22F46;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .button:hover {
+      background: #d11f3a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(242, 47, 70, 0.3);
+    }
+
+    .button.secondary {
+      background: #6c757d;
+    }
+
+    .button.secondary:hover {
+      background: #5a6268;
+    }
+
+    .alert {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .alert.error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+
+    .alert.info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .conversation-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .conversation-meta {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <a href="/" class="back-link">← Back to Workshop</a>
+      <h1>💬 Conversation History</h1>
+      <p>Review your past AI voice conversations</p>
+    </div>
+
+    <div class="content">
+      <!-- Alert Messages -->
+      <div id="alertError" class="alert error"></div>
+      <div id="alertInfo" class="alert info"></div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="number" id="totalConversations">0</div>
+          <div class="label">Total Conversations</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="totalMessages">0</div>
+          <div class="label">Total Messages</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="avgDuration">0m</div>
+          <div class="label">Avg Duration</div>
+        </div>
+        <div class="stat-card">
+          <div class="number" id="avgTurns">0</div>
+          <div class="label">Avg Turns</div>
+        </div>
+      </div>
+
+      <!-- Conversation List -->
+      <div id="conversationList" class="conversation-list">
+        <div style="text-align: center; color: #999;">Loading conversations...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let conversations = [];
+    let sessionToken = null;
+
+    // Get session token from URL or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    sessionToken = urlParams.get('sessionToken') || localStorage.getItem('sessionToken');
+
+    if (!sessionToken) {
+      showAlert('error', '❌ No session found. Please start from the workshop page.');
+    } else {
+      loadConversations();
+    }
+
+    async function loadConversations() {
+      try {
+        const response = await fetch(`/api/conversation-history-get?sessionToken=${encodeURIComponent(sessionToken)}&limit=50`);
+        const data = await response.json();
+
+        if (!data.success) {
+          showAlert('error', `❌ ${data.error || 'Failed to load conversations'}`);
+          return;
+        }
+
+        conversations = data.conversations || [];
+        renderConversations();
+        updateStats();
+
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+        showAlert('error', `❌ Error: ${error.message}`);
+      }
+    }
+
+    function renderConversations() {
+      const listContainer = document.getElementById('conversationList');
+
+      if (conversations.length === 0) {
+        listContainer.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <h2>No conversations yet</h2>
+            <p style="margin-top: 10px;">Your AI voice conversations will appear here after you make test calls</p>
+          </div>
+        `;
+        return;
+      }
+
+      listContainer.innerHTML = conversations.map((conv, index) => {
+        const startTime = new Date(conv.startedAt);
+        const endTime = conv.endedAt ? new Date(conv.endedAt) : null;
+        const duration = conv.durationSeconds ? formatDuration(conv.durationSeconds) : 'In progress';
+        const status = conv.status === 'completed' ? 'completed' : 'active';
+
+        return `
+          <div class="conversation-card" onclick="toggleConversation('${conv.id}')">
+            <div class="conversation-header">
+              <div>
+                <div class="conversation-title">
+                  📞 Call ${conversations.length - index}
+                  ${conv.direction ? `(${conv.direction})` : ''}
+                </div>
+                <div class="conversation-time">${startTime.toLocaleString()}</div>
+              </div>
+              <span class="conversation-status status-${status}">
+                ${status === 'completed' ? '✓ Completed' : '⏳ Active'}
+              </span>
+            </div>
+
+            <div class="conversation-meta">
+              <div class="meta-item">
+                <span>⏱️ Duration:</span>
+                <strong>${duration}</strong>
+              </div>
+              <div class="meta-item">
+                <span>💬 Turns:</span>
+                <strong>${conv.turnCount || 0}</strong>
+              </div>
+              <div class="meta-item">
+                <span>📊 Messages:</span>
+                <strong>${conv.messageCount || 0}</strong>
+              </div>
+              ${conv.fromNumber ? `
+                <div class="meta-item">
+                  <span>📱 From:</span>
+                  <strong>${conv.fromNumber}</strong>
+                </div>
+              ` : ''}
+            </div>
+
+            <button class="button secondary" onclick="loadConversationDetail('${conv.id}'); event.stopPropagation();">
+              👁️ View Conversation
+            </button>
+
+            <div class="conversation-detail" id="detail-${conv.id}">
+              <div style="text-align: center; color: #999; padding: 20px;">
+                Loading conversation...
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadConversationDetail(conversationId) {
+      const detailContainer = document.getElementById(`detail-${conversationId}`);
+
+      try {
+        const response = await fetch(`/api/conversation-history-get?sessionToken=${encodeURIComponent(sessionToken)}&conversationSessionId=${conversationId}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          detailContainer.innerHTML = `<div style="color: #dc3545;">❌ Failed to load conversation details</div>`;
+          return;
+        }
+
+        const conversation = data.conversation;
+        const history = conversation.history || [];
+
+        if (history.length === 0) {
+          detailContainer.innerHTML = `<div style="color: #999;">No messages in this conversation</div>`;
+          return;
+        }
+
+        detailContainer.innerHTML = `
+          <h3 style="margin-bottom: 20px; color: #0d122b;">Conversation Transcript</h3>
+          ${history.map(msg => `
+            <div class="message ${msg.role}">
+              <div class="message-header">
+                <span class="message-role">${msg.role === 'user' ? '👤 Caller' : '🤖 AI Assistant'}</span>
+                <span>${new Date(msg.timestamp).toLocaleTimeString()}</span>
+              </div>
+              <div class="message-content">${msg.content}</div>
+            </div>
+          `).join('')}
+        `;
+
+      } catch (error) {
+        console.error('Error loading conversation detail:', error);
+        detailContainer.innerHTML = `<div style="color: #dc3545;">❌ Error: ${error.message}</div>`;
+      }
+    }
+
+    function toggleConversation(conversationId) {
+      const card = event.currentTarget;
+      card.classList.toggle('expanded');
+    }
+
+    function updateStats() {
+      const totalConversations = conversations.length;
+      const totalMessages = conversations.reduce((sum, conv) => sum + (conv.messageCount || 0), 0);
+      const totalDuration = conversations.reduce((sum, conv) => sum + (conv.durationSeconds || 0), 0);
+      const totalTurns = conversations.reduce((sum, conv) => sum + (conv.turnCount || 0), 0);
+
+      document.getElementById('totalConversations').textContent = totalConversations;
+      document.getElementById('totalMessages').textContent = totalMessages;
+      document.getElementById('avgDuration').textContent =
+        totalConversations > 0 ? formatDuration(Math.round(totalDuration / totalConversations)) : '0m';
+      document.getElementById('avgTurns').textContent =
+        totalConversations > 0 ? Math.round(totalTurns / totalConversations) : 0;
+    }
+
+    function formatDuration(seconds) {
+      if (!seconds) return '0s';
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    }
+
+    function showAlert(type, message) {
+      const alertElement = document.getElementById(`alert${type.charAt(0).toUpperCase() + type.slice(1)}`);
+      alertElement.textContent = message;
+      alertElement.style.display = 'block';
+
+      setTimeout(() => {
+        alertElement.style.display = 'none';
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
