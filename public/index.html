@@ -6147,8 +6147,8 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary" id="nextBtn7" onclick="nextStep()" disabled>
-              Next: ConversationRelay →
+            <button class="btn btn-primary" id="nextBtn7" onclick="nextStep()" ${systemPromptSaved ? '' : 'disabled'}>
+              Next: Tools & Functions →
             </button>
           </div>
         </div>
@@ -6252,8 +6252,10 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
       customSystemPrompt = prompt;
       systemPromptSaved = true;
+      promptEngineeringComplete = true; // Mark prompt engineering as complete
       showStatus('systemPromptStatus', 'success', '✅ System prompt saved! Deploy it below or skip to next step.');
       saveProgressToStorage();
+      updateProgressBar(); // Update progress bar immediately
 
       // Clear all existing next-action highlights first
       document.querySelectorAll('.next-action').forEach(el => {
@@ -6261,7 +6263,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
       });
 
       // Enable Next button immediately - deployment is optional
-      const nextBtn = document.getElementById('nextBtn9');
+      const nextBtn = document.getElementById('nextBtn7'); // Fixed: Step 7 uses nextBtn7, not nextBtn9
       if (nextBtn) {
         nextBtn.disabled = false;
         // Add next-action to Next button since it's the recommended next step
