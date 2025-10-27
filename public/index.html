@@ -5383,7 +5383,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
       if (conversationRelayVoice) return conversationRelayVoice;
 
       // Otherwise return provider defaults
-      if (ttsProvider === 'elevenlabs') return '9XfYMbJVZqPHaQtYnTAO'; // Cody - Energetic Upbeat Educator
+      if (ttsProvider === 'elevenlabs') return '4YYIPFl9wE5c4L2eu2Gb'; // Bert Reynolds - Charismatic and Smooth
       if (ttsProvider === 'google') return 'en-US-Wavenet-A';
       return 'Polly.Joanna'; // Amazon Polly default
     }
@@ -5393,6 +5393,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
       // ElevenLabs voice ID to name mapping
       const elevenlabsVoices = {
+        '4YYIPFl9wE5c4L2eu2Gb': 'Bert Reynolds - Charismatic and Smooth',
         '9XfYMbJVZqPHaQtYnTAO': 'Cody - Energetic Upbeat Educator',
         '4CrZuIW9am7gYAxgo2Af': 'Shelley - Clear and confident British female',
         '8N2ng9i2uiUWqstgmWlH': 'Beth - Gentle and nurturing',
@@ -5421,6 +5422,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
     function getVoiceOptions() {
       if (ttsProvider === 'elevenlabs') {
         return `
+          <option value="4YYIPFl9wE5c4L2eu2Gb">Bert Reynolds - Charismatic and Smooth</option>
           <option value="9XfYMbJVZqPHaQtYnTAO">Cody - Energetic Upbeat Educator</option>
           <option value="4CrZuIW9am7gYAxgo2Af">Shelley - Clear and confident British female</option>
           <option value="8N2ng9i2uiUWqstgmWlH">Beth - Gentle and nurturing</option>
@@ -10881,7 +10883,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   }
 
   // Popular ElevenLabs Voices - swap the voice ID to try different voices:
-  // '9XfYMbJVZqPHaQtYnTAO' - Cody (Energetic Upbeat Educator) - DEFAULT
+  // '4YYIPFl9wE5c4L2eu2Gb' - Bert Reynolds (Charismatic and Smooth) - DEFAULT
+  // '9XfYMbJVZqPHaQtYnTAO' - Cody (Energetic Upbeat Educator)
   // '4CrZuIW9am7gYAxgo2Af' - Shelley (Clear and confident British female)
   // '8N2ng9i2uiUWqstgmWlH' - Beth (Gentle and nurturing)
   // '90ipbRoKi4CpHXvKVtl0' - Anika (Customer Care Agent)
@@ -10897,7 +10900,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     welcomeGreeting: '${generatedContent?.ivrGreeting || "Hello! I am your AI assistant. How can I help you today?"}',
 
     // Voice Configuration
-    voice: '9XfYMbJVZqPHaQtYnTAO',  // Cody - Energetic Upbeat Educator
+    voice: '4YYIPFl9wE5c4L2eu2Gb',  // Bert Reynolds - Charismatic and Smooth
     ttsProvider: 'elevenlabs',       // Options: 'elevenlabs', 'amazon', 'google'
 
     // Language Settings
@@ -15199,7 +15202,7 @@ app.get('/health', (req, res) => {
     welcomeGreeting: '${generatedContent?.ivrGreeting || "Hello! I am your AI assistant. How can I help you today?"}',
 
     // Voice Configuration
-    voice: '9XfYMbJVZqPHaQtYnTAO',  // Cody - Energetic Upbeat Educator
+    voice: '4YYIPFl9wE5c4L2eu2Gb',  // Bert Reynolds - Charismatic and Smooth
     ttsProvider: 'elevenlabs',       // Options: 'elevenlabs', 'amazon', 'google'
 
     // Language Settings
