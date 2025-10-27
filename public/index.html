@@ -5969,6 +5969,50 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
             <div id="systemPromptStatus" class="status-box"></div>
           </div>
 
+          <!-- Welcome Greeting Configuration -->
+          <div class="service-card" style="margin-top: 20px;">
+            <h3>👋 Welcome Greeting Configuration</h3>
+            <p>Control whether your AI greets callers first or waits for them to speak.</p>
+
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 15px 0;">
+              <label style="display: flex; align-items: center; cursor: pointer; font-size: 15px;">
+                <input
+                  type="checkbox"
+                  id="enableWelcomeGreeting"
+                  checked
+                  onchange="toggleWelcomeGreeting()"
+                  style="width: 20px; height: 20px; margin-right: 12px; cursor: pointer;"
+                />
+                <span style="font-weight: 600; color: #0d122b;">Enable Welcome Greeting</span>
+              </label>
+              <p style="margin: 10px 0 0 32px; font-size: 13px; color: #666;">
+                When enabled, the AI will greet callers first. When disabled, the AI waits for the caller to speak.
+              </p>
+            </div>
+
+            <div id="greetingInputSection" style="margin-top: 15px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #0d122b;">
+                Greeting Message
+              </label>
+              <input
+                type="text"
+                id="customWelcomeGreeting"
+                value="${generatedContent?.ivrGreeting || 'Hello! I am your AI assistant. How can I help you today?'}"
+                placeholder="e.g., Hi! Thanks for calling. How can I help you?"
+                style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px;"
+              />
+              <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                The first message callers will hear when the AI answers the call.
+              </p>
+            </div>
+
+            <div id="noGreetingNotice" style="display: none; margin-top: 15px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+              <p style="margin: 0; color: #856404; font-size: 14px;">
+                <strong>ℹ️ No Greeting Mode:</strong> The AI will remain silent and wait for the caller to speak first. This is useful for inbound calls where the caller already knows why they're calling.
+              </p>
+            </div>
+          </div>
+
           <!-- Interactive Test Section -->
           <div class="service-card" style="margin-top: 20px;">
             <h3>🧪 Test Your Prompt Interactively</h3>
@@ -6157,6 +6201,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
     // systemPromptSaved declared at top of file
     let customSystemPrompt = '';
+    let customWelcomeGreeting = ''; // Custom greeting or empty to skip
 
     // Generate enhanced prompt based on use case when entering Step 7
     function generateEnhancedPrompt() {
@@ -6243,6 +6288,20 @@ You: "Well, let me tell you about the weather today. Currently, the temperature 
 
 Remember: In voice conversations, brevity is key. Keep it natural and conversational.`;
 
+    function toggleWelcomeGreeting() {
+      const enabled = document.getElementById('enableWelcomeGreeting')?.checked;
+      const greetingSection = document.getElementById('greetingInputSection');
+      const noGreetingNotice = document.getElementById('noGreetingNotice');
+
+      if (enabled) {
+        greetingSection.style.display = 'block';
+        noGreetingNotice.style.display = 'none';
+      } else {
+        greetingSection.style.display = 'none';
+        noGreetingNotice.style.display = 'block';
+      }
+    }
+
     function saveSystemPrompt() {
       const prompt = document.getElementById('systemPrompt')?.value || '';
       if (prompt.trim().length < 50) {
@@ -6251,9 +6310,21 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
       }
 
       customSystemPrompt = prompt;
+
+      // Save welcome greeting settings
+      const greetingEnabled = document.getElementById('enableWelcomeGreeting')?.checked;
+      const greetingText = document.getElementById('customWelcomeGreeting')?.value || '';
+
+      // Store greeting configuration
+      if (greetingEnabled && greetingText.trim()) {
+        customWelcomeGreeting = greetingText.trim();
+      } else {
+        customWelcomeGreeting = ''; // Empty = no greeting
+      }
+
       systemPromptSaved = true;
       promptEngineeringComplete = true; // Mark prompt engineering as complete
-      showStatus('systemPromptStatus', 'success', '✅ System prompt saved! Deploy it below or skip to next step.');
+      showStatus('systemPromptStatus', 'success', '✅ System prompt and greeting settings saved!');
       saveProgressToStorage();
       updateProgressBar(); // Update progress bar immediately
 
@@ -10757,17 +10828,18 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
               <div>
                 <!-- Welcome Greeting -->
                 <div class="form-group" style="margin-bottom: 20px;">
-                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600; cursor: help;" title="The initial greeting message that callers hear when the AI answers. This sets the tone for the conversation and should clearly state who or what the AI assistant is.">
-                    👋 Welcome Greeting
+                  <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600; cursor: help;" title="The initial greeting message that callers hear when the AI answers. This sets the tone for the conversation and should clearly state who or what the AI assistant is. Leave empty to skip the greeting and let the caller speak first.">
+                    👋 Welcome Greeting (Optional)
                   </label>
                   <input
                     type="text"
                     id="crWelcomeGreeting"
                     value="Hello! I am your AI assistant. How can I help you today?"
+                    placeholder="Leave empty to skip greeting and wait for caller"
                     onchange="updateConversationRelayCode()"
                     style="width: 100%; padding: 10px; background: #1e1e1e; color: #abb2bf; border: 1px solid #3e4451; border-radius: 4px; font-size: 13px;"
                   />
-                  <p style="font-size: 11px; color: #666; margin-top: 5px;">First message callers will hear</p>
+                  <p style="font-size: 11px; color: #666; margin-top: 5px;">First message callers hear. <strong>Leave empty</strong> to skip greeting and have AI wait for caller to speak first.</p>
                 </div>
 
                 <!-- Language -->
@@ -11273,7 +11345,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     url: wsHandlerUrl,
     voice: '${getConversationRelayVoice(getDefaultVoice())}',
     ttsProvider: '${getConversationRelayTTSProvider(ttsProvider)}',
-    welcomeGreeting: '${generatedContent?.ivrGreeting || "Hello! I am your AI assistant. How can I help you today?"}',
+    ${customWelcomeGreeting ? `welcomeGreeting: '${customWelcomeGreeting.replace(/'/g, "\\'")}',` : '// welcomeGreeting omitted - AI waits for caller to speak first'}
     dtmfDetection: true
   });
 
@@ -11379,7 +11451,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
     // Update ConversationRelay code based on settings
     function updateConversationRelayCode() {
-      const welcomeGreeting = document.getElementById('crWelcomeGreeting')?.value || generatedContent?.ivrGreeting || 'Hello! I am your AI assistant. How can I help you today?';
+      const welcomeGreetingValue = document.getElementById('crWelcomeGreeting')?.value?.trim();
+      const welcomeGreeting = welcomeGreetingValue || generatedContent?.ivrGreeting || 'Hello! I am your AI assistant. How can I help you today?';
       const language = document.getElementById('crLanguage')?.value || 'en-US';
       const transcriptionProvider = document.getElementById('crTranscriptionProvider')?.value || 'deepgram';
       const interruptible = document.getElementById('crInterruptible')?.value || 'speech';
@@ -11390,6 +11463,9 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
       // Build hints line if provided
       const hintsLine = hints ? `    hints: '${hints}',` : `    // hints: 'Twilio,ConversationRelay,WebSocket,API'`;
+
+      // Build welcome greeting line - omit if empty
+      const greetingLine = welcomeGreetingValue ? `    welcomeGreeting: '${welcomeGreeting.replace(/'/g, "\\'")}',` : `    // welcomeGreeting: 'Hello!', // Omitted - AI waits for caller to speak first`;
 
       // Add CI service if enabled
       const intelligenceLine = ciServiceSid ? `\n    // Conversational Intelligence (transcripts, sentiment, topics)\n    intelligenceService: '${ciServiceSid}',\n` : '';
