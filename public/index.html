@@ -4983,9 +4983,16 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
                   🗣️ Voice Type
                 </label>
                 <select id="ivrVoice" style="width: 100%; padding: 12px; background: #2c313c; color: #abb2bf; border: 1px solid #3e4451; border-radius: 4px; font-size: 14px;" onchange="updateIVRCode()">
-                  ${getVoiceOptions()}
+                  <option value="Polly.Joanna">Joanna (Female, US English)</option>
+                  <option value="Polly.Matthew">Matthew (Male, US English)</option>
+                  <option value="Polly.Amy">Amy (Female, British)</option>
+                  <option value="Polly.Brian">Brian (Male, British)</option>
+                  <option value="Polly.Salli">Salli (Female, US English)</option>
+                  <option value="Polly.Kendra">Kendra (Female, US English)</option>
+                  <option value="Polly.Joey">Joey (Male, US English)</option>
+                  <option value="Polly.Justin">Justin (Male, Child, US English)</option>
                 </select>
-                <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Choose the voice for ${getTTSProviderName()}</p>
+                <p style="font-size: 12px; color: #666; margin: 5px 0 0 0;">Choose the Amazon Polly voice for basic TwiML</p>
               </div>
             </div>
           </div>
@@ -5005,17 +5012,17 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
   const twiml = new twilio.twiml.VoiceResponse();
 
   // Greet the caller
-  twiml.say('Hello world', { voice: '${getDefaultVoice()}' });
+  twiml.say('Hello world', { voice: 'Polly.Joanna' });
 
   // Create a menu with gather
   const gather = twiml.gather({
     numDigits: 1,
     timeout: 10
   });
-  gather.say('Press 1 to connect to God. Press 2 to connect to your mom.', { voice: '${getDefaultVoice()}' });
+  gather.say('Press 1 to connect to God. Press 2 to connect to your mom.', { voice: 'Polly.Joanna' });
 
   // After gather timeout, say goodbye and hang up
-  twiml.say('Goodbye!', { voice: '${getDefaultVoice()}' });
+  twiml.say('Goodbye!', { voice: 'Polly.Joanna' });
   twiml.hangup();
 
   callback(null, twiml);
@@ -5024,17 +5031,17 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
   const twiml = new twilio.twiml.VoiceResponse();
 
   // Greet the caller
-  twiml.say('Welcome to our service!');
+  twiml.say('Welcome to our service!', { voice: 'Polly.Joanna' });
 
   // Create a gather to collect input
   const gather = twiml.gather({
     numDigits: 1,
     timeout: 10
   });
-  gather.say('Press 1 for sales, 2 for support.');
+  gather.say('Press 1 for sales, 2 for support.', { voice: 'Polly.Joanna' });
 
   // After gather timeout or completion, say goodbye and hang up
-  twiml.say('Thank you for calling. Goodbye!');
+  twiml.say('Thank you for calling. Goodbye!', { voice: 'Polly.Joanna' });
   twiml.hangup();
 
   callback(null, twiml);
@@ -5460,7 +5467,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
       const greeting = document.getElementById('ivrGreeting')?.value || 'Hello world';
       const option1 = document.getElementById('ivrOption1')?.value || 'Press 1 to connect to God';
       const option2 = document.getElementById('ivrOption2')?.value || 'Press 2 to connect to your mom';
-      const voice = document.getElementById('ivrVoice')?.value || (ttsProvider === 'elevenlabs' ? 'en-US-adam' : (ttsProvider === 'google' ? 'en-US-Wavenet-A' : 'Polly.Joanna'));
+      const voice = document.getElementById('ivrVoice')?.value || 'Polly.Joanna'; // Basic TwiML always uses Polly
 
       // Generate simple IVR code (Say + Gather only, no Dial)
       const code = `exports.handler = function(context, event, callback) {
