@@ -9456,10 +9456,14 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
     async function updatePhoneNumberWebhook() {
       // Update the phone number's voice URL to point to the deployed voice-handler
-      if (!selectedPhoneNumberSid || !websocketUrl) {
-        console.log('Phone number SID or websocket URL not available yet');
+      if (!selectedPhoneNumberSid) {
+        console.log('Phone number SID not available yet');
         console.log('selectedPhoneNumberSid:', selectedPhoneNumberSid);
-        console.log('websocketUrl:', websocketUrl);
+        return;
+      }
+
+      if (!twilioServerlessDomain) {
+        console.log('Twilio Serverless domain not available yet - function not deployed');
         return;
       }
 
@@ -9486,14 +9490,12 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
         if (result.success) {
           console.log('✅ Phone number webhook updated successfully');
-          showStatus('commitStep6Status', 'success', '📞 Phone number configured with ConversationRelay handler!');
+          console.log(`📞 Phone ${selectedPhoneNumber} now points to: ${voiceHandlerUrl}`);
         } else {
           console.error('Failed to update phone number:', result.error);
-          showStatus('commitStep6Status', 'warning', `⚠️ Deployment succeeded but phone update failed: ${result.error}`);
         }
       } catch (error) {
         console.error('Error updating phone number webhook:', error);
-        showStatus('commitStep6Status', 'warning', `⚠️ Deployment succeeded but phone update failed: ${error.message}`);
       }
     }
 
