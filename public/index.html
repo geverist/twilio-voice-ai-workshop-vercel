@@ -15254,6 +15254,25 @@ app.get('/health', (req, res) => {
         projectDeployed
       ].filter(Boolean).length;
 
+      // Debug logging for demo mode
+      if (studentDemoMode) {
+        console.log('📊 Progress Update (Demo Mode):', {
+          currentStep: currentStep + 1,
+          actuallyCompleted,
+          flags: {
+            twilioConnected,
+            callDirectionChosen,
+            servicesReady,
+            basicTwimlCreated,
+            websocketBuilt,
+            conversationRelayCreated,
+            promptEngineeringComplete,
+            toolsConfigured,
+            projectDeployed
+          }
+        });
+      }
+
       // Display shows max of (actual completions, current step + 1)
       // This ensures when you're on step 9, it shows "9 of 9" even if not all prior steps completed
       const displayedCompleted = Math.max(actuallyCompleted, currentStep + 1);
