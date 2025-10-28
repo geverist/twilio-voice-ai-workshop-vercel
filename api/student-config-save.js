@@ -178,6 +178,18 @@ export default async function handler(req, res) {
       )
     `;
 
+    // Add demo_mode column if it doesn't exist (migration for existing tables)
+    try {
+      await sql`
+        ALTER TABLE student_configs
+        ADD COLUMN IF NOT EXISTS demo_mode BOOLEAN DEFAULT false
+      `;
+      console.log('✅ Migration: demo_mode column ensured in student_configs');
+    } catch (migrationError) {
+      // Column might already exist, that's okay
+      console.log('ℹ️ Migration: demo_mode column already exists or migration skipped');
+    }
+
     // Insert or update student configuration
     await sql`
       INSERT INTO student_configs (
