@@ -47,6 +47,18 @@ export default async function handler(req, res) {
 
     console.log(`📖 Fetching config for session: ${sessionToken.substring(0, 20)}...`);
 
+    // Add demo_mode column if it doesn't exist (migration for existing tables)
+    // This ensures the column exists before we try to query it
+    try {
+      await sql`
+        ALTER TABLE student_configs
+        ADD COLUMN IF NOT EXISTS demo_mode BOOLEAN DEFAULT false
+      `;
+    } catch (migrationError) {
+      // Column might already exist, that's okay
+      console.log('ℹ️  Migration: demo_mode column check skipped or already exists');
+    }
+
     // Get student configuration
     const configs = await sql`
       SELECT
