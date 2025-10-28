@@ -10832,9 +10832,12 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
     function confirmInboundTest() {
       basicCallTested = true;
+      step6Deployed = true; // Mark Step 6 as deployed for inbound (no actual deployment needed)
+      setState("step6Deployed", true); // Persist to database
       showStatus('step6Status', 'success', '✅ Great! Your IVR is working. Ready for the next step!');
       document.getElementById('nextBtn6').disabled = false;
       updateProgressBar();
+      saveProgressToStorage(); // Save to localStorage
     }
 
     function confirmInboundTestStep4() {
