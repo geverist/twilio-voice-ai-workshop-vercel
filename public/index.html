@@ -1433,6 +1433,7 @@
           currentStep: currentStep,
           twilioConnected: twilioConnected,
           openaiConnected: openaiConnected,
+          callDirectionChosen: callDirectionChosen, // Added missing field
           callDirection: callDirection,
           useCaseDescription: useCaseDescription,
           selectedPhoneNumber: selectedPhoneNumber,
@@ -1469,8 +1470,10 @@
 
           // Configuration data
           openaiApiKey: openaiApiKey,
-          ttsProvider: ttsProvider,
-          conversationRelayVoice: conversationRelayVoice
+          systemPrompt: customSystemPrompt,
+          tools: toolsPayload,
+          selectedVoice: conversationRelayVoice,
+          ttsProvider: ttsProvider
         };
 
         const response = await fetch('/api/student-config-save', {
