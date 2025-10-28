@@ -11343,8 +11343,9 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   connect.conversationRelay({
     url: wsHandlerUrl,
     voice: '${getConversationRelayVoice(getDefaultVoice())}',
-    ttsProvider: '${getConversationRelayTTSProvider(ttsProvider)}',
-    ${customWelcomeGreeting ? `welcomeGreeting: '${customWelcomeGreeting.replace(/'/g, "\\'")}',` : '// welcomeGreeting omitted - AI waits for caller to speak first'}
+    ttsProvider: '${getConversationRelayTTSProvider(ttsProvider)}',${customWelcomeGreeting ? `
+    welcomeGreeting: '${customWelcomeGreeting.replace(/'/g, "\\'")}',` : `
+    // welcomeGreeting omitted - AI waits for caller to speak first`}
     dtmfDetection: true
   });
 
