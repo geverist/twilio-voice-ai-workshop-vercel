@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { useCaseDescription, callDirection, openaiApiKey } = req.body;
+    const { useCaseDescription, callDirection, openaiApiKey, skipInitialGreeting } = req.body;
 
     // Validation
     if (!useCaseDescription || !useCaseDescription.trim()) {
@@ -40,6 +40,7 @@ export default async function handler(req, res) {
     }
 
     console.log('🤖 Generating content for use case:', useCaseDescription.substring(0, 100));
+    console.log('👋 Skip initial greeting:', skipInitialGreeting ? 'YES' : 'NO');
 
     // Call OpenAI to generate customized content
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -101,7 +102,7 @@ CRITICAL REQUIREMENTS:
 - ONLY customize: opening role description and the example User/You interactions
 
 Also generate:
-- "ivrGreeting": Friendly ${callDirection} greeting (1-2 sentences)
+- "ivrGreeting": ${skipInitialGreeting ? 'Return empty string "" (AI will wait for caller to speak first)' : `Friendly ${callDirection} greeting (1-2 sentences)`}
 - "exampleQuestions": Array of 3-4 realistic questions
 - "suggestedVoice": Voice type recommendation
 
@@ -145,7 +146,7 @@ Return ONLY valid JSON: {"systemPrompt": "...", "ivrGreeting": "...", "exampleQu
       success: true,
       content: {
         systemPrompt: generatedContent.systemPrompt || '',
-        ivrGreeting: generatedContent.ivrGreeting || 'Hello! How can I help you today?',
+        ivrGreeting: skipInitialGreeting ? '' : (generatedContent.ivrGreeting || 'Hello! How can I help you today?'),
         exampleQuestions: generatedContent.exampleQuestions || [],
         suggestedVoice: generatedContent.suggestedVoice || 'friendly'
       },

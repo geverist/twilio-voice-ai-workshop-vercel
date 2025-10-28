@@ -1133,6 +1133,7 @@
     let callDirectionChosen = false;
     let callDirection = ''; // 'outbound' or 'inbound'
     let useCaseDescription = ''; // User's custom use case description
+    let skipInitialGreeting = false; // Skip the AI's initial greeting (wait for caller to speak first)
     let generatedContent = null; // AI-generated content based on use case
     let servicesReady = false;
     let basicTwimlCreated = false;
@@ -3786,6 +3787,25 @@
             </div>
           </div>
 
+          <!-- Skip Initial Greeting Option -->
+          <div class="service-card" style="margin-bottom: 20px; background: #f8f9fa;">
+            <label style="display: flex; align-items: start; gap: 12px; cursor: pointer; user-select: none;">
+              <input
+                type="checkbox"
+                id="skipInitialGreeting"
+                onchange="handleSkipGreetingChange()"
+                ${window.skipInitialGreeting ? 'checked' : ''}
+                style="width: 20px; height: 20px; cursor: pointer; margin-top: 2px; flex-shrink: 0;"
+              />
+              <div style="flex: 1;">
+                <div style="font-weight: 600; color: #0d122b; margin-bottom: 4px;">Skip Initial Greeting</div>
+                <div style="font-size: 13px; color: #666; line-height: 1.5;">
+                  When enabled, the AI will wait for the caller to speak first instead of greeting them. This creates a more natural conversation flow for some use cases (e.g., customer service where the caller already knows why they're calling).
+                </div>
+              </div>
+            </label>
+          </div>
+
           <div class="instructions">
             <h3>📞 Choose Your Call Direction</h3>
             <p>Select how you want to use your Voice AI bot. We'll start simple, then add AI capabilities!</p>
@@ -3876,6 +3896,20 @@
       }
     }
 
+    function handleSkipGreetingChange() {
+      const checkbox = document.getElementById('skipInitialGreeting');
+      if (checkbox) {
+        skipInitialGreeting = checkbox.checked;
+        saveProgressToStorage();
+        console.log('👋 Skip initial greeting:', skipInitialGreeting ? 'YES (AI waits for caller)' : 'NO (AI greets first)');
+
+        // If greeting is now skipped and we already generated content, we should regenerate
+        if (generatedContent && skipInitialGreeting) {
+          console.log('💡 Tip: Greeting will be skipped when you generate ConversationRelay code');
+        }
+      }
+    }
+
     async function regenerateUseCaseContent() {
       // Update use case description from textarea first
       handleUseCaseInput();
@@ -3948,9 +3982,11 @@ User: "Can you help me with this?"
 You: "I'd be absolutely delighted to help you with whatever you need assistance with today. I have a wide range of capabilities and knowledge at my disposal, so please feel free to ask me anything and I'll do my very best to provide you with the most comprehensive and helpful answer possible."
 
 Remember: In voice conversations, brevity is key. Keep it natural and conversational.`,
-            ivrGreeting: callDirection === 'inbound'
-              ? `Hi! Thanks for calling. I'm here to help with ${useCaseDescription}. How can I assist you?`
-              : `Hello! I'm calling about ${useCaseDescription}. Do you have a moment to chat?`,
+            ivrGreeting: skipInitialGreeting ? '' : (
+              callDirection === 'inbound'
+                ? `Hi! Thanks for calling. I'm here to help with ${useCaseDescription}. How can I assist you?`
+                : `Hello! I'm calling about ${useCaseDescription}. Do you have a moment to chat?`
+            ),
             exampleQuestions: [
               `How can I help with ${useCaseDescription}?`,
               'Can you tell me more about what you need?',
@@ -4010,7 +4046,8 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
           body: JSON.stringify({
             useCaseDescription,
             callDirection,
-            openaiApiKey
+            openaiApiKey,
+            skipInitialGreeting
           })
         });
 
@@ -4054,9 +4091,11 @@ User: "Can you help me with this?"
 You: "I'd be absolutely delighted to help you with whatever you need assistance with today. I have a wide range of capabilities and knowledge at my disposal, so please feel free to ask me anything and I'll do my very best to provide you with the most comprehensive and helpful answer possible."
 
 Remember: In voice conversations, brevity is key. Keep it natural and conversational.`,
-            ivrGreeting: callDirection === 'inbound'
-              ? `Hi! Thanks for calling. I'm here to help with ${useCaseDescription}. How can I assist you?`
-              : `Hello! I'm calling about ${useCaseDescription}. Do you have a moment to chat?`,
+            ivrGreeting: skipInitialGreeting ? '' : (
+              callDirection === 'inbound'
+                ? `Hi! Thanks for calling. I'm here to help with ${useCaseDescription}. How can I assist you?`
+                : `Hello! I'm calling about ${useCaseDescription}. Do you have a moment to chat?`
+            ),
             exampleQuestions: [
               `How can I help with ${useCaseDescription}?`,
               'Can you tell me more about what you need?',
@@ -4134,9 +4173,11 @@ User: "Can you help me with this?"
 You: "I'd be absolutely delighted to help you with whatever you need assistance with today. I have a wide range of capabilities and knowledge at my disposal, so please feel free to ask me anything and I'll do my very best to provide you with the most comprehensive and helpful answer possible."
 
 Remember: In voice conversations, brevity is key. Keep it natural and conversational.`,
-          ivrGreeting: callDirection === 'inbound'
-            ? `Hi! Thanks for calling. I'm here to help with ${useCaseDescription}. How can I assist you?`
-            : `Hello! I'm calling about ${useCaseDescription}. Do you have a moment to chat?`,
+          ivrGreeting: skipInitialGreeting ? '' : (
+            callDirection === 'inbound'
+              ? `Hi! Thanks for calling. I'm here to help with ${useCaseDescription}. How can I assist you?`
+              : `Hello! I'm calling about ${useCaseDescription}. Do you have a moment to chat?`
+          ),
           exampleQuestions: [
             `How can I help with ${useCaseDescription}?`,
             'Can you tell me more about what you need?',
@@ -5108,7 +5149,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
                 📚 <strong>Documentation:</strong>
                 <a href="https://www.twilio.com/docs/voice/twiml/say" target="_blank">&lt;Say&gt; Verb</a> |
                 <a href="https://www.twilio.com/docs/voice/twiml/gather" target="_blank">&lt;Gather&gt; Verb</a> |
-                <a href="https://www.twilio.com/docs/voice/tutorials/ivr-phone-tree-python" target="_blank">IVR Tutorial</a>
+                <a href="https://www.twilio.com/docs/voice/tutorials/build-interactive-voice-response-ivr-phone-tree" target="_blank">IVR Tutorial</a>
               </p>
             `}
           </div>
@@ -11017,10 +11058,18 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
                   <label style="display: block; margin-bottom: 8px; color: #4fc1ff; font-weight: 600; cursor: help;" title="The initial greeting message that callers hear when the AI answers. This sets the tone for the conversation and should clearly state who or what the AI assistant is. Leave empty to skip the greeting and let the caller speak first.">
                     👋 Welcome Greeting (Optional)
                   </label>
+                  ${skipInitialGreeting ? `
+                  <div style="background: #e3f2fd; border: 2px solid #90caf9; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+                    <div style="color: #1976d2; font-size: 13px; line-height: 1.5;">
+                      <strong>✓ Skip Initial Greeting Enabled</strong><br>
+                      The AI will wait for the caller to speak first. You can override this by entering a greeting below.
+                    </div>
+                  </div>
+                  ` : ''}
                   <input
                     type="text"
                     id="crWelcomeGreeting"
-                    value="Hello! I am your AI assistant. How can I help you today?"
+                    value="${generatedContent?.ivrGreeting || 'Hello! I am your AI assistant. How can I help you today?'}"
                     placeholder="Leave empty to skip greeting and wait for caller"
                     onchange="updateConversationRelayCode()"
                     style="width: 100%; padding: 10px; background: #1e1e1e; color: #abb2bf; border: 1px solid #3e4451; border-radius: 4px; font-size: 13px;"

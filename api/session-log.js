@@ -88,12 +88,8 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const { sessionToken, studentEmail, eventType, limit } = req.query;
 
-      if (!sessionToken && !studentEmail) {
-        return res.status(400).json({
-          success: false,
-          error: 'sessionToken or studentEmail required'
-        });
-      }
+      // Allow fetching all logs if no filters provided (useful for instructor dashboard)
+      // Note: In production, you may want to add pagination or admin authentication for this
 
       let query = sql`
         SELECT
