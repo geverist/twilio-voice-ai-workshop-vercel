@@ -3808,9 +3808,10 @@
                 style="width: 20px; height: 20px; cursor: pointer; margin-top: 2px; flex-shrink: 0;"
               />
               <div style="flex: 1;">
-                <div style="font-weight: 600; color: #0d122b; margin-bottom: 4px;">Skip Initial Greeting</div>
+                <div style="font-weight: 600; color: #0d122b; margin-bottom: 4px;">Dynamic AI Greeting</div>
                 <div style="font-size: 13px; color: #666; line-height: 1.5;">
-                  When enabled, the AI will wait for the caller to speak first instead of greeting them. This creates a more natural conversation flow for some use cases (e.g., customer service where the caller already knows why they're calling).
+                  <strong>For outbound calls:</strong> Moves the greeting into the system prompt so the AI can personalize it (e.g., "Hi Sarah, this is...") based on your use case.<br>
+                  <strong>For inbound calls:</strong> The AI will wait for the caller to speak first instead of using a pre-recorded greeting.
                 </div>
               </div>
             </label>

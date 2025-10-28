@@ -66,6 +66,13 @@ You MUST use this EXACT template structure. Copy ALL sections and guidelines wor
 ---TEMPLATE START---
 You are a helpful assistant [CUSTOMIZE THIS: describe their specific role based on: ${useCaseDescription}].
 
+${skipInitialGreeting && callDirection === 'outbound' ? `
+# Initial Greeting (IMPORTANT for outbound calls)
+When the call first connects, greet the person warmly and introduce yourself/your purpose. For example:
+- "Hi [customer name], this is [your role/company]..."
+- Make it personal and friendly
+- Keep it brief (1-2 sentences max)
+` : ''}
 # Voice Conversation Guidelines
 - Keep responses BRIEF (1-2 sentences max)
 - Be conversational and natural
@@ -99,10 +106,10 @@ CRITICAL REQUIREMENTS:
 - Copy ALL bullet points under "Response Style" word-for-word
 - Keep "GOOD Response:" and "BAD Response (too long):" labels exactly as shown
 - Keep the final "Remember:" line exactly as shown
-- ONLY customize: opening role description and the example User/You interactions
+- ONLY customize: opening role description and the example User/You interactions${skipInitialGreeting && callDirection === 'outbound' ? ', AND add personalized greeting instructions in "# Initial Greeting" section' : ''}
 
 Also generate:
-- "ivrGreeting": ${skipInitialGreeting ? 'Return empty string "" (AI will wait for caller to speak first)' : `Friendly ${callDirection} greeting (1-2 sentences)`}
+- "ivrGreeting": ${skipInitialGreeting ? 'Return empty string "" because the AI will handle the greeting dynamically in the conversation' : `Friendly ${callDirection} greeting (1-2 sentences)`}
 - "exampleQuestions": Array of 3-4 realistic questions
 - "suggestedVoice": Voice type recommendation
 
