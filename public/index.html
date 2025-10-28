@@ -5828,6 +5828,31 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
             <p>Your system prompt is THE MOST IMPORTANT part of your Voice AI. Learn how to craft effective prompts for voice interactions.</p>
           </div>
 
+          <!-- OpenAI API Key Status -->
+          ${!studentDemoMode ? `
+          <div class="service-card" style="background: ${openaiApiKey ? '#d4edda' : '#fff3cd'}; border-left: 4px solid ${openaiApiKey ? '#28a745' : '#ffc107'};">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong style="font-size: 1.05rem; color: ${openaiApiKey ? '#155724' : '#856404'};">
+                  ${openaiApiKey ? '✅ OpenAI API Key Connected' : '⚠️ OpenAI API Key Not Set'}
+                </strong>
+                ${openaiApiKey ? `
+                  <p style="margin: 5px 0 0 0; font-size: 13px; color: #155724;">
+                    Key: sk-****...****
+                  </p>
+                ` : `
+                  <p style="margin: 5px 0 0 0; font-size: 13px; color: #856404;">
+                    An OpenAI API key is required to test your prompt and use AI features.
+                  </p>
+                `}
+              </div>
+              <button class="btn btn-secondary" onclick="currentStep = 0; renderStepContent();" style="padding: 8px 16px; font-size: 13px;">
+                ${openaiApiKey ? '🔄 Change Key' : '➕ Add Key'}
+              </button>
+            </div>
+          </div>
+          ` : ''}
+
           <div class="service-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
             <h3 style="color: white; margin: 0 0 15px 0;">⚡ Why Prompt Engineering Matters</h3>
             <p style="color: rgba(255,255,255,0.95); line-height: 1.6;">
