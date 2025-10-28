@@ -6098,7 +6098,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
                   <div style="font-size: 18px; font-weight: 600; color: #333;">ConversationRelay Best Practices</div>
                 </div>
                 <p style="color: #666; margin-bottom: 12px;">Voice-specific prompting techniques for Twilio ConversationRelay.</p>
-                <a href="https://www.twilio.com/docs/voice/twiml/connect/conversationrelay" target="_blank"
+                <a href="https://www.twilio.com/docs/voice/conversationrelay/best-practices" target="_blank"
                    style="display: inline-block; padding: 10px 20px; background: #F22F46; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
                   🎙️ View Docs →
                 </a>
@@ -7111,7 +7111,7 @@ Expected: ${scenario.expected}</div>`;
             <p style="margin-top: 15px;">
               📚 <strong>Documentation:</strong>
               <a href="https://platform.openai.com/docs/guides/function-calling" target="_blank">OpenAI Function Calling</a> |
-              <a href="https://platform.openai.com/docs/assistants/tools" target="_blank">AI Tools</a>
+              <a href="https://platform.openai.com/docs/guides/realtime" target="_blank">Realtime API</a>
             </p>
           </div>
 
@@ -7875,9 +7875,9 @@ case 'send_whatsapp':
   break;</code></pre>
               </li>
               <li><strong>Add required environment variables</strong> in Twilio Console → Functions → Environment Variables:
-                <ul style="margin-top: 10px;">
+                <ul style="margin-top: 10px; margin-left: 20px;">
                   <li>For Email: <code>SENDGRID_API_KEY</code>, <code>SENDER_EMAIL</code></li>
-                  <li>For WhatsApp: <code>TWILIO_WHATSAPP_NUMBER</code></li>
+                  <li>For WhatsApp: <code>TWILIO_WHATSAPP_NUMBER</code>, <code>TWILIO_WHATSAPP_TEMPLATE_SID</code> (must be pre-approved template)</li>
                 </ul>
               </li>
               <li><strong>Update your system prompt</strong> to tell the AI about these new capabilities</li>
@@ -11917,8 +11917,8 @@ ${hintsLine}${intelligenceLine}
             <p>Create a WebSocket handler that processes conversation events and integrates with OpenAI.</p>
             <p style="margin-top: 15px;">
               📚 <strong>Documentation:</strong>
-              <a href="https://www.twilio.com/docs/voice/twiml/connect/conversationrelay#websocket-messages" target="_blank">WebSocket Messages</a> |
-              <a href="https://www.twilio.com/docs/voice/twiml/connect/conversationrelay#events" target="_blank">Event Types</a> |
+              <a href="https://www.twilio.com/docs/voice/conversationrelay/websocket-messages" target="_blank">WebSocket Messages</a> |
+              <a href="https://www.twilio.com/docs/voice/conversationrelay/websocket-messages#event-types" target="_blank">Event Types</a> |
               <a href="https://www.twilio.com/docs/serverless/functions" target="_blank">Serverless Functions</a>
             </p>
           </div>
@@ -14277,6 +14277,22 @@ app.get('/health', (req, res) => {
       // Trigger change detection to re-enable validate button if needed
       handleCodeChange('code9');
 
+      // Update the button that was clicked to show success
+      const clickedButton = event?.target;
+      if (clickedButton) {
+        const originalText = clickedButton.textContent;
+        const originalBackground = clickedButton.style.background;
+        clickedButton.textContent = '✅ Added!';
+        clickedButton.style.background = '#10b981';
+        clickedButton.disabled = true;
+
+        setTimeout(() => {
+          clickedButton.textContent = originalText;
+          clickedButton.style.background = originalBackground;
+          clickedButton.disabled = false;
+        }, 3000);
+      }
+
       // Scroll back up to the code9 editor
       const code9Container = code9Editor.closest('.code-editor');
       if (code9Container) {
@@ -14289,6 +14305,7 @@ app.get('/health', (req, res) => {
       }
 
       // Show success message
+      const channelName = channelCodeId.replace('Function', '').toUpperCase();
       showStatus('step9Status', 'success', `✅ ${channelName} code added to your Tools & Knowledge Base handler!`);
     }
 
