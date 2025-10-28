@@ -15012,12 +15012,13 @@ app.get('/health', (req, res) => {
     // ==========================================================================
 
     let selectedRating = 0;
+    let completedStepsCount = 0; // Store numeric count
 
     function showFeedbackModal() {
       const modal = document.getElementById('feedbackModal');
 
       // Auto-fill context information
-      const completedStepsCount = steps.filter((_, index) => {
+      completedStepsCount = steps.filter((_, index) => {
         if (index === 0) return twilioConnected && openaiConnected; // Step 1: Setup
         if (index === 1) return callDirectionChosen; // Step 2: Use Case
         if (index === 2) return servicesReady; // Step 3: Services
@@ -15029,6 +15030,7 @@ app.get('/health', (req, res) => {
         return false;
       }).length;
 
+      // Update display (but store number in global variable for submission)
       document.getElementById('feedbackCompletedSteps').textContent = `${completedStepsCount} of ${steps.length}`;
       document.getElementById('feedbackTimeSpent').textContent = 'N/A'; // Could track this with timestamps
 
@@ -15089,7 +15091,7 @@ app.get('/health', (req, res) => {
           name: document.getElementById('feedbackUserName').value.trim(),
           message: message,
           rating: selectedRating,
-          completedSteps: document.getElementById('feedbackCompletedSteps').textContent,
+          completedSteps: completedStepsCount, // Use numeric count instead of text
           timestamp: new Date().toISOString(),
           context: {
             currentStep: currentStep + 1,
