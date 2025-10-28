@@ -15021,18 +15021,18 @@ app.get('/health', (req, res) => {
     function showFeedbackModal() {
       const modal = document.getElementById('feedbackModal');
 
-      // Auto-fill context information
-      completedStepsCount = steps.filter((_, index) => {
-        if (index === 0) return twilioConnected && openaiConnected; // Step 1: Setup
-        if (index === 1) return callDirectionChosen; // Step 2: Use Case
-        if (index === 2) return servicesReady; // Step 3: Services
-        if (index === 3) return step4Committed; // Step 4: Basic TwiML
-        if (index === 4) return step5Committed; // Step 5: WebSocket
-        if (index === 5) return step6Committed; // Step 6: ConversationRelay
-        if (index === 6) return step7Committed; // Step 7: Prompt Engineering
-        if (index === 7) return step8Committed; // Step 8: Tools
-        return false;
-      }).length;
+      // Auto-fill context information (match progress bar calculation)
+      completedStepsCount = [
+        twilioConnected,
+        callDirectionChosen,
+        servicesReady,
+        basicTwimlCreated,
+        websocketBuilt,
+        conversationRelayCreated,
+        promptEngineeringComplete,
+        toolsConfigured,
+        projectDeployed
+      ].filter(Boolean).length;
 
       // Update display (but store number in global variable for submission)
       document.getElementById('feedbackCompletedSteps').textContent = `${completedStepsCount} of ${steps.length}`;
