@@ -1426,8 +1426,9 @@
       try {
         const payload = {
           sessionToken: sessionToken,
-          studentEmail: studentEmail,
-          studentName: studentName,
+          studentEmail: studentEmail || null, // Allow null for demo mode
+          studentName: studentName || (studentDemoMode ? 'Demo User' : null),
+          demoMode: studentDemoMode, // Track demo mode sessions
 
           // Step states
           currentStep: currentStep,
