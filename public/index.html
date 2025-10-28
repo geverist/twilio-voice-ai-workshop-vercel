@@ -1868,34 +1868,38 @@
           </div>
           <div style="margin-bottom: 25px;">
             <label for="studentEmail" style="display: block; text-align: left; color: #666; font-size: 0.95rem; margin-bottom: 8px; font-weight: 500;">
-              Your Email <span style="color: #999; font-weight: 400;">(optional)</span>
+              Your Email <span style="color: #F22F46; font-weight: 600;">*</span>
             </label>
             <input
               type="email"
               id="studentEmail"
               value="${studentEmail}"
               placeholder="e.g., alex.johnson@company.com"
+              required
               style="width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;"
               onfocus="this.style.borderColor='#F22F46'"
               onblur="this.style.borderColor='#ddd'"
             />
             <p style="color: #999; font-size: 0.85rem; margin-top: 6px; text-align: left;">
-              Optional: Helps instructors track your progress during the workshop
+              Required to track your workshop progress and provide support
             </p>
+            <p id="emailError" style="color: #F22F46; font-size: 0.85rem; margin-top: 6px; text-align: left; display: none;"></p>
           </div>
           <div style="margin-bottom: 25px;">
             <label for="studentName" style="display: block; text-align: left; color: #666; font-size: 0.95rem; margin-bottom: 8px; font-weight: 500;">
-              Your Name <span style="color: #999; font-weight: 400;">(optional)</span>
+              Your Name <span style="color: #F22F46; font-weight: 600;">*</span>
             </label>
             <input
               type="text"
               id="studentName"
               value="${studentName}"
               placeholder="e.g., Alex Johnson"
+              required
               style="width: 100%; padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s;"
               onfocus="this.style.borderColor='#F22F46'"
               onblur="this.style.borderColor='#ddd'"
             />
+            <p id="nameError" style="color: #F22F46; font-size: 0.85rem; margin-top: 6px; text-align: left; display: none;"></p>
           </div>
           <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
             <button onclick="saveStudentNameAndStart(false)" style="flex: 1; min-width: 220px; max-width: 280px; padding: 18px 30px; background: linear-gradient(135deg, #F22F46 0%, #ff6b6b 100%); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s;">
@@ -1917,19 +1921,54 @@
     function saveStudentNameAndStart(isDemoMode) {
       const nameInput = document.getElementById('studentName');
       const emailInput = document.getElementById('studentEmail');
+      const nameError = document.getElementById('nameError');
+      const emailError = document.getElementById('emailError');
       const name = nameInput ? nameInput.value.trim() : '';
       const email = emailInput ? emailInput.value.trim() : '';
 
-      // Save name and email if provided (both are optional now)
-      if (name) {
-        setState("studentName", name);
-        localStorage.setItem('studentName', name);
+      // Reset error messages
+      if (nameError) nameError.style.display = 'none';
+      if (emailError) emailError.style.display = 'none';
+      if (nameInput) nameInput.style.borderColor = '#ddd';
+      if (emailInput) emailInput.style.borderColor = '#ddd';
+
+      // Validate name (required)
+      if (!name) {
+        if (nameError) {
+          nameError.textContent = 'Please enter your name';
+          nameError.style.display = 'block';
+        }
+        if (nameInput) nameInput.style.borderColor = '#F22F46';
+        return; // Stop execution
       }
 
-      if (email) {
-        setState("studentEmail", email);
-        localStorage.setItem('studentEmail', email);
+      // Validate email (required and format)
+      if (!email) {
+        if (emailError) {
+          emailError.textContent = 'Please enter your email address';
+          emailError.style.display = 'block';
+        }
+        if (emailInput) emailInput.style.borderColor = '#F22F46';
+        return; // Stop execution
       }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        if (emailError) {
+          emailError.textContent = 'Please enter a valid email address';
+          emailError.style.display = 'block';
+        }
+        if (emailInput) emailInput.style.borderColor = '#F22F46';
+        return; // Stop execution
+      }
+
+      // Save name and email (both are now required)
+      setState("studentName", name);
+      localStorage.setItem('studentName', name);
+
+      setState("studentEmail", email);
+      localStorage.setItem('studentEmail', email);
 
       studentDemoMode = isDemoMode;
       localStorage.setItem('studentDemoMode', isDemoMode ? 'true' : 'false');
