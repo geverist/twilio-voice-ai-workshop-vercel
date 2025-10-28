@@ -109,7 +109,7 @@ export default async function handler(req, res) {
         studentName: config.student_name,
         openaiApiKey: decryptedApiKey,
         systemPrompt: config.system_prompt || 'You are a helpful voice assistant. Keep responses brief and conversational since they will be spoken aloud.',
-        greeting: config.ivr_greeting || 'Hello! How can I help you today?',
+        greeting: config.ivr_greeting !== null && config.ivr_greeting !== undefined ? config.ivr_greeting : 'Hello! How can I help you today?',
         voice: config.selected_voice || 'alloy',
         tools: config.tools || []
       },
