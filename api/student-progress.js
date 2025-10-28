@@ -161,28 +161,48 @@ export default async function handler(req, res) {
         completed,
         timeSpent,
         codeSubmitted,
-        deploymentUrl
+        deploymentUrl,
+        demoMode
       } = req.body;
 
-      if (!sessionToken || !studentEmail) {
+      if (!sessionToken) {
         return res.status(400).json({
           success: false,
-          error: 'sessionToken and studentEmail are required'
+          error: 'sessionToken is required'
         });
       }
 
-      // Get or create student
-      const student = await sql`
-        INSERT INTO students (student_email, student_name)
-        VALUES (${studentEmail}, ${studentName || studentEmail})
-        ON CONFLICT (student_email)
-        DO UPDATE SET
-          student_name = COALESCE(EXCLUDED.student_name, students.student_name),
-          updated_at = NOW()
-        RETURNING student_id
-      `;
+      // Email is optional - if not provided, track as anonymous
+      const email = studentEmail || null;
+      const name = studentName || (email ? email : 'Anonymous Student');
 
-      const studentId = student[0].student_id;
+      let studentId;
+
+      if (email) {
+        // Get or create student with email
+        const student = await sql`
+          INSERT INTO students (student_email, student_name)
+          VALUES (${email}, ${name})
+          ON CONFLICT (student_email)
+          DO UPDATE SET
+            student_name = COALESCE(EXCLUDED.student_name, students.student_name),
+            updated_at = NOW()
+          RETURNING student_id
+        `;
+        studentId = student[0].student_id;
+      } else {
+        // Create anonymous student (no email - sessionToken is the identifier)
+        const student = await sql`
+          INSERT INTO students (student_email, student_name)
+          VALUES (${`anonymous_${sessionToken.substring(0, 16)}`}, ${name})
+          ON CONFLICT (student_email)
+          DO UPDATE SET
+            student_name = COALESCE(EXCLUDED.student_name, students.student_name),
+            updated_at = NOW()
+          RETURNING student_id
+        `;
+        studentId = student[0].student_id;
+      }
 
       // Get or create session
       await sql`

@@ -1323,6 +1323,89 @@
       stateListeners[path].push(callback);
     }
 
+    // =============================================
+    // SESSION LOGGING (for troubleshooting)
+    // =============================================
+
+    /**
+     * Log session event for troubleshooting
+     * @param {string} eventType - Type of event: navigation|error|action|api_call|state_change
+     * @param {object} eventData - Event details
+     */
+    async function logSessionEvent(eventType, eventData) {
+      if (!sessionToken) return; // Don't log if no session
+
+      try {
+        await fetch(`${window.location.origin}/api/session-log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: sessionToken,
+            studentEmail: studentEmail || null,
+            eventType: eventType,
+            eventData: {
+              ...eventData,
+              currentStep: currentStep,
+              stepName: steps[currentStep]?.title || 'Unknown',
+              demoMode: studentDemoMode,
+              userAgent: navigator.userAgent,
+              timestamp: new Date().toISOString()
+            }
+          })
+        });
+      } catch (error) {
+        // Silently fail - don't break app if logging fails
+        console.warn('Failed to log session event:', error);
+      }
+    }
+
+    // Log navigation events
+    function logNavigation(from, to) {
+      logSessionEvent('navigation', {
+        from: from,
+        to: to,
+        fromStepName: steps[from]?.title || 'Unknown',
+        toStepName: steps[to]?.title || 'Unknown'
+      });
+    }
+
+    // Log errors
+    function logError(errorType, errorMessage, errorDetails = {}) {
+      logSessionEvent('error', {
+        errorType: errorType,
+        errorMessage: errorMessage,
+        ...errorDetails
+      });
+      console.error(`[Session Error] ${errorType}:`, errorMessage, errorDetails);
+    }
+
+    // Log user actions
+    function logAction(actionName, actionDetails = {}) {
+      logSessionEvent('action', {
+        actionName: actionName,
+        ...actionDetails
+      });
+    }
+
+    // Log API calls
+    function logApiCall(endpoint, method, status, details = {}) {
+      logSessionEvent('api_call', {
+        endpoint: endpoint,
+        method: method,
+        status: status,
+        ...details
+      });
+    }
+
+    // Log state changes
+    function logStateChange(stateName, oldValue, newValue) {
+      logSessionEvent('state_change', {
+        stateName: stateName,
+        oldValue: oldValue,
+        newValue: newValue
+      });
+    }
+
     // Queue database sync with debouncing
     function queueDatabaseSync() {
       clearTimeout(syncTimer);
@@ -1640,9 +1723,9 @@
     }
 
     async function trackStudentProgress() {
-      // Only track if we have email and session token
-      if (!studentEmail || !sessionToken) {
-        console.log('📊 Progress tracking skipped - missing email or session');
+      // Track if we have session token (email is optional)
+      if (!sessionToken) {
+        console.log('📊 Progress tracking skipped - missing session token');
         return;
       }
 
@@ -1673,7 +1756,8 @@
           8: 'Final Deployment'
         };
 
-        console.log(`📊 Tracking progress for ${studentEmail} session ${sessionToken.substring(0, 8)} (currentStep: ${currentStep}, UI Step: ${currentStep + 1})`);
+        const identifier = studentEmail || 'anonymous';
+        console.log(`📊 Tracking progress for ${identifier} session ${sessionToken.substring(0, 8)} (currentStep: ${currentStep}, UI Step: ${currentStep + 1})`);
 
         // Track progress for current step using the normalized V2 student-progress API
         const stepNumber = currentStep;  // 0-indexed (0-8)
@@ -1689,13 +1773,14 @@
           },
           body: JSON.stringify({
             sessionToken: sessionToken,
-            studentEmail: studentEmail,
-            studentName: studentName || studentEmail,
+            studentEmail: studentEmail || null,  // Allow null email for anonymous sessions
+            studentName: studentName || studentEmail || 'Anonymous Student',
             stepNumber: stepNumber,
             stepName: stepName,
             completed: isCompleted,
             timeSpent: 0,  // TODO: Track actual time spent per step
-            codeSubmitted: null  // TODO: Track code submissions if needed
+            codeSubmitted: null,  // TODO: Track code submissions if needed
+            demoMode: studentDemoMode  // Track if this is demo mode
           })
         });
 
@@ -3417,24 +3502,58 @@
         return;
       }
 
-      // Format looks valid - accept it without API call
-      status.innerHTML = 'Validating format...';
+      // Test the API key with actual OpenAI API call
+      status.innerHTML = 'Testing API key...';
       status.style.display = 'inline-flex';
       status.style.background = '#d1ecf1';
       status.style.color = '#0c5460';
 
-      // Simulate a brief validation delay for UX
-      await new Promise(resolve => setTimeout(resolve, 500));
+      try {
+        // Make a minimal API call to validate the key
+        const response = await fetch('https://api.openai.com/v1/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`
+          }
+        });
 
-      // Store API key after format validation
-      openaiApiKey = apiKey;
-      setState("openaiConnected", true);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+          const errorMessage = errorData.error?.message || 'Invalid API key';
 
-      status.innerHTML = '<span class="live-indicator"></span> Connected';
-      status.style.background = '#d4edda';
-      status.style.color = '#155724';
+          logApiCall('/v1/models', 'GET', response.status, { error: errorMessage });
+          logError('openai_validation_failed', errorMessage, { statusCode: response.status });
 
-      showStatus('step1Status', 'success', '✅ OpenAI API key format validated! (Will be tested when you make your first AI call)');
+          showStatus('step1Status', 'error', `❌ API key validation failed: ${errorMessage}`);
+          status.innerHTML = `❌ Invalid key`;
+          status.style.display = 'inline-flex';
+          status.style.background = '#f8d7da';
+          status.style.color = '#721c24';
+          return;
+        }
+
+        // API key is valid
+        logApiCall('/v1/models', 'GET', 200, { success: true });
+        logAction('openai_connected', { validated: true });
+
+        openaiApiKey = apiKey;
+        setState("openaiConnected", true);
+
+        status.innerHTML = '<span class="live-indicator"></span> Connected';
+        status.style.background = '#d4edda';
+        status.style.color = '#155724';
+
+        showStatus('step1Status', 'success', '✅ OpenAI API key validated successfully!');
+      } catch (error) {
+        console.error('OpenAI validation error:', error);
+        logError('openai_validation_exception', error.message, { stack: error.stack });
+        showStatus('step1Status', 'error', `❌ Failed to validate API key: ${error.message}`);
+        status.innerHTML = `❌ Validation failed`;
+        status.style.display = 'inline-flex';
+        status.style.background = '#f8d7da';
+        status.style.color = '#721c24';
+        return;
+      }
 
       // Hide prerequisites warning if shown
       const prereqDiv = document.getElementById('step5Prerequisites');
@@ -13772,7 +13891,9 @@ app.get('/health', (req, res) => {
           celebrate('🎊 Almost done! Final step ahead!', 'normal');
         }
 
+        const oldStep = currentStep;
         currentStep++;
+        logNavigation(oldStep, currentStep); // Log step navigation
         renderProgressSteps();
         renderStepContent();
         window.scrollTo(0, 0);
