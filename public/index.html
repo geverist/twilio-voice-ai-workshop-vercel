@@ -2205,10 +2205,15 @@
         }
       }
 
-      // Step 4: Enable next button if basic TwiML is created
-      if (basicTwimlCreated) {
+      // Step 4: Enable next button only if deployment is complete
+      if (step4Deployed) {
         const nextBtn4 = document.getElementById('nextBtn4');
-        if (nextBtn4) nextBtn4.disabled = false;
+        if (nextBtn4) {
+          nextBtn4.disabled = false;
+          if (currentStep === 3) {
+            nextBtn4.classList.add('next-action');
+          }
+        }
       }
 
       // Step 4: Add next-action to validate button if not yet validated and on step 4
@@ -2217,8 +2222,8 @@
         if (validateBtn4) validateBtn4.classList.add('next-action');
       }
 
-      // Step 5: Enable next button if WebSocket is built  (✅ ADDED)
-      if (websocketBuilt) {
+      // Step 5: Enable next button only if deployment is complete
+      if (step5Deployed) {
         const nextBtn5 = document.getElementById('nextBtn5');
         if (nextBtn5) {
           nextBtn5.disabled = false;
@@ -2234,10 +2239,15 @@
         if (validateBtn5) validateBtn5.classList.add('next-action');
       }
 
-      // Step 6: Enable next button if ConversationRelay is created
-      if (conversationRelayCreated) {
+      // Step 6: Enable next button only if deployment is complete
+      if (step6Deployed) {
         const nextBtn6 = document.getElementById('nextBtn6');
-        if (nextBtn6) nextBtn6.disabled = false;
+        if (nextBtn6) {
+          nextBtn6.disabled = false;
+          if (currentStep === 5) {
+            nextBtn6.classList.add('next-action');
+          }
+        }
       }
 
       // Step 6: Add next-action to validate button if not yet validated and on step 6
@@ -2246,8 +2256,8 @@
         if (validateBtn6) validateBtn6.classList.add('next-action');
       }
 
-      // Step 7: Enable next button if system prompt is saved  (✅ ADDED)
-      if (systemPromptSaved) {
+      // Step 7: Enable next button only if deployment is complete
+      if (step7Deployed) {
         const nextBtn7 = document.getElementById('nextBtn7');
         if (nextBtn7) {
           nextBtn7.disabled = false;
@@ -2257,8 +2267,8 @@
         }
       }
 
-      // Step 8: Enable next button if tools are configured  (✅ ADDED)
-      if (toolsConfigured) {
+      // Step 8: Enable next button only if deployment is complete
+      if (step8Deployed) {
         const nextBtn8 = document.getElementById('nextBtn8');
         if (nextBtn8) {
           nextBtn8.disabled = false;
@@ -6418,7 +6428,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary" id="nextBtn7" onclick="nextStep()" ${systemPromptSaved ? '' : 'disabled'}>
+            <button class="btn btn-primary ${step7Deployed ? 'next-action' : ''}" id="nextBtn7" onclick="nextStep()" ${step7Deployed ? '' : 'disabled'}>
               Next: Tools & Functions →
             </button>
           </div>
@@ -9653,8 +9663,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary" id="nextBtn5" onclick="nextStep()" disabled>
-              Next: Prompt Engineering →
+            <button class="btn btn-primary ${step5Deployed ? 'next-action' : ''}" id="nextBtn5" onclick="nextStep()" ${step5Deployed ? '' : 'disabled'}>
+              Next: ConversationRelay →
             </button>
           </div>
         </div>
@@ -10732,8 +10742,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary" id="nextBtn6" onclick="nextStep()" disabled>
-              Next: Tools & Functions →
+            <button class="btn btn-primary ${step6Deployed ? 'next-action' : ''}" id="nextBtn6" onclick="nextStep()" ${step6Deployed ? '' : 'disabled'}>
+              Next: Prompt Engineering →
             </button>
           </div>
         </div>
@@ -11388,8 +11398,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary" id="nextBtn8" onclick="nextStep()" ${step6Deployed || step6CodeValidated ? '' : 'disabled'}>
-              Next: Deploy Your System →
+            <button class="btn btn-primary ${step8Deployed ? 'next-action' : ''}" id="nextBtn8" onclick="nextStep()" ${step8Deployed ? '' : 'disabled'}>
+              Next: Complete & Celebrate →
             </button>
           </div>
         </div>
@@ -12247,7 +12257,7 @@ app.get('/health', (req, res) => {
 
           <div class="button-group">
             <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
-            <button class="btn btn-primary ${step5Deployed ? 'next-action' : ''}" id="nextBtn7" onclick="nextStep()" ${step5CodeValidated || step5Deployed || codespaceUrl ? '' : 'disabled'}>
+            <button class="btn btn-primary ${step5Deployed ? 'next-action' : ''}" id="nextBtn5" onclick="nextStep()" ${step5Deployed ? '' : 'disabled'}>
               Next: ConversationRelay →
             </button>
           </div>
