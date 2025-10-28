@@ -11451,8 +11451,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
     // Update ConversationRelay code based on settings
     function updateConversationRelayCode() {
-      const welcomeGreetingValue = document.getElementById('crWelcomeGreeting')?.value?.trim();
-      const welcomeGreeting = welcomeGreetingValue || generatedContent?.ivrGreeting || 'Hello! I am your AI assistant. How can I help you today?';
+      // Use customWelcomeGreeting if set (from Step 7), otherwise fall back to input field or generated content
+      const greetingValue = customWelcomeGreeting || document.getElementById('crWelcomeGreeting')?.value?.trim() || '';
       const language = document.getElementById('crLanguage')?.value || 'en-US';
       const transcriptionProvider = document.getElementById('crTranscriptionProvider')?.value || 'deepgram';
       const interruptible = document.getElementById('crInterruptible')?.value || 'speech';
@@ -11465,7 +11465,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       const hintsLine = hints ? `    hints: '${hints}',` : `    // hints: 'Twilio,ConversationRelay,WebSocket,API'`;
 
       // Build welcome greeting line - omit if empty
-      const greetingLine = welcomeGreetingValue ? `    welcomeGreeting: '${welcomeGreeting.replace(/'/g, "\\'")}',` : `    // welcomeGreeting: 'Hello!', // Omitted - AI waits for caller to speak first`;
+      const greetingLine = greetingValue ? `    welcomeGreeting: '${greetingValue.replace(/'/g, "\\'")}',` : `    // welcomeGreeting: 'Hello!', // Omitted - AI waits for caller to speak first`;
 
       // Add CI service if enabled
       const intelligenceLine = ciServiceSid ? `\n    // Conversational Intelligence (transcripts, sentiment, topics)\n    intelligenceService: '${ciServiceSid}',\n` : '';
@@ -11489,7 +11489,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     url: wsHandlerUrl,
 
     // Optional: Initial greeting message
-    welcomeGreeting: '${welcomeGreeting.replace(/'/g, "\\'")}',
+${greetingLine}
 
     // Voice Configuration
     voice: '${voice}',
