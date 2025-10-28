@@ -1837,15 +1837,17 @@
         bottom: 0;
         background: rgba(0, 0, 0, 0.9);
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: center;
         z-index: 10000;
         animation: fadeIn 0.3s;
+        overflow-y: auto;
+        padding: 20px;
       `;
 
       modal.innerHTML = `
-        <div style="background: white; border-radius: 16px; padding: 50px; max-width: 650px; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);">
-          <div style="font-size: 4rem; margin-bottom: 20px;">🚀</div>
+        <div style="background: white; border-radius: 16px; padding: 30px; max-width: 650px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); margin: auto; box-sizing: border-box;">
+          <div style="font-size: 3rem; margin-bottom: 20px;">🚀</div>
           <h2 style="color: #0d122b; margin-bottom: 20px; font-size: 2rem;">Welcome to the Workshop!</h2>
           <p style="color: #666; margin-bottom: 25px; line-height: 1.6; font-size: 1.05rem;">
             This workshop guides you through building AI-powered voice agents. You'll connect your accounts to test with real APIs.
