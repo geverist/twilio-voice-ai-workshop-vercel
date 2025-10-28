@@ -393,6 +393,7 @@
         <button class="tab" onclick="switchTab('bulk')">Bulk Send</button>
         <button class="tab" onclick="switchTab('history')">Invitation History</button>
         <button class="tab" onclick="switchTab('cleanup')">👥 Active Students</button>
+        <button class="tab" onclick="switchTab('logs')">📋 Session Logs</button>
       </div>
 
       <!-- Alert Messages -->
@@ -690,6 +691,102 @@ student2@example.com,Jane Smith</pre>
             <li><strong>Delete API Keys Only:</strong> Removes OpenAI keys but preserves all other data (names, prompts, tools, phone numbers)</li>
             <li><strong>Delete Complete Sessions:</strong> Permanently removes all data for selected sessions</li>
             <li><strong>Best Practice:</strong> Delete API keys for security and cost control after workshop ends</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Session Logs Tab -->
+      <div id="logsTab" class="tab-content">
+        <div class="info-box" style="background: #e3f2fd; border-left-color: #1976d2;">
+          <h3 style="color: #1976d2;">📋 Session Event Logs</h3>
+          <p style="color: #1976d2;">
+            View detailed session events for troubleshooting student issues. Filter by student email/session token, event type, and time range.
+          </p>
+        </div>
+
+        <div class="form-section">
+          <h2>🔍 Filter Session Logs</h2>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div class="form-group" style="margin: 0;">
+              <label for="logStudentEmailFilter">Student Email or Session Token</label>
+              <input
+                type="text"
+                id="logStudentEmailFilter"
+                placeholder="student@example.com or ws_xxx"
+              />
+              <div class="hint">Filter by specific student or session</div>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="logEventTypeFilter">Event Type</label>
+              <select id="logEventTypeFilter" style="padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; width: 100%;">
+                <option value="">All Event Types</option>
+                <option value="navigation">🧭 Navigation</option>
+                <option value="error">❌ Errors</option>
+                <option value="action">✅ Actions</option>
+                <option value="api_call">🔗 API Calls</option>
+                <option value="state_change">🔄 State Changes</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="logLimitFilter">Result Limit</label>
+              <input
+                type="number"
+                id="logLimitFilter"
+                placeholder="100"
+                min="10"
+                max="500"
+                value="100"
+              />
+              <div class="hint">Max number of events to show</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="button" onclick="loadInstructorSessionLogs()" id="loadInstructorLogsBtn">
+              🔄 Load Logs
+            </button>
+            <button class="button secondary" onclick="clearInstructorLogFilters()">
+              Clear Filters
+            </button>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div id="instructorLogsLoading" style="display: none; text-align: center; padding: 40px; color: #666;">
+            <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+            <p>Loading session logs...</p>
+          </div>
+
+          <div id="instructorLogsError" style="display: none;"></div>
+
+          <div id="instructorLogsContent" style="display: none;">
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <strong id="instructorLogsCount">0</strong> events found
+            </div>
+
+            <div id="instructorLogsList" style="max-height: 700px; overflow-y: auto;">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div id="instructorLogsEmpty" style="display: block; background: #f8f9fa; padding: 40px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 64px; margin-bottom: 15px;">📋</div>
+            <p style="color: #666; font-size: 16px; margin-bottom: 10px;">No logs loaded yet</p>
+            <p style="color: #999; font-size: 14px;">Use the filters above to load session logs for troubleshooting</p>
+          </div>
+        </div>
+
+        <div class="form-section" style="background: #e3f2fd; border: 2px solid #90caf9;">
+          <h3 style="color: #1976d2; margin-bottom: 15px;">💡 How to Use Session Logs</h3>
+          <ul style="color: #1976d2; line-height: 1.8; padding-left: 20px;">
+            <li><strong>Student Issues:</strong> When a student reports a problem, enter their email to see all their session events</li>
+            <li><strong>Error Tracking:</strong> Filter by "Errors" to see all errors across all students</li>
+            <li><strong>Navigation Patterns:</strong> Filter by "Navigation" to see how students progress through steps</li>
+            <li><strong>API Failures:</strong> Filter by "API Calls" to debug external service issues</li>
+            <li><strong>Session Token:</strong> Use the full session token from the Active Students tab for precise filtering</li>
           </ul>
         </div>
       </div>
@@ -2132,6 +2229,146 @@ student2@example.com,Jane Smith</pre>
         console.error('Delete student sessions error:', error);
         showAlert('error', `❌ Error: ${error.message}`);
       }
+    }
+
+    // =============================================
+    // SESSION LOGS TAB - Instructor View
+    // =============================================
+
+    async function loadInstructorSessionLogs() {
+      const btn = document.getElementById('loadInstructorLogsBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Loading...';
+
+      document.getElementById('instructorLogsLoading').style.display = 'block';
+      document.getElementById('instructorLogsError').style.display = 'none';
+      document.getElementById('instructorLogsContent').style.display = 'none';
+      document.getElementById('instructorLogsEmpty').style.display = 'none';
+
+      try {
+        const studentFilter = document.getElementById('logStudentEmailFilter').value.trim();
+        const eventType = document.getElementById('logEventTypeFilter').value;
+        const limit = document.getElementById('logLimitFilter').value || 100;
+
+        // Build query params
+        let url = `/api/session-log?limit=${limit}`;
+
+        // If filter looks like email, use studentEmail param
+        // If it starts with "ws_", use sessionToken param
+        if (studentFilter) {
+          if (studentFilter.startsWith('ws_')) {
+            url += `&sessionToken=${encodeURIComponent(studentFilter)}`;
+          } else {
+            url += `&studentEmail=${encodeURIComponent(studentFilter)}`;
+          }
+        }
+
+        if (eventType) {
+          url += `&eventType=${eventType}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load session logs');
+        }
+
+        document.getElementById('instructorLogsLoading').style.display = 'none';
+
+        if (data.events.length === 0) {
+          document.getElementById('instructorLogsEmpty').style.display = 'block';
+        } else {
+          renderInstructorSessionLogs(data.events);
+          document.getElementById('instructorLogsCount').textContent = data.events.length;
+          document.getElementById('instructorLogsContent').style.display = 'block';
+        }
+
+      } catch (error) {
+        console.error('Logs error:', error);
+        document.getElementById('instructorLogsLoading').style.display = 'none';
+        document.getElementById('instructorLogsError').style.display = 'block';
+        document.getElementById('instructorLogsError').innerHTML = `
+          <div class="alert error" style="display: block;">
+            <strong>❌ Failed to Load Session Logs</strong><br>
+            ${error.message}
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Load Logs';
+      }
+    }
+
+    function renderInstructorSessionLogs(events) {
+      const logsList = document.getElementById('instructorLogsList');
+
+      logsList.innerHTML = events.map(event => {
+        const eventData = typeof event.event_data === 'string' ? JSON.parse(event.event_data) : event.event_data;
+        const timestamp = new Date(event.created_at).toLocaleString();
+        const studentInfo = event.student_name || event.student_email || 'Unknown';
+
+        const typeConfig = {
+          'navigation': { emoji: '🧭', color: '#3b82f6', label: 'Navigation' },
+          'error': { emoji: '❌', color: '#ef4444', label: 'Error' },
+          'action': { emoji: '✅', color: '#10b981', label: 'Action' },
+          'api_call': { emoji: '🔗', color: '#8b5cf6', label: 'API Call' },
+          'state_change': { emoji: '🔄', color: '#f59e0b', label: 'State Change' }
+        };
+
+        const config = typeConfig[event.event_type] || { emoji: '📋', color: '#6c757d', label: event.event_type };
+
+        return `
+          <div class="invitation-item" style="flex-direction: column; align-items: stretch; padding: 20px; border-left: 4px solid ${config.color}; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">${config.emoji}</span>
+                <div>
+                  <div style="font-weight: 600; color: ${config.color};">${config.label}</div>
+                  <div style="font-size: 0.85rem; color: #666; margin-top: 3px;">
+                    👤 ${studentInfo}
+                  </div>
+                  <div style="font-size: 0.85rem; color: #666; margin-top: 3px;">${timestamp}</div>
+                </div>
+              </div>
+              <div style="text-align: right; font-size: 0.85rem; color: #666; font-family: monospace;">
+                ${event.session_token ? event.session_token.substring(0, 20) + '...' : 'No session'}
+              </div>
+            </div>
+
+            ${eventData.errorMessage ? `
+              <div style="padding: 10px; background: #fee; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #ef4444;">
+                <strong style="color: #991b1b;">Error:</strong> ${eventData.errorMessage}
+                ${eventData.errorType ? `<div style="font-size: 0.85rem; color: #666; margin-top: 5px;">Type: ${eventData.errorType}</div>` : ''}
+                ${eventData.statusCode ? `<div style="font-size: 0.85rem; color: #666; margin-top: 5px;">Status: ${eventData.statusCode}</div>` : ''}
+              </div>
+            ` : ''}
+
+            ${eventData.from !== undefined && eventData.to !== undefined ? `
+              <div style="padding: 10px; background: #e3f2fd; border-radius: 6px; margin-bottom: 10px;">
+                <strong style="color: #1976d2;">Step Navigation:</strong> Step ${eventData.from} → Step ${eventData.to}
+                ${eventData.fromStepName ? `<div style="font-size: 0.85rem; color: #666; margin-top: 5px;">${eventData.fromStepName} → ${eventData.toStepName}</div>` : ''}
+              </div>
+            ` : ''}
+
+            <details style="margin-top: 10px;">
+              <summary style="cursor: pointer; color: #667eea; font-size: 13px; font-weight: 600;">View Full Event Data</summary>
+              <pre style="background: #2c313c; color: #abb2bf; padding: 15px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin-top: 10px; line-height: 1.5;">${JSON.stringify(eventData, null, 2)}</pre>
+            </details>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function clearInstructorLogFilters() {
+      document.getElementById('logStudentEmailFilter').value = '';
+      document.getElementById('logEventTypeFilter').value = '';
+      document.getElementById('logLimitFilter').value = '100';
+
+      // Reset display
+      document.getElementById('instructorLogsContent').style.display = 'none';
+      document.getElementById('instructorLogsError').style.display = 'none';
+      document.getElementById('instructorLogsEmpty').style.display = 'block';
     }
   </script>
 </body>

@@ -243,6 +243,7 @@
         <button class="tab" onclick="showTab('prompts')">📝 Prompts</button>
         <button class="tab" onclick="showTab('functions')">🛠️ Functions</button>
         <button class="tab" onclick="showTab('analytics')">📈 Analytics</button>
+        <button class="tab" onclick="showTab('logs')">📋 Session Logs</button>
       </div>
 
       <div id="overview" class="tab-content active">
@@ -625,6 +626,54 @@
             <div style="font-size: 64px; margin-bottom: 15px;">📞</div>
             <p style="color: #666; font-size: 16px; margin-bottom: 10px;">No calls found</p>
             <p style="color: #999; font-size: 14px;">Make a test call to see analytics appear here!</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="logs" class="tab-content">
+        <div class="panel">
+          <h2>📋 Session Logs</h2>
+          <p style="color: #666; margin-bottom: 20px;">View detailed session events for troubleshooting errors, navigation patterns, and API call issues</p>
+
+          <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+            <select id="logEventTypeFilter" class="config-select" style="flex: 0 0 200px;" onchange="applyLogFilters()">
+              <option value="">All Event Types</option>
+              <option value="navigation">🧭 Navigation</option>
+              <option value="error">❌ Errors</option>
+              <option value="action">✅ Actions</option>
+              <option value="api_call">🔗 API Calls</option>
+              <option value="state_change">🔄 State Changes</option>
+            </select>
+            <input type="number" id="logLimitInput" class="config-select" placeholder="Limit (default 100)" min="10" max="500" style="flex: 0 0 150px;" />
+            <button class="btn" onclick="loadSessionLogs()" id="loadLogsBtn">
+              🔄 Load Logs
+            </button>
+            <button class="btn btn-secondary" onclick="clearLogFilters()">
+              Clear Filters
+            </button>
+          </div>
+
+          <div id="logsLoading" style="display: none; text-align: center; padding: 40px; color: #666;">
+            <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+            <p>Loading session logs...</p>
+          </div>
+
+          <div id="logsError" style="display: none;"></div>
+
+          <div id="logsContent" style="display: none;">
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <strong id="logsCount">0</strong> events found
+            </div>
+
+            <div id="logsList" style="max-height: 700px; overflow-y: auto;">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div id="logsEmpty" style="display: none; background: #f8f9fa; padding: 40px; border-radius: 8px; text-align: center; margin-top: 20px;">
+            <div style="font-size: 64px; margin-bottom: 15px;">📋</div>
+            <p style="color: #666; font-size: 16px; margin-bottom: 10px;">No logs found</p>
+            <p style="color: #999; font-size: 14px;">Session logs will appear as you use the workshop!</p>
           </div>
         </div>
       </div>
@@ -1432,6 +1481,118 @@
       } catch (error) {
         console.error(`❌ Error saving ${fieldName}:`, error);
       }
+    }
+
+    // =========================================================================
+    // SESSION LOGS TAB
+    // =========================================================================
+
+    async function loadSessionLogs() {
+      const btn = document.getElementById('loadLogsBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Loading...';
+
+      document.getElementById('logsLoading').style.display = 'block';
+      document.getElementById('logsError').style.display = 'none';
+      document.getElementById('logsContent').style.display = 'none';
+      document.getElementById('logsEmpty').style.display = 'none';
+
+      try {
+        const eventType = document.getElementById('logEventTypeFilter').value;
+        const limit = document.getElementById('logLimitInput').value || 100;
+
+        let url = `${API_BASE}/api/session-log?sessionToken=${SESSION_TOKEN}&limit=${limit}`;
+        if (eventType) {
+          url += `&eventType=${eventType}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load session logs');
+        }
+
+        document.getElementById('logsLoading').style.display = 'none';
+
+        if (data.events.length === 0) {
+          document.getElementById('logsEmpty').style.display = 'block';
+        } else {
+          renderSessionLogs(data.events);
+          document.getElementById('logsCount').textContent = data.events.length;
+          document.getElementById('logsContent').style.display = 'block';
+        }
+
+      } catch (error) {
+        console.error('Logs error:', error);
+        document.getElementById('logsLoading').style.display = 'none';
+        document.getElementById('logsError').style.display = 'block';
+        document.getElementById('logsError').innerHTML = `
+          <div class="error">
+            <h3 style="margin-bottom: 10px;">❌ Failed to Load Session Logs</h3>
+            <p>${error.message}</p>
+          </div>
+        `;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Load Logs';
+      }
+    }
+
+    function renderSessionLogs(events) {
+      const logsList = document.getElementById('logsList');
+
+      logsList.innerHTML = events.map(event => {
+        const eventData = typeof event.event_data === 'string' ? JSON.parse(event.event_data) : event.event_data;
+        const timestamp = new Date(event.created_at).toLocaleString();
+
+        const typeConfig = {
+          'navigation': { emoji: '🧭', color: '#3b82f6', label: 'Navigation' },
+          'error': { emoji: '❌', color: '#ef4444', label: 'Error' },
+          'action': { emoji: '✅', color: '#10b981', label: 'Action' },
+          'api_call': { emoji: '🔗', color: '#8b5cf6', label: 'API Call' },
+          'state_change': { emoji: '🔄', color: '#f59e0b', label: 'State Change' }
+        };
+
+        const config = typeConfig[event.event_type] || { emoji: '📋', color: '#6c757d', label: event.event_type };
+
+        return `
+          <div class="setting-card" style="margin-bottom: 15px; border-left: 4px solid ${config.color};">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 24px;">${config.emoji}</span>
+                <div>
+                  <div style="font-weight: 600; color: ${config.color};">${config.label}</div>
+                  <div style="font-size: 0.85rem; color: #666; margin-top: 3px;">${timestamp}</div>
+                </div>
+              </div>
+            </div>
+
+            ${eventData.errorMessage ? `
+              <div style="padding: 10px; background: #fee; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #ef4444;">
+                <strong style="color: #991b1b;">Error:</strong> ${eventData.errorMessage}
+                ${eventData.errorType ? `<div style="font-size: 0.85rem; color: #666; margin-top: 5px;">Type: ${eventData.errorType}</div>` : ''}
+              </div>
+            ` : ''}
+
+            <details style="margin-top: 10px;">
+              <summary style="cursor: pointer; color: #667eea; font-size: 13px; font-weight: 600;">View Event Data</summary>
+              <pre style="background: #2c313c; color: #abb2bf; padding: 15px; border-radius: 6px; font-size: 12px; overflow-x: auto; margin-top: 10px; line-height: 1.5;">${JSON.stringify(eventData, null, 2)}</pre>
+            </details>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function applyLogFilters() {
+      // Auto-load when filter changes
+      loadSessionLogs();
+    }
+
+    function clearLogFilters() {
+      document.getElementById('logEventTypeFilter').value = '';
+      document.getElementById('logLimitInput').value = '';
+      loadSessionLogs();
     }
 
     loadConfig();
