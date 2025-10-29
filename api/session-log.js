@@ -91,59 +91,172 @@ export default async function handler(req, res) {
       // Allow fetching all logs if no filters provided (useful for instructor dashboard)
       // Note: In production, you may want to add pagination or admin authentication for this
 
-      let query = sql`
-        SELECT
-          e.event_id,
-          e.session_token,
-          e.event_type,
-          e.event_data,
-          e.created_at,
-          s.student_email,
-          s.student_name
-        FROM events e
-        LEFT JOIN students s ON e.student_id = s.student_id
-        WHERE 1=1
+      // Ensure tables exist
+      await sql`
+        CREATE TABLE IF NOT EXISTS students (
+          student_id SERIAL PRIMARY KEY,
+          student_email TEXT UNIQUE NOT NULL,
+          student_name TEXT,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
       `;
 
-      const conditions = [];
-      const params = [];
-
-      if (sessionToken) {
-        conditions.push(`e.session_token = $${params.length + 1}`);
-        params.push(sessionToken);
-      }
-
-      if (studentEmail) {
-        conditions.push(`s.student_email = $${params.length + 1}`);
-        params.push(studentEmail);
-      }
-
-      if (eventType) {
-        conditions.push(`e.event_type = $${params.length + 1}`);
-        params.push(eventType);
-      }
-
-      // Build final query
-      let queryText = `
-        SELECT
-          e.event_id,
-          e.session_token,
-          e.event_type,
-          e.event_data,
-          e.created_at,
-          s.student_email,
-          s.student_name
-        FROM events e
-        LEFT JOIN students s ON e.student_id = s.student_id
+      await sql`
+        CREATE TABLE IF NOT EXISTS events (
+          event_id SERIAL PRIMARY KEY,
+          student_id INTEGER REFERENCES students(student_id),
+          session_token TEXT,
+          event_type TEXT NOT NULL,
+          event_data JSONB,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
       `;
 
-      if (conditions.length > 0) {
-        queryText += ' WHERE ' + conditions.join(' AND ');
+      // Build query with filters
+      const limitValue = parseInt(limit) || 100;
+      let result;
+
+      if (sessionToken && studentEmail && eventType) {
+        // All three filters
+        result = await sql`
+          SELECT
+            e.event_id,
+            e.session_token,
+            e.event_type,
+            e.event_data,
+            e.created_at,
+            s.student_email,
+            s.student_name
+          FROM events e
+          LEFT JOIN students s ON e.student_id = s.student_id
+          WHERE e.session_token = ${sessionToken}
+            AND s.student_email = ${studentEmail}
+            AND e.event_type = ${eventType}
+          ORDER BY e.created_at DESC
+          LIMIT ${limitValue}
+        `;
+      } else if (sessionToken && studentEmail) {
+        // Session and email
+        result = await sql`
+          SELECT
+            e.event_id,
+            e.session_token,
+            e.event_type,
+            e.event_data,
+            e.created_at,
+            s.student_email,
+            s.student_name
+          FROM events e
+          LEFT JOIN students s ON e.student_id = s.student_id
+          WHERE e.session_token = ${sessionToken}
+            AND s.student_email = ${studentEmail}
+          ORDER BY e.created_at DESC
+          LIMIT ${limitValue}
+        `;
+      } else if (sessionToken && eventType) {
+        // Session and event type
+        result = await sql`
+          SELECT
+            e.event_id,
+            e.session_token,
+            e.event_type,
+            e.event_data,
+            e.created_at,
+            s.student_email,
+            s.student_name
+          FROM events e
+          LEFT JOIN students s ON e.student_id = s.student_id
+          WHERE e.session_token = ${sessionToken}
+            AND e.event_type = ${eventType}
+          ORDER BY e.created_at DESC
+          LIMIT ${limitValue}
+        `;
+      } else if (studentEmail && eventType) {
+        // Email and event type
+        result = await sql`
+          SELECT
+            e.event_id,
+            e.session_token,
+            e.event_type,
+            e.event_data,
+            e.created_at,
+            s.student_email,
+            s.student_name
+          FROM events e
+          LEFT JOIN students s ON e.student_id = s.student_id
+          WHERE s.student_email = ${studentEmail}
+            AND e.event_type = ${eventType}
+          ORDER BY e.created_at DESC
+          LIMIT ${limitValue}
+        `;
+      } else if (sessionToken) {
+        // Session only
+        result = await sql`
+          SELECT
+            e.event_id,
+            e.session_token,
+            e.event_type,
+            e.event_data,
+            e.created_at,
+            s.student_email,
+            s.student_name
+          FROM events e
+          LEFT JOIN students s ON e.student_id = s.student_id
+          WHERE e.session_token = ${sessionToken}
+          ORDER BY e.created_at DESC
+          LIMIT ${limitValue}
+        `;
+      } else if (studentEmail) {
+        // Email only
+        result = await sql`
+          SELECT
+            e.event_id,
+            e.session_token,
+            e.event_type,
+            e.event_data,
+            e.created_at,
+            s.student_email,
+            s.student_name
+          FROM events e
+          LEFT JOIN students s ON e.student_id = s.student_id
+          WHERE s.student_email = ${studentEmail}
+          ORDER BY e.created_at DESC
+          LIMIT ${limitValue}
+        `;
+      } else if (eventType) {
+        // Event type only
+        result = await sql`
+          SELECT
+            e.event_id,
+            e.session_token,
+            e.event_type,
+            e.event_data,
+            e.created_at,
+            s.student_email,
+            s.student_name
+          FROM events e
+          LEFT JOIN students s ON e.student_id = s.student_id
+          WHERE e.event_type = ${eventType}
+          ORDER BY e.created_at DESC
+          LIMIT ${limitValue}
+        `;
+      } else {
+        // No filters - all logs
+        result = await sql`
+          SELECT
+            e.event_id,
+            e.session_token,
+            e.event_type,
+            e.event_data,
+            e.created_at,
+            s.student_email,
+            s.student_name
+          FROM events e
+          LEFT JOIN students s ON e.student_id = s.student_id
+          ORDER BY e.created_at DESC
+          LIMIT ${limitValue}
+        `;
       }
-
-      queryText += ` ORDER BY e.created_at DESC LIMIT ${parseInt(limit) || 100}`;
-
-      const result = await sql.unsafe(queryText, params);
 
       return res.status(200).json({
         success: true,
