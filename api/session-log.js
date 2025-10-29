@@ -55,33 +55,73 @@ export default async function handler(req, res) {
 
       const eventTimestamp = timestamp || new Date().toISOString();
 
+      // Ensure tables exist before inserting
+      try {
+        await sql`
+          CREATE TABLE IF NOT EXISTS students (
+            student_id SERIAL PRIMARY KEY,
+            student_email TEXT UNIQUE NOT NULL,
+            student_name TEXT,
+            created_at TIMESTAMP DEFAULT NOW()
+          )
+        `;
+
+        await sql`
+          CREATE TABLE IF NOT EXISTS events (
+            event_id SERIAL PRIMARY KEY,
+            student_id INTEGER REFERENCES students(student_id),
+            session_token TEXT,
+            event_type TEXT NOT NULL,
+            event_data JSONB,
+            created_at TIMESTAMP DEFAULT NOW()
+          )
+        `;
+      } catch (tableError) {
+        console.error('⚠️ Error ensuring session log tables exist:', tableError);
+        // Continue anyway
+      }
+
       // Get student_id if email provided
       let studentId = null;
       if (studentEmail) {
-        const studentResult = await sql`
-          SELECT student_id FROM students WHERE student_email = ${studentEmail}
-        `;
-        if (studentResult.length > 0) {
-          studentId = studentResult[0].student_id;
+        try {
+          const studentResult = await sql`
+            SELECT student_id FROM students WHERE student_email = ${studentEmail}
+          `;
+          if (studentResult.length > 0) {
+            studentId = studentResult[0].student_id;
+          }
+        } catch (studentError) {
+          console.error('⚠️ Error looking up student:', studentError);
+          // Continue without student_id
         }
       }
 
       // Insert log entry
-      await sql`
-        INSERT INTO events (student_id, session_token, event_type, event_data, created_at)
-        VALUES (
-          ${studentId},
-          ${sessionToken},
-          ${eventType},
-          ${JSON.stringify(eventData)},
-          ${eventTimestamp}
-        )
-      `;
+      try {
+        await sql`
+          INSERT INTO events (student_id, session_token, event_type, event_data, created_at)
+          VALUES (
+            ${studentId},
+            ${sessionToken},
+            ${eventType},
+            ${JSON.stringify(eventData)},
+            ${eventTimestamp}
+          )
+        `;
 
-      return res.status(200).json({
-        success: true,
-        message: 'Event logged successfully'
-      });
+        return res.status(200).json({
+          success: true,
+          message: 'Event logged successfully'
+        });
+      } catch (insertError) {
+        console.error('❌ Error inserting event log:', insertError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to log event',
+          message: insertError.message
+        });
+      }
     }
 
     // GET: Retrieve session logs
@@ -91,26 +131,32 @@ export default async function handler(req, res) {
       // Allow fetching all logs if no filters provided (useful for instructor dashboard)
       // Note: In production, you may want to add pagination or admin authentication for this
 
-      // Ensure tables exist
-      await sql`
-        CREATE TABLE IF NOT EXISTS students (
-          student_id SERIAL PRIMARY KEY,
-          student_email TEXT UNIQUE NOT NULL,
-          student_name TEXT,
-          created_at TIMESTAMP DEFAULT NOW()
-        )
-      `;
+      // Ensure tables exist with better error handling
+      try {
+        await sql`
+          CREATE TABLE IF NOT EXISTS students (
+            student_id SERIAL PRIMARY KEY,
+            student_email TEXT UNIQUE NOT NULL,
+            student_name TEXT,
+            created_at TIMESTAMP DEFAULT NOW()
+          )
+        `;
 
-      await sql`
-        CREATE TABLE IF NOT EXISTS events (
-          event_id SERIAL PRIMARY KEY,
-          student_id INTEGER REFERENCES students(student_id),
-          session_token TEXT,
-          event_type TEXT NOT NULL,
-          event_data JSONB,
-          created_at TIMESTAMP DEFAULT NOW()
-        )
-      `;
+        await sql`
+          CREATE TABLE IF NOT EXISTS events (
+            event_id SERIAL PRIMARY KEY,
+            student_id INTEGER REFERENCES students(student_id),
+            session_token TEXT,
+            event_type TEXT NOT NULL,
+            event_data JSONB,
+            created_at TIMESTAMP DEFAULT NOW()
+          )
+        `;
+        console.log('✅ Session log tables verified/created');
+      } catch (tableError) {
+        console.error('⚠️ Error creating session log tables:', tableError);
+        // Continue anyway - tables might already exist
+      }
 
       // Build query with filters
       const limitValue = parseInt(limit) || 100;
