@@ -689,6 +689,22 @@ export default async function handler(req, res) {
       sessions = result.map(r => ({ ...r, student_email: r.student_email || 'unknown@example.com' }));
     }
 
+    console.log(`📊 Returning ${students.length} students and ${sessions.length} sessions`);
+
+    // Log first session for debugging (if exists)
+    if (sessions.length > 0) {
+      console.log(`🔍 Sample session data:`, {
+        sessionToken: sessions[0].session_token?.substring(0, 20),
+        twilioConnected: sessions[0].twilio_connected,
+        openaiConnected: sessions[0].openai_connected,
+        step4Deployed: sessions[0].step4_deployed,
+        step5Deployed: sessions[0].step5_deployed,
+        step6Deployed: sessions[0].step6_deployed,
+        systemPromptSaved: sessions[0].system_prompt_saved,
+        step8Deployed: sessions[0].step8_deployed
+      });
+    }
+
     return res.status(200).json({
       success: true,
       students: students.map(student => ({
