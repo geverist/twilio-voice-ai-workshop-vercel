@@ -120,13 +120,25 @@ export default async function handler(req, res) {
     }
 
     // Build and execute dynamic update
-    const setClauses = updateFields.map(field => `${field} = $${field}`).join(', ');
+    // Prepare values array in correct order for positional parameters
+    const setClauseParts = [];
+    const values = [];
 
-    await sql`
+    updateFields.forEach(field => {
+      values.push(updateValues[field]);
+      setClauseParts.push(`${field} = $${values.length}`);
+    });
+
+    const setClauses = setClauseParts.join(', ');
+
+    // Add session_token to values for WHERE clause
+    values.push(sessionToken);
+
+    await sql.unsafe(`
       UPDATE student_configs
-      SET ${sql.unsafe(setClauses + ', updated_at = NOW()')}
-      WHERE session_token = ${sessionToken}
-    `.values(updateValues);
+      SET ${setClauses}, updated_at = NOW()
+      WHERE session_token = $${values.length}
+    `, values);
 
     console.log(`✅ Updated ${updateFields.length} fields for session: ${sessionToken.substring(0, 20)}...`);
 
