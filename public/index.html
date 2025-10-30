@@ -5621,7 +5621,7 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
       if (conversationRelayVoice) return conversationRelayVoice;
 
       // Otherwise return provider defaults
-      if (ttsProvider === 'elevenlabs') return '4YYIPFl9wE5c4L2eu2Gb'; // Bert Reynolds - Charismatic and Smooth
+      if (ttsProvider === 'elevenlabs') return 'EXAVITQu4vr4xnSDxMaL'; // Sarah - Professional
       if (ttsProvider === 'google') return 'en-US-Wavenet-A';
       return 'Polly.Joanna'; // Amazon Polly default
     }
@@ -5631,17 +5631,21 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
 
       // ElevenLabs voice ID to name mapping
       const elevenlabsVoices = {
-        '4YYIPFl9wE5c4L2eu2Gb': 'Bert Reynolds - Charismatic and Smooth',
-        '9XfYMbJVZqPHaQtYnTAO': 'Cody - Energetic Upbeat Educator',
-        '4CrZuIW9am7gYAxgo2Af': 'Shelley - Clear and confident British female',
-        '8N2ng9i2uiUWqstgmWlH': 'Beth - Gentle and nurturing',
-        '90ipbRoKi4CpHXvKVtl0': 'Anika - Customer Care Agent',
-        '9PvnT6XRzlljoaDG6Knu': 'Ranbir - Warm & Friendly',
-        'EXAVITQu4vr4xnSDxMaL': 'Bella - Calm and Professional',
-        '7S3KNdLDL7aRgBVRQb1z': 'Nathaniel - Deep Rich Mature British',
-        '6dcFFb31LVaCdYevmTAx': 'Jerry - Presenter, Announcer, Event',
-        'iKqE7GcKIGSXOrp5q2Y3': 'Atlas - Business Explainer',
-        'vOFq2yBGlsvTiMHEVmKr': 'Luna - Youthful Friendly'
+        'EXAVITQu4vr4xnSDxMaL': 'Sarah (Female, American, Professional)',
+        'FGY2WhTYpPnrIDTdsKH5': 'Laura (Female, American, Sassy)',
+        'Xb7hH8MSUJpSbSDYk0k2': 'Alice (Female, British, Professional)',
+        'XrExE9yKIg1WjnnlVkGX': 'Matilda (Female, American, Upbeat)',
+        'cgSgspJ2msm6clMCkdW9': 'Jessica (Female, American, Cute)',
+        'pFZP5JQG7iQjIQuC4Bku': 'Lily (Female, Confident)',
+        'TX3LPaxmHKxFdv7VOQHJ': 'Liam (Male, American, Confident)',
+        'iP95p4xoKVk53GoZ742B': 'Chris (Male, American, Casual)',
+        'nPczCjzI2devNBz1zQrb': 'Brian (Male, American, Classy)',
+        'onwK4e9ZLuTAKqWW03F9': 'Daniel (Male, British, Formal)',
+        'CwhRBWXzGAHq8TQ4Fs17': 'Roger (Male, American, Classy)',
+        '2EiwWnXFnvU5JabPnv8n': 'Clyde (Male, American, Intense)',
+        'JBFqnCBsd6RMkjVDRZzb': 'George (Male, British, Mature)',
+        'bIHbv24MWmeRgasZH58o': 'Will (Male, American, Chill)',
+        'SAz9YHcvj6GT2YYXdXww': 'River (Neutral, American, Calm)'
       };
 
       if (elevenlabsVoices[voiceId]) {
@@ -11328,14 +11332,14 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   }
 
   // Popular ElevenLabs Voices - swap the voice ID to try different voices:
-  // '4YYIPFl9wE5c4L2eu2Gb' - Bert Reynolds (Charismatic and Smooth) - DEFAULT
-  // '9XfYMbJVZqPHaQtYnTAO' - Cody (Energetic Upbeat Educator)
-  // '4CrZuIW9am7gYAxgo2Af' - Shelley (Clear and confident British female)
-  // '8N2ng9i2uiUWqstgmWlH' - Beth (Gentle and nurturing)
-  // '90ipbRoKi4CpHXvKVtl0' - Anika (Customer Care Agent)
-  // '9PvnT6XRzlljoaDG6Knu' - Ranbir (Warm & Friendly)
-  // '7S3KNdLDL7aRgBVRQb1z' - Nathaniel (Deep Rich Mature British)
-  // '6dcFFb31LVaCdYevmTAx' - Jerry (Presenter, Announcer, Event)
+  // 'EXAVITQu4vr4xnSDxMaL' - Sarah (Female, American, Professional) - DEFAULT
+  // 'FGY2WhTYpPnrIDTdsKH5' - Laura (Female, American, Sassy)
+  // 'TX3LPaxmHKxFdv7VOQHJ' - Liam (Male, American, Confident)
+  // 'iP95p4xoKVk53GoZ742B' - Chris (Male, American, Casual)
+  // 'nPczCjzI2devNBz1zQrb' - Brian (Male, American, Classy)
+  // 'onwK4e9ZLuTAKqWW03F9' - Daniel (Male, British, Formal)
+  // 'JBFqnCBsd6RMkjVDRZzb' - George (Male, British, Mature)
+  // 'SAz9YHcvj6GT2YYXdXww' - River (Neutral, American, Calm)
 
   connect.conversationRelay({
     // Required: WebSocket endpoint URL
@@ -11345,7 +11349,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     welcomeGreeting: '${generatedContent?.ivrGreeting || "Hello! I am your AI assistant. How can I help you today?"}',
 
     // Voice Configuration
-    voice: '4YYIPFl9wE5c4L2eu2Gb',  // Bert Reynolds - Charismatic and Smooth
+    voice: 'EXAVITQu4vr4xnSDxMaL',  // Sarah - Professional
     ttsProvider: 'elevenlabs',       // Options: 'elevenlabs', 'amazon', 'google'
 
     // Language Settings
@@ -15249,7 +15253,7 @@ app.get('/health', (req, res) => {
     welcomeGreeting: '${generatedContent?.ivrGreeting || "Hello! I am your AI assistant. How can I help you today?"}',
 
     // Voice Configuration
-    voice: '4YYIPFl9wE5c4L2eu2Gb',  // Bert Reynolds - Charismatic and Smooth
+    voice: 'EXAVITQu4vr4xnSDxMaL',  // Sarah - Professional
     ttsProvider: 'elevenlabs',       // Options: 'elevenlabs', 'amazon', 'google'
 
     // Language Settings
