@@ -6164,6 +6164,97 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
             </div>
           </div>
 
+          <!-- Turn Detection & Semantic VAD Explanation -->
+          <div class="service-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h3 style="color: white; margin: 0 0 15px 0;">🎤 Turn Detection & Semantic VAD</h3>
+            <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
+              <p style="color: rgba(255,255,255,0.95); line-height: 1.6; margin-bottom: 15px;">
+                <strong>Semantic Voice Activity Detection (VAD)</strong> is how the AI knows when the caller has finished speaking and it's time to respond. This is critical for natural conversations.
+              </p>
+
+              <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <h4 style="color: white; margin: 0 0 10px 0;">🔍 How It Works:</h4>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.8; color: rgba(255,255,255,0.95);">
+                  <li><strong>Traditional VAD:</strong> Detects silence (e.g., 500ms of no audio) → Often interrupts mid-sentence</li>
+                  <li><strong>Semantic VAD (OpenAI Realtime):</strong> Uses AI to detect <em>meaningful</em> pauses → Understands when thought is complete</li>
+                </ul>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <h4 style="color: white; margin: 0 0 10px 0;">✨ Why Semantic VAD Matters:</h4>
+                <p style="margin: 0; color: rgba(255,255,255,0.95); line-height: 1.6;">
+                  Caller: "I need to... <em>[brief pause]</em> ...book an appointment for Tuesday"
+                </p>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; color: rgba(255,255,255,0.95);">
+                  <li>❌ <strong>Traditional VAD:</strong> AI interrupts after "I need to..." (thinking silence = done)</li>
+                  <li>✅ <strong>Semantic VAD:</strong> AI waits for complete thought, responds after "Tuesday"</li>
+                </ul>
+              </div>
+
+              <div style="background: rgba(255,212,59,0.2); padding: 15px; border-radius: 6px; border-left: 4px solid #ffd43b;">
+                <p style="margin: 0; color: white; line-height: 1.6;">
+                  <strong>💡 Pro Tip:</strong> You can influence turn-taking behavior in your system prompt! Add instructions like:
+                  <em>"Wait for the caller to finish their complete thought before responding. Don't interrupt natural pauses."</em>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stateful Prompt Engineering -->
+          <div class="service-card" style="background: linear-gradient(135deg, #61afef 0%, #2c313c 100%); color: white;">
+            <h3 style="color: white; margin: 0 0 15px 0;">🧠 Stateful Prompt Engineering (Conversation Memory)</h3>
+            <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px;">
+              <p style="color: rgba(255,255,255,0.95); line-height: 1.6; margin-bottom: 15px;">
+                Your AI maintains <strong>conversation history</strong> throughout the entire call. Each exchange (caller + AI response) is added to an array and sent with every new request.
+              </p>
+
+              <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <h4 style="color: white; margin: 0 0 10px 0;">📚 How Conversation Memory Works:</h4>
+                <pre style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; overflow-x: auto; color: #61afef; font-size: 13px; line-height: 1.6;">
+// Every OpenAI API call includes full conversation history
+messages: [
+  { role: "system", content: "Your system prompt..." },
+  { role: "user", content: "Hi, I need an appointment" },
+  { role: "assistant", content: "I'd be happy to help! What day works for you?" },
+  { role: "user", content: "How about Tuesday?" },
+  { role: "assistant", content: "Perfect! What time on Tuesday?" },
+  { role: "user", content: "2pm" },  // ← Current turn
+  // AI can reference ALL previous messages when responding
+]</pre>
+              </div>
+
+              <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <h4 style="color: white; margin: 0 0 10px 0;">✅ What This Enables:</h4>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.8; color: rgba(255,255,255,0.95);">
+                  <li><strong>Context awareness:</strong> AI remembers what was said 5 minutes ago</li>
+                  <li><strong>Pronoun resolution:</strong> "Change it to Wednesday" → AI knows "it" = appointment</li>
+                  <li><strong>Progressive information gathering:</strong> Collect name, then date, then time across multiple turns</li>
+                  <li><strong>Conversation repair:</strong> "Actually, I meant Thursday" → AI can correct previous information</li>
+                  <li><strong>Personalization:</strong> "Hi, I'm Sarah" → AI can use "Sarah" for the rest of the call</li>
+                </ul>
+              </div>
+
+              <div style="background: rgba(255,212,59,0.2); padding: 15px; border-radius: 6px; border-left: 4px solid #ffd43b;">
+                <p style="margin: 0 0 10px 0; color: white; line-height: 1.6;">
+                  <strong>⚠️ Important Considerations:</strong>
+                </p>
+                <ul style="margin: 0; padding-left: 20px; color: white; line-height: 1.8;">
+                  <li><strong>Token limits:</strong> Very long conversations may exceed context window (~128K tokens for GPT-4o)</li>
+                  <li><strong>Cost:</strong> You pay for all tokens in conversation history on every API call</li>
+                  <li><strong>Privacy:</strong> Conversation history is stored in memory during the call, cleared when call ends</li>
+                </ul>
+              </div>
+
+              <div style="background: rgba(152,195,121,0.2); padding: 15px; border-radius: 6px; border-left: 4px solid #98c379;">
+                <p style="margin: 0; color: white; line-height: 1.6;">
+                  <strong>💡 Pro Tip:</strong> Use your system prompt to tell the AI <em>how</em> to use conversation history effectively:
+                  <br><br>
+                  <em>"Remember key information from earlier in the conversation (name, dates, preferences). Reference previous statements naturally. If the caller changes their mind, update your understanding gracefully."</em>
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div class="service-card">
             <h3>✍️ Craft Your System Prompt${generatedContent ? ' <span style="color: #98c379; font-size: 14px;">✨ AI-Generated for Your Use Case</span>' : ''}</h3>
             <p>${generatedContent ? 'Below is a custom system prompt generated based on your use case description. You can edit it or use it as-is.' : 'Edit the sample prompt below or write your own. This prompt will guide your AI\'s behavior.'}</p>

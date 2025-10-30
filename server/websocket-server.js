@@ -97,7 +97,22 @@ wss.on('connection', async (ws, req) => {
   // Initialize OpenAI client with student's API key (or instructor's as fallback)
   const openai = new OpenAI({ apiKey: openaiApiKey });
 
-  // Store conversation history
+  // =========================================================================
+  // STATEFUL PROMPT ENGINEERING: Conversation Memory
+  // =========================================================================
+  // This array maintains the complete conversation history for this call.
+  // Each user message and AI response is added to this array and sent with
+  // every new OpenAI API request, enabling:
+  //
+  // ✅ Context awareness - AI remembers what was said earlier
+  // ✅ Pronoun resolution - "Change it to Thursday" (AI knows what "it" is)
+  // ✅ Progressive information gathering - Collect details across turns
+  // ✅ Conversation repair - "Actually, I meant Wednesday"
+  // ✅ Personalization - "Hi, I'm Sarah" → AI uses name for rest of call
+  //
+  // ⚠️  Important: Full history is sent with EVERY request (costs tokens!)
+  // ⚠️  Privacy: History stored in memory during call, cleared when call ends
+  // =========================================================================
   const conversationHistory = [];
 
   ws.on('message', async (data) => {
@@ -126,7 +141,31 @@ wss.on('connection', async (ws, req) => {
           });
 
           try {
-            // Call OpenAI with student's custom system prompt
+            // ===================================================================
+            // OPENAI API CALL WITH CONVERSATION MEMORY
+            // ===================================================================
+            // The messages array is the key to stateful conversations:
+            //
+            // 1. System prompt (first message) - Defines AI personality/behavior
+            // 2. ...conversationHistory (rest) - ALL previous turns in the call
+            //
+            // Example messages array after 3 turns:
+            // [
+            //   { role: "system", content: "You are a helpful assistant..." },
+            //   { role: "user", content: "Hi, I need an appointment" },
+            //   { role: "assistant", content: "I'd be happy to help!" },
+            //   { role: "user", content: "How about Tuesday at 2pm?" },
+            //   { role: "assistant", content: "Perfect! I'll book that." },
+            //   { role: "user", content: "Actually, can we do 3pm?" },  ← current
+            // ]
+            //
+            // The AI can see ALL previous messages, so it knows:
+            // - "We" refers to the appointment being discussed
+            // - "3pm" is changing the time from the previously mentioned "2pm"
+            // - Tuesday is still the day (hasn't changed)
+            //
+            // This enables natural, context-aware conversations! 🎯
+            // ===================================================================
             const completion = await openai.chat.completions.create({
               model: 'gpt-4o-mini',
               messages: [
@@ -134,7 +173,7 @@ wss.on('connection', async (ws, req) => {
                   role: 'system',
                   content: studentSettings.systemPrompt
                 },
-                ...conversationHistory
+                ...conversationHistory  // ← Full conversation history included
               ],
               max_tokens: 150,
               temperature: 0.7
