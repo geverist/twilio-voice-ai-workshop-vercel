@@ -78,6 +78,8 @@ export default async function handler(req, res) {
         codespace_url,
         github_repo_url,
         railway_url,
+        enable_persistent_memory,
+        memory_retention_days,
         created_at,
         updated_at
       FROM student_configs
@@ -129,6 +131,8 @@ export default async function handler(req, res) {
         codespaceUrl: config.codespace_url,
         githubRepoUrl: config.github_repo_url,
         railwayUrl: config.railway_url,
+        enablePersistentMemory: config.enable_persistent_memory,
+        memoryRetentionDays: config.memory_retention_days,
         createdAt: config.created_at,
         updatedAt: config.updated_at
       }
