@@ -1666,6 +1666,7 @@
         callDirectionChosen,
         callDirection,
         useCaseDescription,
+        skipInitialGreeting,  // ✅ ADDED - user preference for greeting behavior
         generatedContent,
         servicesReady,
         basicTwimlCreated,
@@ -1696,6 +1697,7 @@
         step7Committed,      // ✅ ADDED (was missing!)
         step7Deployed,       // ✅ ADDED (was missing!)
         systemPromptSaved,   // ✅ ADDED
+        promptEngineeringComplete,  // ✅ ADDED - needed for progress bar
         step8Committed,
         step8Deployed,       // ✅ ADDED
         step8CodeValidated,  // ✅ ADDED
@@ -2083,6 +2085,7 @@
       callDirectionChosen = progress.callDirectionChosen || false;
       callDirection = progress.callDirection || '';
       useCaseDescription = progress.useCaseDescription || '';
+      skipInitialGreeting = progress.skipInitialGreeting || false;  // ✅ ADDED - user preference for greeting behavior
       generatedContent = progress.generatedContent || null;
       servicesReady = progress.servicesReady || false;
       basicTwimlCreated = progress.basicTwimlCreated || false;
@@ -2112,6 +2115,7 @@
       step7Committed = progress.step7Committed || false;          // ✅ ADDED
       step7Deployed = progress.step7Deployed || false;            // ✅ ADDED
       systemPromptSaved = progress.systemPromptSaved || false;    // ✅ ADDED
+      promptEngineeringComplete = progress.promptEngineeringComplete || false;  // ✅ ADDED - needed for progress bar
       step8Committed = progress.step8Committed || false;
       step8Deployed = progress.step8Deployed || false;            // ✅ ADDED
       step8CodeValidated = progress.step8CodeValidated || false;  // ✅ ADDED
