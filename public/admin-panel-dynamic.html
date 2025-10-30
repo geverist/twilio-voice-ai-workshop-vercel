@@ -876,11 +876,15 @@
         </div>
         <div class="setting-card">
           <h3>🔊 TTS Provider</h3>
-          <div class="setting-value">${getTTSProviderName(config.ttsProvider)}</div>
+          <div class="setting-value" id="ttsProviderDisplay">${getTTSProviderName(config.ttsProvider)}</div>
+        </div>
+        <div class="setting-card">
+          <h3>🎧 STT Provider</h3>
+          <div class="setting-value" id="sttProviderDisplay">${getSTTProviderName(config.sttProvider)}</div>
         </div>
         <div class="setting-card">
           <h3>🎙️ Voice</h3>
-          <div class="setting-value">${config.selectedVoice || 'Default'}</div>
+          <div class="setting-value" id="voiceDisplay">${config.selectedVoice || 'Default'}</div>
         </div>
         <div class="setting-card">
           <h3>🌐 WebSocket URL</h3>
@@ -948,6 +952,16 @@
         'google': 'Google TTS',
         'deepgram': 'Deepgram Aura',
         'amazon': 'Amazon Polly'
+      };
+      return providers[provider] || 'Unknown';
+    }
+
+    function getSTTProviderName(provider) {
+      const providers = {
+        'deepgram': 'Deepgram',
+        'google': 'Google STT',
+        'amazon': 'Amazon Transcribe',
+        'azure': 'Azure Speech'
       };
       return providers[provider] || 'Unknown';
     }
@@ -1502,6 +1516,15 @@
       const provider = document.getElementById('ttsProviderSelect').value;
       document.getElementById('currentTTSProvider').textContent = getTTSProviderName(provider);
 
+      // Update overview display dynamically
+      const overviewDisplay = document.getElementById('ttsProviderDisplay');
+      if (overviewDisplay) {
+        overviewDisplay.textContent = getTTSProviderName(provider);
+      }
+
+      // Update top metric card
+      document.getElementById('ttsProviderMetric').textContent = getTTSProviderName(provider);
+
       // Update available voices based on provider
       populateVoices(provider);
 
@@ -1558,6 +1581,12 @@
       const voice = document.getElementById('voiceSelect').value;
       const voiceLabel = document.getElementById('voiceSelect').selectedOptions[0].text;
 
+      // Update overview display dynamically
+      const overviewDisplay = document.getElementById('voiceDisplay');
+      if (overviewDisplay) {
+        overviewDisplay.textContent = voice;
+      }
+
       try {
         await saveConfigField('selectedVoice', voice);
         alert(`✅ Voice updated to: ${voiceLabel}`);
@@ -1606,8 +1635,15 @@
 
     function updateSTTProvider() {
       const sttProvider = document.getElementById('sttProviderSelect').value;
+
+      // Update overview display dynamically
+      const overviewDisplay = document.getElementById('sttProviderDisplay');
+      if (overviewDisplay) {
+        overviewDisplay.textContent = getSTTProviderName(sttProvider);
+      }
+
       saveConfigField('sttProvider', sttProvider);
-      alert(`✅ Speech-to-Text provider set to: ${sttProvider}`);
+      alert(`✅ Speech-to-Text provider set to: ${getSTTProviderName(sttProvider)}`);
     }
 
     function updateBargeInDisplay(value) {
