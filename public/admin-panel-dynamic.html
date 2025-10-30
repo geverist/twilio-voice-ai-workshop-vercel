@@ -389,16 +389,6 @@
           </p>
 
           <div class="settings-grid">
-            <!-- WebSocket Configuration -->
-            <div class="setting-card">
-              <h3>🔌 WebSocket Endpoint</h3>
-              <p style="color: #666; font-size: 13px; margin: 10px 0;">Your deployed WebSocket server URL</p>
-              <div class="setting-value" id="websocketUrlDisplay">--</div>
-              <button class="btn btn-secondary" onclick="testWebSocketConnection()" style="width: 100%; margin-top: 10px;">
-                🔍 Test Connection
-              </button>
-            </div>
-
             <!-- Voice Activity Detection -->
             <div class="setting-card">
               <h3>🎤 Voice Activity Detection</h3>
@@ -779,7 +769,6 @@
       if (config.aiMaxTokens) document.getElementById('maxTokensInput').value = config.aiMaxTokens;
 
       // Initialize ConversationRelay controls
-      document.getElementById('websocketUrlDisplay').textContent = config.websocketUrl || 'Not deployed';
       if (config.vadMode) document.getElementById('vadSelect').value = config.vadMode;
       if (config.interruptible !== undefined) document.getElementById('interruptibleCheckbox').checked = config.interruptible;
       if (config.sttProvider) document.getElementById('sttProviderSelect').value = config.sttProvider;
@@ -1421,33 +1410,6 @@
     // =========================================================================
     // CONVERSATIONRELAY CONFIGURATION TAB
     // =========================================================================
-
-    function testWebSocketConnection() {
-      const wsUrl = config.websocketUrl || '';
-      if (!wsUrl) {
-        alert('❌ No WebSocket URL configured. Deploy your WebSocket server first!');
-        return;
-      }
-
-      alert(`🔍 Testing connection to:\n${wsUrl}\n\nCheck your browser console for results.`);
-
-      // Attempt WebSocket connection test
-      try {
-        const ws = new WebSocket(wsUrl);
-        ws.onopen = () => {
-          console.log('✅ WebSocket connection successful!');
-          alert('✅ WebSocket connection successful!');
-          ws.close();
-        };
-        ws.onerror = (error) => {
-          console.error('❌ WebSocket connection failed:', error);
-          alert('❌ WebSocket connection failed. Check console for details.');
-        };
-      } catch (error) {
-        console.error('❌ WebSocket test error:', error);
-        alert('❌ Failed to test WebSocket: ' + error.message);
-      }
-    }
 
     function updateVAD() {
       const vad = document.getElementById('vadSelect').value;
