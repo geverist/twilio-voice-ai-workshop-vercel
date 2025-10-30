@@ -242,6 +242,7 @@
         <button class="tab" onclick="showTab('conversationrelay')">☎️ ConversationRelay</button>
         <button class="tab" onclick="showTab('prompts')">📝 Prompts</button>
         <button class="tab" onclick="showTab('functions')">🛠️ Functions</button>
+        <button class="tab" onclick="showTab('memory')">🧠 Memory</button>
         <button class="tab" onclick="showTab('analytics')">📈 Analytics</button>
         <button class="tab" onclick="showTab('logs')">📋 Session Logs</button>
       </div>
@@ -615,6 +616,79 @@
         </div>
       </div>
 
+      <div id="memory" class="tab-content">
+        <div class="panel">
+          <h2>🧠 Persistent Memory (OpenAI Assistants)</h2>
+          <p style="color: #666; margin-bottom: 30px;">
+            Enable conversation memory across calls. Each phone number gets its own OpenAI thread that remembers previous conversations.
+          </p>
+
+          <!-- Memory Settings -->
+          <div class="settings-grid">
+            <div class="setting-card">
+              <h3>⚡ Enable Memory</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Turn on persistent conversation memory</p>
+              <label style="display: flex; align-items: center; gap: 10px; margin: 15px 0; cursor: pointer;">
+                <input type="checkbox" id="enableMemoryCheckbox" onchange="togglePersistentMemory()"
+                       style="width: 20px; height: 20px; cursor: pointer;">
+                <span style="font-size: 14px;">Enable Persistent Memory</span>
+              </label>
+            </div>
+
+            <div class="setting-card">
+              <h3>📅 Retention Period</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">How long to keep conversation history</p>
+              <input type="number" id="memoryRetentionDays" min="1" max="365" value="30" placeholder="Days">
+              <button class="btn" onclick="updateMemoryRetention()" style="width: 100%;">💾 Save Retention</button>
+            </div>
+          </div>
+
+          <!-- Memory Threads -->
+          <div style="margin-top: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h3 style="color: #333; margin: 0;">Active Conversation Threads</h3>
+              <div>
+                <button class="btn" onclick="loadMemoryThreads()" id="loadThreadsBtn">🔄 Load Threads</button>
+                <button class="btn btn-secondary" onclick="clearAllMemory()" style="margin-left: 10px;">🗑️ Clear All Memory</button>
+              </div>
+            </div>
+
+            <div id="threadsLoading" style="display: none; text-align: center; padding: 40px; color: #666;">
+              <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+              <p>Loading memory threads...</p>
+            </div>
+
+            <div id="threadsContent" style="display: none;">
+              <div class="stats-grid" style="margin-bottom: 20px;">
+                <div class="metric-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                  <div class="metric-label">Total Threads</div>
+                  <div class="metric-value" id="totalThreadsCount">0</div>
+                </div>
+                <div class="metric-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                  <div class="metric-label">Total Messages</div>
+                  <div class="metric-value" id="totalMessagesCount">0</div>
+                </div>
+              </div>
+
+              <div id="threadsList"></div>
+            </div>
+
+            <div id="threadsEmpty" style="display: none; background: #f8f9fa; padding: 40px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 64px; margin-bottom: 15px;">🧠</div>
+              <p style="color: #666; font-size: 16px; margin-bottom: 10px;">No conversation threads yet</p>
+              <p style="color: #999; font-size: 14px;">Memory threads are created automatically when callers interact with your Voice AI!</p>
+            </div>
+          </div>
+
+          <div style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 12px; color: white;">
+            <h3 style="color: white; margin: 0 0 10px 0;">✨ How It Works</h3>
+            <p style="color: rgba(255,255,255,0.95); font-size: 14px; line-height: 1.6; margin: 0;">
+              Each phone number gets a unique OpenAI Assistant thread. When someone calls back, the AI automatically has full context from previous conversations. This enables truly personalized experiences where the AI remembers customer preferences, previous orders, and conversation history.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div id="analytics" class="tab-content">
         <div class="panel">
           <h2>📈 Call Analytics</h2>
@@ -824,6 +898,9 @@
 
       // Initialize stateful mode
       initializeStatefulPrompts();
+
+      // Initialize memory settings
+      initializeMemorySettings();
 
       // Initialize AI Configuration controls
       const aiProvider = config.aiProvider || 'openai';
@@ -1688,5 +1765,8 @@
 
   <!-- Stateful Prompts Management -->
   <script src="/stateful-prompts-functions.js"></script>
+
+  <!-- Memory Management -->
+  <script src="/memory-functions.js"></script>
 </body>
 </html>

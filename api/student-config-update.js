@@ -106,7 +106,9 @@ export default async function handler(req, res) {
       aiModel: 'ai_model',
       aiTemperature: 'ai_temperature',
       aiMaxTokens: 'ai_max_tokens',
-      conversationStates: 'conversation_states'
+      conversationStates: 'conversation_states',
+      enablePersistentMemory: 'enable_persistent_memory',
+      memoryRetentionDays: 'memory_retention_days'
     };
 
     // Build SET clause
