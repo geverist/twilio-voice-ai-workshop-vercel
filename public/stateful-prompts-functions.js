@@ -90,7 +90,12 @@ function renderStates() {
 
       <!-- System Prompt Preview -->
       <div style="margin-bottom: 15px;">
-        <strong style="color: #333; font-size: 13px;">System Prompt:</strong>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong style="color: #333; font-size: 13px;">System Prompt:</strong>
+          <button onclick="generateStatePrompt(${index})" style="padding: 4px 10px; font-size: 11px; cursor: pointer; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 4px; font-weight: 600;">
+            ✨ Generate with Best Practices
+          </button>
+        </div>
         <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-top: 5px; font-size: 13px; max-height: 100px; overflow-y: auto;">
           ${state.systemPrompt || 'No prompt defined'}
         </div>
@@ -120,7 +125,7 @@ function renderStates() {
 }
 
 /**
- * Render visual flow diagram
+ * Render visual flow diagram with clickable states, arrows, and transition rules
  */
 function renderFlowDiagram() {
   const flowDiagram = document.getElementById('flowDiagram');
@@ -132,15 +137,83 @@ function renderFlowDiagram() {
 
   flowDiagram.innerHTML = conversationStates.map((state, index) => {
     const hasTransitions = state.transitions && state.transitions.length > 0;
+
+    let transitionsHTML = '';
+    if (hasTransitions) {
+      // Show all transitions from this state
+      transitionsHTML = state.transitions.map(transition => {
+        const targetStateName = getStateName(transition.nextState);
+        const conditionText = transition.condition.value
+          ? `${transition.condition.type} = "${transition.condition.value}"`
+          : transition.condition.type;
+
+        return `
+          <div style="display: flex; align-items: center; gap: 10px; margin-left: 20px;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+              <div style="color: #f59e0b; font-size: 24px; font-weight: bold;">↓</div>
+              <div style="background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis;" title="${conditionText}">
+                ${conditionText}
+              </div>
+              <div style="color: #f59e0b; font-size: 24px; font-weight: bold;">↓</div>
+            </div>
+            <button
+              onclick="scrollToStateByName('${targetStateName}')"
+              style="background: #667eea; color: white; padding: 6px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; border: none; cursor: pointer; transition: transform 0.2s;"
+              onmouseover="this.style.transform='scale(1.05)';"
+              onmouseout="this.style.transform='scale(1)';"
+            >
+              ${targetStateName}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
     return `
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <div style="background: ${state.isDefault ? '#10b981' : '#667eea'}; color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;">
-          ${state.name}
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button
+            onclick="scrollToState(${index})"
+            style="background: ${state.isDefault ? '#10b981' : '#667eea'}; color: white; padding: 10px 20px; border-radius: 24px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;"
+            onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.2)';"
+            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';"
+          >
+            ${state.isDefault ? '🏁 ' : ''}${state.name}
+          </button>
         </div>
-        ${hasTransitions && index < conversationStates.length - 1 ? '<div style="color: #667eea; font-size: 20px;">→</div>' : ''}
+        ${transitionsHTML}
       </div>
     `;
   }).join('');
+}
+
+/**
+ * Scroll to a specific state card by index
+ */
+function scrollToState(stateIndex) {
+  const statesList = document.getElementById('statesList');
+  const stateCards = statesList.querySelectorAll('.setting-card');
+
+  if (stateCards[stateIndex]) {
+    stateCards[stateIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Flash highlight effect
+    const originalBorder = stateCards[stateIndex].style.borderLeft;
+    stateCards[stateIndex].style.borderLeft = '6px solid #f59e0b';
+    setTimeout(() => {
+      stateCards[stateIndex].style.borderLeft = originalBorder;
+    }, 1500);
+  }
+}
+
+/**
+ * Scroll to a specific state card by name
+ */
+function scrollToStateByName(stateName) {
+  const stateIndex = conversationStates.findIndex(s => s.name === stateName);
+  if (stateIndex !== -1) {
+    scrollToState(stateIndex);
+  }
 }
 
 /**
@@ -311,6 +384,63 @@ async function regeneratePrompts() {
       alert('✅ Prompts regenerated successfully!');
     } else {
       alert('❌ Failed to regenerate: ' + data.error);
+    }
+  } catch (error) {
+    alert('❌ Error: ' + error.message);
+  }
+}
+
+/**
+ * Generate prompt for a specific state using best practices
+ */
+async function generateStatePrompt(stateIndex) {
+  const state = conversationStates[stateIndex];
+  if (!state) return;
+
+  const useCase = document.getElementById('useCaseEditor').value.trim();
+
+  if (!useCase) {
+    alert('❌ Please enter a use case description first in the Overview tab');
+    return;
+  }
+
+  // Ask user for context about this specific state
+  const stateContext = prompt(
+    `Generate prompt for state: ${state.name}\n\n` +
+    `What should the AI do in this state?\n` +
+    `(e.g., "Collect customer name and contact info", "Handle appointment booking", "Process payment")`,
+    state.systemPrompt || ''
+  );
+
+  if (!stateContext) return;
+
+  try {
+    const response = await fetch(`${API_BASE}/api/generate-use-case-content`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        useCaseDescription: useCase + '\n\nFor this specific state: ' + stateContext,
+        callDirection: config.callDirection || 'inbound',
+        openaiApiKey: localStorage.getItem('openaiApiKey'),
+        skipInitialGreeting: true // States don't need greetings
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Update the state's prompt
+      conversationStates[stateIndex].systemPrompt = data.systemPrompt;
+
+      // Re-render to show updated prompt
+      renderStates();
+
+      // Auto-save the states
+      await saveAllStates();
+
+      alert(`✅ Prompt generated for ${state.name}!`);
+    } else {
+      alert('❌ Failed to generate prompt: ' + data.error);
     }
   } catch (error) {
     alert('❌ Error: ' + error.message);

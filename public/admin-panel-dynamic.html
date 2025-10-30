@@ -283,8 +283,9 @@
           <div class="settings-grid">
             <div class="setting-card">
               <h3>📞 Test Your Voice AI</h3>
-              <p>Call your Twilio number to test</p>
-              <button class="btn" onclick="alert('Call: ' + (config.selectedPhoneNumber || 'Not configured'))">View Phone Number</button>
+              <p id="callStatusText">Click to call from your browser</p>
+              <button class="btn" id="callButton" onclick="makeTestCall()">📞 Call Now</button>
+              <button class="btn btn-secondary" id="hangupButton" onclick="hangupCall()" style="display: none; margin-left: 10px;">❌ Hang Up</button>
             </div>
             <div class="setting-card">
               <h3>📊 View Logs</h3>
@@ -1804,5 +1805,158 @@
 
   <!-- Memory Management -->
   <script src="/memory-functions.js"></script>
+
+  <!-- Twilio Client SDK for Browser Calling -->
+  <script src="https://sdk.twilio.com/js/client/v1.14/twilio.min.js"></script>
+
+  <!-- Browser Calling Functions -->
+  <script>
+    // Twilio Device for browser calling
+    let twilioDevice = null;
+    let currentCall = null;
+
+    /**
+     * Initialize Twilio Device with access token
+     */
+    async function initializeTwilioDevice() {
+      try {
+        // Get access token from API
+        const response = await fetch(`${API_BASE}/api/twilio-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to get access token');
+        }
+
+        console.log('✅ Twilio access token obtained');
+
+        // Initialize Twilio Device
+        twilioDevice = new Twilio.Device(data.token, {
+          codecPreferences: ['opus', 'pcmu'],
+          fakeLocalDTMF: true,
+          enableRingingState: true
+        });
+
+        // Setup event handlers
+        twilioDevice.on('ready', () => {
+          console.log('✅ Twilio Device is ready');
+        });
+
+        twilioDevice.on('error', (error) => {
+          console.error('❌ Twilio Device error:', error);
+          updateCallStatus('Error: ' + error.message);
+        });
+
+        twilioDevice.on('connect', (conn) => {
+          console.log('✅ Call connected');
+          currentCall = conn;
+          updateCallStatus('🟢 Connected - Speaking...');
+          document.getElementById('callButton').style.display = 'none';
+          document.getElementById('hangupButton').style.display = 'inline-block';
+        });
+
+        twilioDevice.on('disconnect', () => {
+          console.log('📞 Call disconnected');
+          currentCall = null;
+          updateCallStatus('Click to call from your browser');
+          document.getElementById('callButton').style.display = 'inline-block';
+          document.getElementById('hangupButton').style.display = 'none';
+        });
+
+        twilioDevice.on('incoming', (conn) => {
+          console.log('📞 Incoming call');
+          conn.accept();
+        });
+
+        return twilioDevice;
+
+      } catch (error) {
+        console.error('❌ Failed to initialize Twilio Device:', error);
+        throw error;
+      }
+    }
+
+    /**
+     * Make a test call to the Voice AI
+     */
+    async function makeTestCall() {
+      const callButton = document.getElementById('callButton');
+      const originalText = callButton.textContent;
+
+      try {
+        callButton.disabled = true;
+        callButton.textContent = '⏳ Connecting...';
+        updateCallStatus('⏳ Initializing...');
+
+        // Initialize device if not already done
+        if (!twilioDevice) {
+          await initializeTwilioDevice();
+        }
+
+        // Get the phone number to call
+        const phoneNumber = config.selectedPhoneNumber;
+
+        if (!phoneNumber) {
+          throw new Error('No phone number configured. Please configure your Twilio phone number first.');
+        }
+
+        updateCallStatus('📞 Calling ' + phoneNumber + '...');
+
+        // Make the call
+        const params = {
+          To: phoneNumber
+        };
+
+        currentCall = await twilioDevice.connect(params);
+
+        console.log('📞 Calling:', phoneNumber);
+
+      } catch (error) {
+        console.error('❌ Call failed:', error);
+        alert('❌ Failed to make call: ' + error.message);
+        updateCallStatus('Click to call from your browser');
+        callButton.disabled = false;
+        callButton.textContent = originalText;
+      }
+    }
+
+    /**
+     * Hang up the current call
+     */
+    function hangupCall() {
+      if (currentCall) {
+        console.log('📞 Hanging up...');
+        currentCall.disconnect();
+        currentCall = null;
+      }
+
+      if (twilioDevice) {
+        twilioDevice.disconnectAll();
+      }
+
+      updateCallStatus('Click to call from your browser');
+      document.getElementById('callButton').style.display = 'inline-block';
+      document.getElementById('callButton').disabled = false;
+      document.getElementById('callButton').textContent = '📞 Call Now';
+      document.getElementById('hangupButton').style.display = 'none';
+    }
+
+    /**
+     * Update call status text
+     */
+    function updateCallStatus(status) {
+      const statusElement = document.getElementById('callStatusText');
+      if (statusElement) {
+        statusElement.textContent = status;
+      }
+    }
+  </script>
 </body>
 </html>
