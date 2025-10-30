@@ -1390,9 +1390,16 @@
       ).join('');
     }
 
-    function updateVoice() {
+    async function updateVoice() {
       const voice = document.getElementById('voiceSelect').value;
-      saveConfigField('selectedVoice', voice);
+      const voiceLabel = document.getElementById('voiceSelect').selectedOptions[0].text;
+
+      try {
+        await saveConfigField('selectedVoice', voice);
+        alert(`✅ Voice updated to: ${voiceLabel}`);
+      } catch (error) {
+        alert(`❌ Failed to save voice: ${error.message}`);
+      }
     }
 
     function updateTemperature(value) {
