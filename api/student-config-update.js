@@ -105,7 +105,8 @@ export default async function handler(req, res) {
       aiProvider: 'ai_provider',
       aiModel: 'ai_model',
       aiTemperature: 'ai_temperature',
-      aiMaxTokens: 'ai_max_tokens'
+      aiMaxTokens: 'ai_max_tokens',
+      conversationStates: 'conversation_states'
     };
 
     // Build SET clause
@@ -113,7 +114,7 @@ export default async function handler(req, res) {
       if (updates[camelKey] !== undefined) {
         updateFields.push(dbKey);
         // JSON fields need to be stringified
-        if (dbKey === 'tools' || dbKey === 'voice_settings') {
+        if (dbKey === 'tools' || dbKey === 'voice_settings' || dbKey === 'conversation_states') {
           updateValues[dbKey] = JSON.stringify(updates[camelKey]);
         } else {
           updateValues[dbKey] = updates[camelKey];
