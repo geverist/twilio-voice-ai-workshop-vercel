@@ -330,9 +330,6 @@
               <select id="voiceSelect" class="config-select" onchange="updateVoice()">
                 <!-- Dynamically populated based on TTS provider -->
               </select>
-              <button class="btn" onclick="previewVoice()" style="width: 100%; margin-top: 10px;">
-                🔊 Preview Voice
-              </button>
             </div>
 
             <!-- AI Model Selection -->
@@ -1385,10 +1382,6 @@
     function updateVoice() {
       const voice = document.getElementById('voiceSelect').value;
       saveConfigField('selectedVoice', voice);
-    }
-
-    function previewVoice() {
-      alert('🔊 Voice preview feature coming soon! For now, make a test call to hear your selected voice.');
     }
 
     function updateTemperature(value) {
