@@ -253,8 +253,8 @@
 
           <div class="stats-grid">
             <div class="metric-card">
-              <div class="metric-label">Session Token</div>
-              <div class="metric-value" style="font-size: 14px; font-family: monospace;" id="sessionTokenDisplay"></div>
+              <div class="metric-label">STT Provider</div>
+              <div class="metric-value" style="font-size: 20px;" id="sttProviderMetric">--</div>
             </div>
             <div class="metric-card">
               <div class="metric-label">Call Direction</div>
@@ -864,7 +864,7 @@
 
     function renderConfig() {
       document.getElementById('useCaseDisplay').textContent = config.useCaseDescription || 'Voice AI Assistant';
-      document.getElementById('sessionTokenDisplay').textContent = SESSION_TOKEN.substring(0, 30) + '...';
+      document.getElementById('sttProviderMetric').textContent = getSTTProviderName(config.sttProvider);
       document.getElementById('callDirectionMetric').textContent =
         (config.callDirection || 'inbound') === 'inbound' ? '📥 Inbound' : '📤 Outbound';
       document.getElementById('ttsProviderMetric').textContent = getTTSProviderName(config.ttsProvider);
@@ -1642,6 +1642,9 @@
       if (overviewDisplay) {
         overviewDisplay.textContent = getSTTProviderName(sttProvider);
       }
+
+      // Update top metric card
+      document.getElementById('sttProviderMetric').textContent = getSTTProviderName(sttProvider);
 
       saveConfigField('sttProvider', sttProvider);
       alert(`✅ Speech-to-Text provider set to: ${getSTTProviderName(sttProvider)}`);
