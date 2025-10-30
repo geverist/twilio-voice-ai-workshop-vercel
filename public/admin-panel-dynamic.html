@@ -518,7 +518,24 @@
               <input type="text" id="newFunctionWebhookUrl" placeholder="https://your-api.com/webhooks/your-function (leave empty for simulated mode)" style="margin-top: 0;">
 
               <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Parameters (JSON Schema)</label>
-              <textarea id="newFunctionParameters" placeholder='{"type": "object", "properties": {"date": {"type": "string", "description": "Date to check"}}, "required": ["date"]}' style="min-height: 120px; font-family: monospace;"></textarea>
+              <textarea id="newFunctionParameters" placeholder='{
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "description": "Date in YYYY-MM-DD format"
+    },
+    "time": {
+      "type": "string",
+      "description": "Time in HH:MM format (24-hour)"
+    },
+    "name": {
+      "type": "string",
+      "description": "Customer full name"
+    }
+  },
+  "required": ["date", "name"]
+}' style="min-height: 120px; font-family: monospace;"></textarea>
 
               <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; font-size: 13px; color: #856404;">
                 💡 <strong>Tip:</strong> Parameters use JSON Schema format. Define what inputs your function needs.
