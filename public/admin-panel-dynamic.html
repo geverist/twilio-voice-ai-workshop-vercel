@@ -403,8 +403,19 @@
               <p style="color: #666; font-size: 13px; margin: 10px 0;">Allow callers to interrupt AI mid-sentence</p>
               <label style="display: flex; align-items: center; gap: 10px; margin: 15px 0; cursor: pointer;">
                 <input type="checkbox" id="interruptibleCheckbox" onchange="updateInterruptible()"
-                       style="width: 20px; height: 20px; cursor: pointer;">
+                       style="width: 20px; height: 20px; cursor: pointer;" checked>
                 <span style="font-size: 14px;">Enable Interruptions (Natural conversations)</span>
+              </label>
+            </div>
+
+            <!-- Skip Initial Greeting -->
+            <div class="setting-card">
+              <h3>👋 Initial Greeting</h3>
+              <p style="color: #666; font-size: 13px; margin: 10px 0;">Control whether AI greets first or waits for caller</p>
+              <label style="display: flex; align-items: center; gap: 10px; margin: 15px 0; cursor: pointer;">
+                <input type="checkbox" id="skipInitialGreetingCheckbox" onchange="updateSkipInitialGreeting()"
+                       style="width: 20px; height: 20px; cursor: pointer;">
+                <span style="font-size: 14px;">Skip Initial Greeting (AI waits for caller)</span>
               </label>
             </div>
 
@@ -413,8 +424,8 @@
               <h3>🎧 Speech-to-Text Provider</h3>
               <p style="color: #666; font-size: 13px; margin: 10px 0;">How caller speech is transcribed</p>
               <select id="sttProviderSelect" class="config-select" onchange="updateSTTProvider()">
-                <option value="google">Google STT (High accuracy)</option>
                 <option value="deepgram">Deepgram (Low latency)</option>
+                <option value="google">Google STT (High accuracy)</option>
                 <option value="amazon">Amazon Transcribe</option>
                 <option value="azure">Azure Speech</option>
               </select>
@@ -767,8 +778,16 @@
 
       // Initialize ConversationRelay controls
       if (config.vadMode) document.getElementById('vadSelect').value = config.vadMode;
-      if (config.interruptible !== undefined) document.getElementById('interruptibleCheckbox').checked = config.interruptible;
-      if (config.sttProvider) document.getElementById('sttProviderSelect').value = config.sttProvider;
+
+      // Set interruptible - default to true if not explicitly set
+      document.getElementById('interruptibleCheckbox').checked = config.interruptible !== undefined ? config.interruptible : true;
+
+      // Set skip initial greeting checkbox
+      if (config.skipInitialGreeting !== undefined) document.getElementById('skipInitialGreetingCheckbox').checked = config.skipInitialGreeting;
+
+      // Set STT provider - default to deepgram if not set
+      document.getElementById('sttProviderSelect').value = config.sttProvider || 'deepgram';
+
       if (config.bargeInSensitivity) {
         document.getElementById('bargeInSlider').value = config.bargeInSensitivity;
         document.getElementById('bargeInValue').textContent = config.bargeInSensitivity;
@@ -1432,6 +1451,12 @@
       const interruptible = document.getElementById('interruptibleCheckbox').checked;
       saveConfigField('interruptible', interruptible);
       alert(`✅ Interruptions ${interruptible ? 'enabled' : 'disabled'}`);
+    }
+
+    function updateSkipInitialGreeting() {
+      const skipInitialGreeting = document.getElementById('skipInitialGreetingCheckbox').checked;
+      saveConfigField('skipInitialGreeting', skipInitialGreeting);
+      alert(`✅ Initial greeting ${skipInitialGreeting ? 'will be skipped (AI waits for caller)' : 'enabled (AI greets first)'}`);
     }
 
     function updateSTTProvider() {

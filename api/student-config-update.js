@@ -96,7 +96,16 @@ export default async function handler(req, res) {
       websocketUrl: 'websocket_url',
       codespaceUrl: 'codespace_url',
       githubRepoUrl: 'github_repo_url',
-      railwayUrl: 'railway_url'
+      railwayUrl: 'railway_url',
+      interruptible: 'interruptible',
+      skipInitialGreeting: 'skip_initial_greeting',
+      sttProvider: 'stt_provider',
+      vadMode: 'vad_mode',
+      bargeInSensitivity: 'barge_in_sensitivity',
+      aiProvider: 'ai_provider',
+      aiModel: 'ai_model',
+      aiTemperature: 'ai_temperature',
+      aiMaxTokens: 'ai_max_tokens'
     };
 
     // Build SET clause
