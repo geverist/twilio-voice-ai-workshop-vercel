@@ -129,13 +129,19 @@ export default async function handler(req, res) {
     }
 
     // Update existing record
+    // Convert tools to JSON string if provided, otherwise keep existing
+    const toolsJson = tools !== undefined ? JSON.stringify(tools) : null;
+
     const result = await sql`
       UPDATE student_configs
       SET
         system_prompt = COALESCE(${systemPrompt}, system_prompt),
         ivr_greeting = COALESCE(${greeting}, ivr_greeting),
         selected_voice = COALESCE(${voice}, selected_voice),
-        tools = COALESCE(${tools ? JSON.stringify(tools) : null}::jsonb, tools),
+        tools = CASE
+          WHEN ${toolsJson}::text IS NOT NULL THEN ${toolsJson}::jsonb
+          ELSE tools
+        END,
         updated_at = NOW()
       WHERE session_token = ${sessionToken}
       RETURNING
