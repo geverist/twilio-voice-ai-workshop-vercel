@@ -8466,7 +8466,7 @@ case 'send_whatsapp':
               </p>
               <ul style="margin: 10px 0 20px 20px; font-size: 1rem;">
                 <li>✅ <strong>Step 4:</strong> Basic TwiML voice handler</li>
-                <li>✅ <strong>Step 5:</strong> WebSocket handler for Media Streams</li>
+                <li>✅ <strong>Step 5:</strong> WebSocket handler for ConversationRelay</li>
                 <li>✅ <strong>Step 6:</strong> ConversationRelay with AI orchestration</li>
                 <li>✅ <strong>Step 7:</strong> Custom AI prompt personality</li>
                 <li>✅ <strong>Step 8:</strong> Advanced tools and function calling</li>
@@ -9321,7 +9321,7 @@ case 'send_whatsapp':
                 <h4 style="margin: 0 0 15px 0; color: #1a73e8;">📞 Demo Workshop Calls (3)</h4>
 
                 ${generateDemoCallCard(1, 'Step 4', 'Basic TwiML Test', 'completed', '45s', 'You tested the Basic TwiML handler with IVR menu navigation.')}
-                ${generateDemoCallCard(2, 'Step 5', 'Media Streams Test', 'completed', '62s', 'You tested real-time audio streaming via WebSocket.')}
+                ${generateDemoCallCard(2, 'Step 5', 'WebSocket Test', 'completed', '62s', 'You tested the WebSocket handler for ConversationRelay.')}
                 ${generateDemoCallCard(3, 'Step 6', 'AI Voice Assistant', 'completed', '98s', 'You had a conversation with your AI assistant powered by ConversationRelay!', true)}
 
                 <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 8px; border-left: 4px solid #4fc1ff;">
@@ -12575,332 +12575,6 @@ app.get('/health', (req, res) => {
       }
     }
 
-    // =========================================================================
-    // MEDIA STREAMS DEMO - Raw Audio Streaming + Transcript Visualization
-    // This demonstrates how Twilio Media Streams work - the foundation of ConversationRelay
-    // =========================================================================
-    let voiceTestActive = false;
-    let audioContext = null;
-    let analyser = null;
-    let animationFrame = null;
-    let mediaStreamWs = null;
-    let audioProcessor = null;
-    let audioChunksSent = 0;
-    let speechRecognition = null;
-    let currentUtterance = null;
-
-    async function toggleVoiceTest() {
-      const btn = document.getElementById('voiceTestBtn');
-      const status = document.getElementById('voiceTestStatus');
-      const conversation = document.getElementById('voiceConversation');
-
-      if (!voiceTestActive) {
-        // Start Media Streams demo
-        try {
-          status.textContent = 'Connecting to Media Streams server...';
-
-          // Connect to Media Streams demo WebSocket
-          // Use production URL if on Vercel, otherwise localhost for development
-          const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-          const wsProtocol = isProduction ? 'wss:' : 'ws:';
-          const wsHost = isProduction ? window.location.host : 'localhost:8082';
-          const wsPath = isProduction ? '/api/media-stream-demo' : '';
-          const wsUrl = `${wsProtocol}//${wsHost}${wsPath}`;
-
-          console.log(`Connecting to Media Streams demo at: ${wsUrl}`);
-          mediaStreamWs = new WebSocket(wsUrl);
-
-          mediaStreamWs.onopen = async () => {
-            console.log('✓ Connected to Media Streams server');
-            status.textContent = 'Requesting microphone access...';
-
-            // Show conversation panel
-            conversation.style.display = 'block';
-            conversation.innerHTML = `
-              <div style="color: rgba(255,255,255,0.9); font-size: 14px; line-height: 1.6;">
-                <strong>📡 Media Streams Demo</strong><br>
-                <span style="font-size: 12px; color: rgba(255,255,255,0.7);">
-                  This demonstrates how Twilio Media Streams work!<br>
-                  Your audio is being streamed to the WebSocket in real-time.
-                </span>
-              </div>
-            `;
-
-            // Get microphone access
-            const stream = await navigator.mediaDevices.getUserMedia({
-              audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                sampleRate: 16000
-              }
-            });
-
-            // Setup audio context and visualization
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const source = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 256;
-            source.connect(analyser);
-
-            // Start visualization
-            visualizeAudio();
-
-            // NOTE: Media Streams does NOT provide transcripts!
-            // You only get raw audio - you'd need to integrate your own STT.
-            // ConversationRelay (next step) handles this automatically!
-
-            // Create audio processor to stream raw audio to WebSocket
-            audioProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-            source.connect(audioProcessor);
-            audioProcessor.connect(audioContext.destination);
-
-            audioChunksSent = 0;
-
-            audioProcessor.onaudioprocess = (e) => {
-              if (mediaStreamWs && mediaStreamWs.readyState === WebSocket.OPEN) {
-                const inputData = e.inputBuffer.getChannelData(0);
-
-                // Convert Float32Array to Int16Array (PCM format)
-                // This is the EXACT format Twilio Media Streams uses!
-                const pcmData = new Int16Array(inputData.length);
-                for (let i = 0; i < inputData.length; i++) {
-                  pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-                }
-
-                // Send raw audio bytes to WebSocket (like Twilio does!)
-                mediaStreamWs.send(pcmData.buffer);
-                audioChunksSent++;
-
-                // Update UI every 50 chunks
-                if (audioChunksSent % 50 === 0) {
-                  const duration = (audioChunksSent * 4096 / 16000).toFixed(1);
-                  conversation.innerHTML = `
-                    <div style="color: rgba(255,255,255,0.9); font-size: 14px; line-height: 1.6;">
-                      <strong>📡 Media Streams Demo</strong><br>
-                      <span style="font-size: 12px; color: rgba(255,255,255,0.7);">
-                        Streaming raw audio to WebSocket...<br>
-                        <strong>${audioChunksSent} chunks sent</strong> (~${duration}s of audio)
-                      </span>
-                    </div>
-                  `;
-                }
-              }
-            };
-
-            // Send start message
-            mediaStreamWs.send(JSON.stringify({ type: 'start' }));
-
-            // Update UI
-            voiceTestActive = true;
-            btn.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
-            btn.style.transform = 'scale(1.05)';
-            status.textContent = '🎙️ Streaming audio... Speak now!';
-          };
-
-          mediaStreamWs.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-
-            switch (data.type) {
-              case 'connected':
-                console.log('Media Streams:', data.message);
-                break;
-
-              case 'status':
-                console.log('Status:', data.message);
-                break;
-
-              case 'audioReceived':
-                // Server acknowledged receiving audio!
-                conversation.innerHTML += `
-                  <div style="margin: 15px 0; padding: 15px; background: rgba(76, 175, 80, 0.3); border-radius: 8px; border-left: 4px solid #4caf50;">
-                    <strong style="color: #4caf50;">✅ ${data.message}</strong><br>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 8px;">
-                      📊 Received ${data.chunksReceived} audio chunks (${data.duration})<br>
-                      🎯 This is exactly how ConversationRelay receives your audio!
-                    </div>
-                  </div>
-                `;
-                conversation.scrollTop = conversation.scrollHeight;
-                status.textContent = '🔊 Generating audio response...';
-                break;
-
-              case 'speak':
-                // Server wants us to speak a response (simulating audio playback)
-                conversation.innerHTML += `
-                  <div style="margin: 15px 0; padding: 15px; background: rgba(102, 126, 234, 0.3); border-radius: 8px; border-left: 4px solid #667eea;">
-                    <strong style="color: #667eea;">🤖 Server Response:</strong><br>
-                    <div style="font-size: 13px; color: white; margin-top: 8px;">
-                      "${data.text}"
-                    </div>
-                    <div style="font-size: 12px; color: rgba(255,255,255,0.7); margin-top: 8px;">
-                      🎵 Playing audio response (this is how ConversationRelay sends audio back!)
-                    </div>
-                  </div>
-                `;
-                conversation.scrollTop = conversation.scrollHeight;
-
-                // Use browser TTS to speak the response
-                const utterance = new SpeechSynthesisUtterance(data.text);
-                utterance.rate = 1.0;
-                utterance.pitch = 1.0;
-
-                utterance.onstart = () => {
-                  status.textContent = '🔊 Speaking response...';
-                };
-
-                utterance.onend = () => {
-                  status.textContent = '🎤 Ready for more audio! Keep talking...';
-                  // Enable next button after successful interactive demo
-                  document.getElementById('nextBtn7').disabled = false;
-                };
-
-                window.speechSynthesis.speak(utterance);
-                break;
-            }
-          };
-
-          mediaStreamWs.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            status.textContent = '❌ Connection failed - is server running on port 8082?';
-          };
-
-          mediaStreamWs.onclose = () => {
-            console.log('Media Streams disconnected');
-            if (voiceTestActive) {
-              status.textContent = '🔌 Disconnected';
-            }
-          };
-
-        } catch (error) {
-          console.error('Error starting Media Streams demo:', error);
-          status.textContent = `❌ ${error.message}`;
-        }
-
-      } else {
-        // Stop Media Streams demo
-        if (mediaStreamWs) {
-          mediaStreamWs.send(JSON.stringify({ type: 'stop' }));
-          mediaStreamWs.close();
-          mediaStreamWs = null;
-        }
-        if (audioProcessor) {
-          audioProcessor.disconnect();
-          audioProcessor = null;
-        }
-        if (audioContext) {
-          audioContext.close();
-        }
-        if (animationFrame) {
-          cancelAnimationFrame(animationFrame);
-        }
-
-        voiceTestActive = false;
-        btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        btn.style.transform = 'scale(1)';
-        status.textContent = 'Click the microphone to start';
-
-        // Reset audio bars
-        const bars = document.querySelectorAll('.audio-bar');
-        bars.forEach(bar => {
-          bar.style.height = '20%';
-          bar.style.background = 'rgba(255,255,255,0.3)';
-        });
-
-        console.log(`📊 Session complete: ${audioChunksSent} total audio chunks sent`);
-      }
-    }
-
-    function visualizeAudio() {
-      if (!analyser || !voiceTestActive) return;
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      analyser.getByteFrequencyData(dataArray);
-
-      const bars = document.querySelectorAll('.audio-bar');
-      bars.forEach((bar, index) => {
-        const dataIndex = Math.floor((index / bars.length) * dataArray.length);
-        const value = dataArray[dataIndex] / 255;
-        const height = Math.max(20, value * 100);
-        bar.style.height = height + '%';
-        bar.style.background = value > 0.3 ? '#667eea' : 'rgba(255,255,255,0.3)';
-      });
-
-      animationFrame = requestAnimationFrame(visualizeAudio);
-    }
-
-    async function processVoiceInput(transcript) {
-      const conversation = document.getElementById('voiceConversation');
-      const status = document.getElementById('voiceTestStatus');
-
-      try {
-        // Get student's WebSocket handler code
-        const studentCode = document.getElementById('code7')?.value || '';
-
-        // Test with their code
-        const response = await fetch('/api/test-websocket-code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            code: studentCode,
-            testMessage: transcript,
-            openaiApiKey: openaiApiKey
-          })
-        });
-
-        const data = await response.json();
-
-        if (data.success && data.test.aiResponse) {
-          const aiResponse = data.test.aiResponse;
-
-          // Add AI response to conversation
-          conversation.innerHTML += `
-            <div style="margin: 10px 0; padding: 10px; background: rgba(76, 175, 80, 0.3); border-radius: 8px;">
-              <strong style="color: #4caf50;">🤖 AI:</strong>
-              <div style="color: white; margin-top: 5px;">${aiResponse}</div>
-            </div>
-          `;
-          conversation.scrollTop = conversation.scrollHeight;
-
-          // Speak the response using browser TTS
-          const utterance = new SpeechSynthesisUtterance(aiResponse);
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
-          utterance.volume = 1.0;
-
-          utterance.onstart = () => {
-            status.textContent = '🔊 AI is speaking...';
-          };
-
-          utterance.onend = () => {
-            status.textContent = '🎤 Listening... (your turn)';
-          };
-
-          window.speechSynthesis.speak(utterance);
-
-          // Enable next button after successful voice test
-          document.getElementById('nextBtn7').disabled = false;
-
-        } else {
-          conversation.innerHTML += `
-            <div style="margin: 10px 0; padding: 10px; background: rgba(244, 67, 54, 0.3); border-radius: 8px;">
-              <strong style="color: #f44336;">❌ Error:</strong>
-              <div style="color: white; margin-top: 5px;">${data.error || 'Failed to process'}</div>
-            </div>
-          `;
-          status.textContent = '❌ Error - try again';
-        }
-
-      } catch (error) {
-        console.error('Voice processing error:', error);
-        conversation.innerHTML += `
-          <div style="margin: 10px 0; padding: 10px; background: rgba(244, 67, 54, 0.3); border-radius: 8px;">
-            <strong style="color: #f44336;">❌ Error:</strong>
-            <div style="color: white; margin-top: 5px;">${error.message}</div>
-          </div>
-        `;
-        status.textContent = '❌ Error - try again';
-      }
-    }
 
     // Test WebSocket with a single custom message
     async function testSingleWebSocketMessage() {
@@ -13252,7 +12926,7 @@ app.get('/health', (req, res) => {
 
             if (testData.receivedMessages && testData.receivedMessages.length > 0) {
               logWebSocketMessage('success', `<strong>✅ Server responded with ${testData.receivedMessages.length} message(s)</strong>`);
-              logWebSocketMessage('info', `Your WebSocket handler is correctly processing Twilio media stream events!`);
+              logWebSocketMessage('info', `Your WebSocket handler is correctly processing ConversationRelay events!`);
             } else {
               logWebSocketMessage('warning', `⚠️ Server connected but didn't send any responses. This may be normal depending on your handler implementation.`);
             }
@@ -13302,8 +12976,8 @@ app.get('/health', (req, res) => {
                   <div style="background: rgba(255,255,255,0.15); padding: 15px; border-radius: 6px; margin: 15px 0;">
                     <strong style="display: block; margin-bottom: 10px;">📋 What You've Learned:</strong>
                     <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
-                      <li>Reviewed the <strong>5 Media Stream event types</strong> Twilio sends</li>
-                      <li>Understood the <strong>JSON format</strong> of each event</li>
+                      <li>Built a <strong>WebSocket handler</strong> for ConversationRelay</li>
+                      <li>Integrated with <strong>OpenAI</strong> for AI responses</li>
                       <li>Set up your <strong>WebSocket server</strong></li>
                     </ul>
                   </div>
@@ -14889,7 +14563,7 @@ app.get('/health', (req, res) => {
 
       // Twilio pricing (approximate)
       const twilioVoice = 0.0085 * duration; // $0.0085 per minute
-      const twilioStreaming = 0.0040 * duration; // $0.004 per minute for Media Streams
+      const twilioStreaming = 0.0040 * duration; // $0.004 per minute for ConversationRelay
       const twilioTranscription = 0.02; // $0.02 per minute
 
       // OpenAI pricing (GPT-4o-mini approximate)
