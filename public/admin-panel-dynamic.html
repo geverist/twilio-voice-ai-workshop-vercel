@@ -433,16 +433,6 @@
               </select>
             </div>
 
-            <!-- Audio Format -->
-            <div class="setting-card">
-              <h3>🔊 Audio Encoding</h3>
-              <p style="color: #666; font-size: 13px; margin: 10px 0;">Audio format for ConversationRelay</p>
-              <select id="audioFormatSelect" class="config-select" onchange="updateAudioFormat()">
-                <option value="mulaw">μ-law (8kHz, Default)</option>
-                <option value="pcm16">PCM 16-bit (16kHz, Higher quality)</option>
-              </select>
-            </div>
-
             <!-- Barge-in Sensitivity -->
             <div class="setting-card">
               <h3>⚡ Barge-in Sensitivity</h3>
@@ -793,7 +783,6 @@
       if (config.vadMode) document.getElementById('vadSelect').value = config.vadMode;
       if (config.interruptible !== undefined) document.getElementById('interruptibleCheckbox').checked = config.interruptible;
       if (config.sttProvider) document.getElementById('sttProviderSelect').value = config.sttProvider;
-      if (config.audioFormat) document.getElementById('audioFormatSelect').value = config.audioFormat;
       if (config.bargeInSensitivity) {
         document.getElementById('bargeInSlider').value = config.bargeInSensitivity;
         document.getElementById('bargeInValue').textContent = config.bargeInSensitivity;
@@ -1476,12 +1465,6 @@
       const sttProvider = document.getElementById('sttProviderSelect').value;
       saveConfigField('sttProvider', sttProvider);
       alert(`✅ Speech-to-Text provider set to: ${sttProvider}`);
-    }
-
-    function updateAudioFormat() {
-      const format = document.getElementById('audioFormatSelect').value;
-      saveConfigField('audioFormat', format);
-      alert(`✅ Audio encoding set to: ${format}`);
     }
 
     function updateBargeInDisplay(value) {
