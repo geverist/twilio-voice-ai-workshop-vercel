@@ -128,6 +128,8 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const { sessionToken, studentEmail, eventType, limit } = req.query;
 
+      console.log('📋 Loading session logs with filters:', { sessionToken, studentEmail, eventType, limit });
+
       // Allow fetching all logs if no filters provided (useful for instructor dashboard)
       // Note: In production, you may want to add pagination or admin authentication for this
 
@@ -154,15 +156,20 @@ export default async function handler(req, res) {
         `;
         console.log('✅ Session log tables verified/created');
       } catch (tableError) {
-        console.error('⚠️ Error creating session log tables:', tableError);
-        // Continue anyway - tables might already exist
+        console.error('❌ Error creating session log tables:', tableError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to create database tables',
+          message: tableError.message
+        });
       }
 
       // Build query with filters
       const limitValue = parseInt(limit) || 100;
       let result;
 
-      if (sessionToken && studentEmail && eventType) {
+      try {
+        if (sessionToken && studentEmail && eventType) {
         // All three filters
         result = await sql`
           SELECT
@@ -302,13 +309,23 @@ export default async function handler(req, res) {
           ORDER BY e.created_at DESC
           LIMIT ${limitValue}
         `;
-      }
+        }
 
-      return res.status(200).json({
-        success: true,
-        events: result,
-        count: result.length
-      });
+        console.log(`✅ Found ${result.length} events`);
+
+        return res.status(200).json({
+          success: true,
+          events: result,
+          count: result.length
+        });
+      } catch (queryError) {
+        console.error('❌ Error executing query:', queryError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to retrieve logs',
+          message: queryError.message
+        });
+      }
     }
 
     return res.status(405).json({
