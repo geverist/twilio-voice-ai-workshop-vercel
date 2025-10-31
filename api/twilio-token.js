@@ -73,7 +73,15 @@ export default async function handler(req, res) {
     if (!accountSid || !authToken) {
       return res.status(400).json({
         success: false,
-        error: 'Twilio credentials not configured'
+        error: 'Twilio credentials not configured. Please add your credentials in the Settings tab.'
+      });
+    }
+
+    if (!twimlAppSid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Browser calling not configured. Please call your Twilio phone number directly from your phone instead.',
+        requiresTwimlApp: true
       });
     }
 

@@ -302,8 +302,20 @@
           <div class="settings-grid">
             <div class="setting-card">
               <h3>📞 Test Your Voice AI</h3>
-              <p id="callStatusText">Click to call from your browser</p>
-              <button class="btn" id="callButton" onclick="makeTestCall()">📞 Call Now</button>
+              <p id="callStatusText" style="margin-bottom: 15px;">
+                Call <strong id="phoneNumberDisplay">your configured number</strong> from any phone to test
+              </p>
+              <div style="background: #f0f9ff; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #0284c7;">
+                <div style="font-size: 13px; color: #0c4a6e; margin-bottom: 5px;">
+                  <strong>🎯 To test:</strong>
+                </div>
+                <ol style="margin: 0; padding-left: 20px; font-size: 13px; color: #075985;">
+                  <li>Call <span id="phoneNumberToCall" style="font-weight: 600;">--</span> from your phone</li>
+                  <li>The AI will answer and interact with you</li>
+                  <li>Check Analytics tab to see call details</li>
+                </ol>
+              </div>
+              <button class="btn" id="callButton" onclick="makeTestCall()" style="display: none;">📞 Browser Call (Advanced)</button>
               <button class="btn btn-secondary" id="hangupButton" onclick="hangupCall()" style="display: none; margin-left: 10px;">❌ Hang Up</button>
             </div>
             <div class="setting-card">
@@ -939,6 +951,13 @@
       document.getElementById('callDirectionMetric').textContent =
         (config.callDirection || 'inbound') === 'inbound' ? '📥 Inbound' : '📤 Outbound';
       document.getElementById('ttsProviderMetric').textContent = getTTSProviderName(config.ttsProvider);
+
+      // Update phone number displays
+      const phoneNumber = config.selectedPhoneNumber || 'Not configured';
+      const phoneNumberDisplay = document.getElementById('phoneNumberDisplay');
+      const phoneNumberToCall = document.getElementById('phoneNumberToCall');
+      if (phoneNumberDisplay) phoneNumberDisplay.textContent = phoneNumber;
+      if (phoneNumberToCall) phoneNumberToCall.textContent = phoneNumber;
 
       // Hide setup prompt if credentials are configured
       const hasCredentials = config.twilioAccountSid && config.twilioAuthToken && config.openaiApiKey;
