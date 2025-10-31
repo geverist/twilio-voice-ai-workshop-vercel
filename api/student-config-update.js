@@ -108,7 +108,10 @@ export default async function handler(req, res) {
       aiMaxTokens: 'ai_max_tokens',
       conversationStates: 'conversation_states',
       enablePersistentMemory: 'enable_persistent_memory',
-      memoryRetentionDays: 'memory_retention_days'
+      memoryRetentionDays: 'memory_retention_days',
+      twilioAccountSid: 'twilio_account_sid',
+      twilioAuthToken: 'twilio_auth_token',
+      openaiApiKey: 'openai_api_key'
     };
 
     // Build SET clause

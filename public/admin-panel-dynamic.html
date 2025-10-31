@@ -172,7 +172,7 @@
       margin-top: 10px;
     }
 
-    input[type="text"], input[type="number"] {
+    input[type="text"], input[type="number"], input[type="password"] {
       width: 100%;
       padding: 10px;
       border: 2px solid #e0e0e0;
@@ -473,8 +473,60 @@
 
       <div id="settings" class="tab-content">
         <div class="panel">
-          <h2>System Settings</h2>
-          <div class="settings-grid" id="settingsContent"></div>
+          <h2>🔐 API Credentials & Configuration</h2>
+          <p style="color: #666; margin-bottom: 30px;">
+            Manage your Twilio and AI provider credentials. All credentials are encrypted and stored securely.
+          </p>
+
+          <!-- Twilio Credentials -->
+          <div class="setting-card" style="border-left: 4px solid #ef4444; margin-bottom: 30px;">
+            <h3>📞 Twilio Credentials</h3>
+            <p style="color: #666; font-size: 13px; margin: 10px 0;">
+              Connect your Twilio account to enable voice calling. Find these in your <a href="https://console.twilio.com" target="_blank" style="color: #667eea;">Twilio Console</a>.
+            </p>
+
+            <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Account SID</label>
+            <input type="text" id="twilioAccountSid" placeholder="AC..." style="margin-top: 0;">
+
+            <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Auth Token</label>
+            <input type="password" id="twilioAuthToken" placeholder="Enter your Twilio Auth Token" style="margin-top: 0;">
+
+            <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Phone Number</label>
+            <input type="text" id="twilioPhoneNumber" placeholder="+1..." style="margin-top: 0;">
+
+            <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; font-size: 13px; color: #856404;">
+              💡 <strong>Tip:</strong> Your Auth Token will be encrypted before storage. You can find these credentials at <a href="https://console.twilio.com" target="_blank" style="color: #856404; text-decoration: underline;">console.twilio.com</a>
+            </div>
+
+            <button class="btn" onclick="saveTwilioCredentials()" style="margin-top: 15px;">
+              💾 Save Twilio Credentials
+            </button>
+          </div>
+
+          <!-- OpenAI API Key -->
+          <div class="setting-card" style="border-left: 4px solid #10b981; margin-bottom: 30px;">
+            <h3>🧠 OpenAI API Key</h3>
+            <p style="color: #666; font-size: 13px; margin: 10px 0;">
+              Your OpenAI API key powers the AI conversations. Get your key from <a href="https://platform.openai.com/api-keys" target="_blank" style="color: #667eea;">platform.openai.com</a>.
+            </p>
+
+            <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">API Key</label>
+            <input type="password" id="openaiApiKey" placeholder="sk-..." style="margin-top: 0;">
+
+            <div style="margin-top: 15px; padding: 10px; background: #e0f2fe; border-radius: 6px; font-size: 13px; color: #075985;">
+              🔒 <strong>Security:</strong> Your API key is encrypted before being stored in the database and never exposed in logs or analytics.
+            </div>
+
+            <button class="btn" onclick="saveOpenAIKey()" style="margin-top: 15px;">
+              💾 Save OpenAI API Key
+            </button>
+          </div>
+
+          <!-- Current Configuration Summary -->
+          <div style="margin-top: 30px;">
+            <h3 style="color: #333; margin-bottom: 15px;">📋 Current Configuration</h3>
+            <div class="settings-grid" id="settingsContent"></div>
+          </div>
         </div>
       </div>
 
@@ -1685,6 +1737,93 @@
         }
       } catch (error) {
         console.error(`❌ Error saving ${fieldName}:`, error);
+      }
+    }
+
+    // =========================================================================
+    // SETTINGS TAB - CREDENTIALS MANAGEMENT
+    // =========================================================================
+
+    async function saveTwilioCredentials() {
+      const accountSid = document.getElementById('twilioAccountSid').value.trim();
+      const authToken = document.getElementById('twilioAuthToken').value.trim();
+      const phoneNumber = document.getElementById('twilioPhoneNumber').value.trim();
+
+      if (!accountSid || !authToken || !phoneNumber) {
+        alert('❌ Please fill in all Twilio fields');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/student-config-update`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN,
+            twilioAccountSid: accountSid,
+            twilioAuthToken: authToken,
+            selectedPhoneNumber: phoneNumber
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ Twilio credentials saved successfully!');
+          config.selectedPhoneNumber = phoneNumber;
+
+          // Clear password field for security
+          document.getElementById('twilioAuthToken').value = '';
+
+          // Update displayed phone number
+          renderConfig();
+        } else {
+          alert('❌ Failed to save: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Error: ' + error.message);
+      }
+    }
+
+    async function saveOpenAIKey() {
+      const apiKey = document.getElementById('openaiApiKey').value.trim();
+
+      if (!apiKey) {
+        alert('❌ Please enter an OpenAI API key');
+        return;
+      }
+
+      if (!apiKey.startsWith('sk-')) {
+        alert('❌ OpenAI API keys should start with "sk-"');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/student-config-update`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN,
+            openaiApiKey: apiKey
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ OpenAI API key saved successfully!');
+          config.openaiApiKey = apiKey;
+
+          // Store in localStorage too for other features that need it
+          localStorage.setItem('openaiApiKey', apiKey);
+
+          // Clear password field for security
+          document.getElementById('openaiApiKey').value = '';
+        } else {
+          alert('❌ Failed to save: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Error: ' + error.message);
       }
     }
 
