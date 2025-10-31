@@ -25,28 +25,20 @@ const sql = postgres(process.env.POSTGRES_URL, {
 function mapVoiceToConversationRelay(provider, voiceId) {
   switch (provider) {
     case 'elevenlabs':
-      // ElevenLabs uses voice IDs directly
-      // Format: elevenlabs.<voice_id>
-      return `elevenlabs.${voiceId}`;
+      // ElevenLabs: Just use the voice ID directly (no prefix)
+      // Per Twilio docs: voice="YourSpecificElevenLabsVoiceID"
+      return voiceId;
 
     case 'google':
       // Google voices format: Google.<language>-<variant>
-      // Map common voice IDs to Google format
-      const googleVoices = {
-        'en-US-Neural2-A': 'Google.en-US-Neural2-A',
-        'en-US-Neural2-C': 'Google.en-US-Neural2-C',
-        'en-US-Neural2-D': 'Google.en-US-Neural2-D',
-        'en-US-Neural2-F': 'Google.en-US-Neural2-F'
-      };
-      return googleVoices[voiceId] || `Google.${voiceId}`;
+      return `Google.${voiceId}`;
 
     case 'deepgram':
-      // Deepgram Aura voices format: aura-<name>-en
-      // ConversationRelay expects: Deepgram.<voice>
+      // Deepgram Aura voices
       return `Deepgram.${voiceId}`;
 
     case 'amazon':
-      // Amazon Polly voices format: Polly.<voice>-Neural
+      // Amazon Polly voices
       const pollyVoices = {
         'Joanna': 'Polly.Joanna-Neural',
         'Matthew': 'Polly.Matthew-Neural',
