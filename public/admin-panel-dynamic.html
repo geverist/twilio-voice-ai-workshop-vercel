@@ -245,7 +245,6 @@
         <button class="tab" onclick="showTab('functions')">🛠️ Functions</button>
         <button class="tab" onclick="showTab('memory')">🧠 Memory</button>
         <button class="tab" onclick="showTab('analytics')">📈 Analytics</button>
-        <button class="tab" onclick="showTab('logs')">📋 Session Logs</button>
       </div>
 
       <div id="overview" class="tab-content active">
@@ -823,25 +822,11 @@
               for phone number <strong id="phoneNumberDisplay">--</strong>
             </div>
 
-            <!-- Call History Table -->
+            <!-- Call History with Intelligence -->
             <div style="margin-top: 30px;">
-              <h3 style="color: #333; margin-bottom: 15px;">Recent Call History</h3>
-              <div style="overflow-x: auto;">
-                <table id="callHistoryTable" style="width: 100%; border-collapse: collapse; background: white;">
-                  <thead>
-                    <tr style="background: #f8f9fa; border-bottom: 2px solid #e0e0e0;">
-                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Date & Time</th>
-                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">From</th>
-                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Direction</th>
-                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Status</th>
-                      <th style="padding: 12px; text-align: right; font-weight: 600; color: #333;">Duration</th>
-                      <th style="padding: 12px; text-align: left; font-weight: 600; color: #333;">Call SID</th>
-                    </tr>
-                  </thead>
-                  <tbody id="callHistoryBody">
-                    <!-- Dynamically populated -->
-                  </tbody>
-                </table>
+              <h3 style="color: #333; margin-bottom: 15px;">📞 Call History & Intelligence</h3>
+              <div id="callHistoryList">
+                <!-- Dynamically populated with expandable call cards -->
               </div>
             </div>
           </div>
@@ -854,53 +839,6 @@
         </div>
       </div>
 
-      <div id="logs" class="tab-content">
-        <div class="panel">
-          <h2>📋 Session Logs</h2>
-          <p style="color: #666; margin-bottom: 20px;">View detailed session events for troubleshooting errors, navigation patterns, and API call issues</p>
-
-          <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
-            <select id="logEventTypeFilter" class="config-select" style="flex: 0 0 200px;" onchange="applyLogFilters()">
-              <option value="">All Event Types</option>
-              <option value="navigation">🧭 Navigation</option>
-              <option value="error">❌ Errors</option>
-              <option value="action">✅ Actions</option>
-              <option value="api_call">🔗 API Calls</option>
-              <option value="state_change">🔄 State Changes</option>
-            </select>
-            <input type="number" id="logLimitInput" class="config-select" placeholder="Limit (default 100)" min="10" max="500" style="flex: 0 0 150px;" />
-            <button class="btn" onclick="loadSessionLogs()" id="loadLogsBtn">
-              🔄 Load Logs
-            </button>
-            <button class="btn btn-secondary" onclick="clearLogFilters()">
-              Clear Filters
-            </button>
-          </div>
-
-          <div id="logsLoading" style="display: none; text-align: center; padding: 40px; color: #666;">
-            <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
-            <p>Loading session logs...</p>
-          </div>
-
-          <div id="logsError" style="display: none;"></div>
-
-          <div id="logsContent" style="display: none;">
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <strong id="logsCount">0</strong> events found
-            </div>
-
-            <div id="logsList" style="max-height: 700px; overflow-y: auto;">
-              <!-- Dynamically populated -->
-            </div>
-          </div>
-
-          <div id="logsEmpty" style="display: none; background: #f8f9fa; padding: 40px; border-radius: 8px; text-align: center; margin-top: 20px;">
-            <div style="font-size: 64px; margin-bottom: 15px;">📋</div>
-            <p style="color: #666; font-size: 16px; margin-bottom: 10px;">No logs found</p>
-            <p style="color: #999; font-size: 14px;">Session logs will appear as you use the workshop!</p>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1470,7 +1408,7 @@
       }
     }
 
-    function renderCallAnalytics(data) {
+    async function renderCallAnalytics(data) {
       const { calls, metrics, phoneNumber, dateRange } = data;
 
       // Update metrics
@@ -1485,33 +1423,125 @@
       document.getElementById('dateRangeTo').textContent = new Date(dateRange.to).toLocaleDateString();
       document.getElementById('phoneNumberDisplay').textContent = phoneNumber;
 
-      // Render call history table
-      const tbody = document.getElementById('callHistoryBody');
-      tbody.innerHTML = calls.map(call => {
+      // Render expandable call cards with Intelligence
+      const callHistoryList = document.getElementById('callHistoryList');
+      callHistoryList.innerHTML = calls.map((call, index) => {
         const statusColor = getStatusColor(call.status);
         const statusEmoji = getStatusEmoji(call.status);
+        const callId = `call-${index}`;
 
         return `
-          <tr style="border-bottom: 1px solid #e0e0e0;">
-            <td style="padding: 12px;">${formatDateTime(call.startTime)}</td>
-            <td style="padding: 12px; font-family: monospace; font-size: 13px;">${call.from}</td>
-            <td style="padding: 12px;">
-              <span style="color: ${call.direction === 'inbound' ? '#3b82f6' : '#10b981'};">
-                ${call.direction === 'inbound' ? '📥' : '📤'} ${call.direction}
-              </span>
-            </td>
-            <td style="padding: 12px;">
-              <span style="padding: 4px 10px; background: ${statusColor}20; color: ${statusColor}; border-radius: 12px; font-size: 12px; font-weight: 600;">
-                ${statusEmoji} ${call.status}
-              </span>
-            </td>
-            <td style="padding: 12px; text-align: right; font-weight: 600;">${formatDuration(call.duration)}</td>
-            <td style="padding: 12px; font-family: monospace; font-size: 11px; color: #666;">
-              ${call.sid.substring(0, 20)}...
-            </td>
-          </tr>
+          <div class="setting-card" style="margin-bottom: 15px; border-left: 4px solid ${statusColor};">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer;" onclick="toggleCallDetails('${callId}')">
+              <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px; flex-wrap: wrap;">
+                  <h4 style="margin: 0; color: #333;">${formatDateTime(call.startTime)}</h4>
+                  <span style="padding: 4px 10px; background: ${statusColor}20; color: ${statusColor}; border-radius: 12px; font-size: 11px; font-weight: 600;">
+                    ${statusEmoji} ${call.status}
+                  </span>
+                  <span style="color: ${call.direction === 'inbound' ? '#3b82f6' : '#10b981'}; font-size: 13px; font-weight: 600;">
+                    ${call.direction === 'inbound' ? '📥 Inbound' : '📤 Outbound'}
+                  </span>
+                  <span style="color: #666; font-size: 13px; font-weight: 600;">⏱️ ${formatDuration(call.duration)}</span>
+                </div>
+                <div style="display: flex; gap: 20px; font-size: 13px; color: #666; flex-wrap: wrap;">
+                  <span>From: <strong style="font-family: monospace;">${call.from}</strong></span>
+                  <span>SID: <strong style="font-family: monospace; font-size: 11px;">${call.sid.substring(0, 25)}...</strong></span>
+                </div>
+              </div>
+              <div style="color: #667eea; font-size: 24px; transition: transform 0.3s;" id="${callId}-icon">▼</div>
+            </div>
+
+            <!-- Expandable Intelligence Section -->
+            <div id="${callId}-details" style="display: none; margin-top: 20px; border-top: 2px solid #f0f0f0; padding-top: 20px;">
+              <div style="text-align: center; padding: 20px; color: #666;">
+                <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
+                <p>Loading conversational intelligence...</p>
+              </div>
+            </div>
+          </div>
         `;
       }).join('');
+    }
+
+    function toggleCallDetails(callId) {
+      const detailsDiv = document.getElementById(`${callId}-details`);
+      const icon = document.getElementById(`${callId}-icon`);
+
+      if (detailsDiv.style.display === 'none') {
+        detailsDiv.style.display = 'block';
+        icon.style.transform = 'rotate(180deg)';
+        icon.textContent = '▲';
+
+        // Load intelligence data for this call
+        const callSid = callId; // Extract from the card data
+        loadCallIntelligence(callId);
+      } else {
+        detailsDiv.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+        icon.textContent = '▼';
+      }
+    }
+
+    async function loadCallIntelligence(callId) {
+      const detailsDiv = document.getElementById(`${callId}-details`);
+
+      try {
+        // For now, show placeholder data
+        // TODO: Call Intelligence API endpoint
+        detailsDiv.innerHTML = `
+          <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #0284c7;">
+            <h4 style="color: #0c4a6e; margin-bottom: 10px;">📊 Conversational Intelligence</h4>
+            <p style="color: #075985; font-size: 13px; margin: 0;">
+              ℹ️ Intelligence data will be available here once the Twilio Intelligence API is integrated.
+              This will include transcripts, summaries, sentiment analysis, and language operators.
+            </p>
+          </div>
+
+          <div class="settings-grid">
+            <div class="setting-card" style="background: #f0fdf4; border-left: 4px solid #22c55e;">
+              <h4 style="color: #166534; margin-bottom: 5px;">😊 Sentiment</h4>
+              <p style="color: #15803d; font-size: 24px; font-weight: 600; margin: 0;">Positive</p>
+            </div>
+
+            <div class="setting-card" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
+              <h4 style="color: #92400e; margin-bottom: 5px;">🗣️ Language</h4>
+              <p style="color: #b45309; font-size: 18px; font-weight: 600; margin: 0;">English</p>
+            </div>
+          </div>
+
+          <div class="setting-card" style="margin-top: 15px;">
+            <h4 style="color: #333; margin-bottom: 10px;">📝 Summary</h4>
+            <p style="color: #666; font-size: 14px; line-height: 1.6;">
+              Summary will be generated from the call transcript using Twilio's AI-powered intelligence features.
+            </p>
+          </div>
+
+          <div class="setting-card" style="margin-top: 15px;">
+            <h4 style="color: #333; margin-bottom: 10px;">💬 Full Transcript</h4>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; max-height: 400px; overflow-y: auto;">
+              <p style="color: #999; font-size: 13px; font-style: italic;">Transcript will appear here...</p>
+            </div>
+          </div>
+
+          <div class="setting-card" style="margin-top: 15px;">
+            <h4 style="color: #333; margin-bottom: 10px;">🎧 Recording</h4>
+            <audio controls style="width: 100%; margin-top: 10px;">
+              <source src="#" type="audio/mpeg">
+              Your browser does not support the audio element.
+            </audio>
+            <p style="color: #999; font-size: 12px; margin-top: 10px;">Recording URL will be available when call completes</p>
+          </div>
+        `;
+      } catch (error) {
+        console.error('Error loading intelligence:', error);
+        detailsDiv.innerHTML = `
+          <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
+            <h4 style="color: #991b1b; margin-bottom: 5px;">❌ Error</h4>
+            <p style="color: #b91c1c; font-size: 13px; margin: 0;">${error.message}</p>
+          </div>
+        `;
+      }
     }
 
     function formatDuration(seconds) {
