@@ -601,6 +601,47 @@
             </div>
           </div>
 
+          <!-- Phone Number Selection -->
+          <div style="margin-top: 30px;">
+            <h3 style="color: #333; margin-bottom: 15px;">📞 Phone Number Configuration</h3>
+            <div class="setting-card" style="border-left: 4px solid #3b82f6;">
+              <h3>Select Your Twilio Phone Number</h3>
+              <p style="margin-bottom: 15px;">Choose which phone number to use for your Voice AI</p>
+
+              <div id="phoneNumberLoading" style="display: none; padding: 20px; text-align: center; color: #666;">
+                <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+                <p>Loading phone numbers...</p>
+              </div>
+
+              <div id="phoneNumberError" style="display: none; padding: 15px; background: #fee; border-radius: 6px; color: #c00; margin-bottom: 15px;"></div>
+
+              <div id="phoneNumberSelector" style="display: none;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Phone Number</label>
+                <select id="phoneNumberSelect" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 14px; margin-bottom: 10px;">
+                  <option value="">-- Select a phone number --</option>
+                </select>
+
+                <div id="selectedNumberInfo" style="display: none; background: #f0fdf4; padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #10b981;">
+                  <div style="font-size: 13px; color: #15803d;">
+                    <div><strong>Selected:</strong> <span id="selectedNumberDisplay"></span></div>
+                    <div style="margin-top: 5px;"><strong>Name:</strong> <span id="selectedNumberName"></span></div>
+                  </div>
+                </div>
+
+                <button class="btn" onclick="savePhoneNumber()" style="margin-top: 15px;">
+                  💾 Save Phone Number
+                </button>
+                <button class="btn btn-secondary" onclick="loadPhoneNumbers()" style="margin-top: 15px; margin-left: 10px;">
+                  🔄 Refresh List
+                </button>
+              </div>
+
+              <button class="btn" onclick="loadPhoneNumbers()" id="loadPhoneNumbersBtn">
+                📱 Load Phone Numbers
+              </button>
+            </div>
+          </div>
+
           <!-- Current Configuration Summary -->
           <div style="margin-top: 30px;">
             <h3 style="color: #333; margin-bottom: 15px;">📋 Current Configuration</h3>
@@ -1998,6 +2039,123 @@
           document.getElementById('openaiApiKey').value = '';
 
           // Update UI to hide setup prompt and switch to status view
+          renderConfig();
+        } else {
+          alert('❌ Failed to save: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Error: ' + error.message);
+      }
+    }
+
+    // =========================================================================
+    // PHONE NUMBER SELECTION
+    // =========================================================================
+
+    async function loadPhoneNumbers() {
+      const loadBtn = document.getElementById('loadPhoneNumbersBtn');
+      const loadingDiv = document.getElementById('phoneNumberLoading');
+      const errorDiv = document.getElementById('phoneNumberError');
+      const selectorDiv = document.getElementById('phoneNumberSelector');
+      const phoneNumberSelect = document.getElementById('phoneNumberSelect');
+
+      // Hide button, show loading
+      loadBtn.style.display = 'none';
+      loadingDiv.style.display = 'block';
+      errorDiv.style.display = 'none';
+      selectorDiv.style.display = 'none';
+
+      try {
+        const response = await fetch(`${API_BASE}/api/twilio-list-numbers?sessionToken=${SESSION_TOKEN}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load phone numbers');
+        }
+
+        // Populate dropdown
+        phoneNumberSelect.innerHTML = '<option value="">-- Select a phone number --</option>';
+
+        data.phoneNumbers.forEach(number => {
+          const option = document.createElement('option');
+          option.value = number.phoneNumber;
+          option.textContent = `${number.phoneNumber} ${number.friendlyName ? `(${number.friendlyName})` : ''}`;
+          option.dataset.friendlyName = number.friendlyName || '';
+          phoneNumberSelect.appendChild(option);
+        });
+
+        // Pre-select current phone number if it exists
+        if (config.selectedPhoneNumber) {
+          phoneNumberSelect.value = config.selectedPhoneNumber;
+          updateSelectedNumberInfo();
+        }
+
+        // Show selector
+        loadingDiv.style.display = 'none';
+        selectorDiv.style.display = 'block';
+
+        console.log(`✅ Loaded ${data.phoneNumbers.length} phone numbers`);
+
+      } catch (error) {
+        console.error('Error loading phone numbers:', error);
+        loadingDiv.style.display = 'none';
+        errorDiv.textContent = `❌ ${error.message}`;
+        errorDiv.style.display = 'block';
+        loadBtn.style.display = 'inline-block';
+      }
+    }
+
+    function updateSelectedNumberInfo() {
+      const phoneNumberSelect = document.getElementById('phoneNumberSelect');
+      const selectedNumberInfo = document.getElementById('selectedNumberInfo');
+      const selectedNumberDisplay = document.getElementById('selectedNumberDisplay');
+      const selectedNumberName = document.getElementById('selectedNumberName');
+
+      const selectedOption = phoneNumberSelect.options[phoneNumberSelect.selectedIndex];
+
+      if (selectedOption && selectedOption.value) {
+        selectedNumberDisplay.textContent = selectedOption.value;
+        selectedNumberName.textContent = selectedOption.dataset.friendlyName || 'No name set';
+        selectedNumberInfo.style.display = 'block';
+      } else {
+        selectedNumberInfo.style.display = 'none';
+      }
+    }
+
+    // Add event listener for phone number selection changes
+    document.addEventListener('DOMContentLoaded', () => {
+      const phoneNumberSelect = document.getElementById('phoneNumberSelect');
+      if (phoneNumberSelect) {
+        phoneNumberSelect.addEventListener('change', updateSelectedNumberInfo);
+      }
+    });
+
+    async function savePhoneNumber() {
+      const phoneNumberSelect = document.getElementById('phoneNumberSelect');
+      const selectedNumber = phoneNumberSelect.value;
+
+      if (!selectedNumber) {
+        alert('❌ Please select a phone number');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/api/student-config-update`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN,
+            selectedPhoneNumber: selectedNumber
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert(`✅ Phone number updated to: ${selectedNumber}`);
+          config.selectedPhoneNumber = selectedNumber;
+
+          // Update displays
           renderConfig();
         } else {
           alert('❌ Failed to save: ' + data.error);
