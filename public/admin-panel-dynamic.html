@@ -515,22 +515,47 @@
               Connect your Twilio account to enable voice calling. Find these in your <a href="https://console.twilio.com" target="_blank" style="color: #667eea;">Twilio Console</a>.
             </p>
 
-            <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Account SID</label>
-            <input type="text" id="twilioAccountSid" placeholder="AC..." style="margin-top: 0;">
-
-            <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Auth Token</label>
-            <input type="password" id="twilioAuthToken" placeholder="Enter your Twilio Auth Token" style="margin-top: 0;">
-
-            <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Phone Number</label>
-            <input type="text" id="twilioPhoneNumber" placeholder="+1..." style="margin-top: 0;">
-
-            <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; font-size: 13px; color: #856404;">
-              💡 <strong>Tip:</strong> Your Auth Token will be encrypted before storage. You can find these credentials at <a href="https://console.twilio.com" target="_blank" style="color: #856404; text-decoration: underline;">console.twilio.com</a>
+            <!-- Show status when configured -->
+            <div id="twilioConfiguredStatus" style="display: none;">
+              <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 4px solid #22c55e; margin: 15px 0;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                  <span style="font-size: 24px;">✅</span>
+                  <h4 style="margin: 0; color: #166534;">Twilio Connected</h4>
+                </div>
+                <div style="color: #15803d; font-size: 13px; margin-top: 10px;">
+                  <div>Account SID: <strong style="font-family: monospace;" id="twilioSidDisplay">--</strong></div>
+                  <div style="margin-top: 5px;">Phone Number: <strong style="font-family: monospace;" id="twilioPhoneDisplay">--</strong></div>
+                </div>
+              </div>
+              <button class="btn btn-secondary" onclick="showTwilioEditForm()" style="margin-top: 10px;">
+                ✏️ Update Credentials
+              </button>
             </div>
 
-            <button class="btn" onclick="saveTwilioCredentials()" style="margin-top: 15px;">
-              💾 Save Twilio Credentials
-            </button>
+            <!-- Show form when not configured or editing -->
+            <div id="twilioEditForm" style="display: none;">
+              <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Account SID</label>
+              <input type="text" id="twilioAccountSid" placeholder="AC..." style="margin-top: 0;">
+
+              <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Auth Token</label>
+              <input type="password" id="twilioAuthToken" placeholder="Enter your Twilio Auth Token" style="margin-top: 0;">
+
+              <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">Phone Number</label>
+              <input type="text" id="twilioPhoneNumber" placeholder="+1..." style="margin-top: 0;">
+
+              <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 6px; font-size: 13px; color: #856404;">
+                💡 <strong>Tip:</strong> Your Auth Token will be encrypted before storage. You can find these credentials at <a href="https://console.twilio.com" target="_blank" style="color: #856404; text-decoration: underline;">console.twilio.com</a>
+              </div>
+
+              <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn" onclick="saveTwilioCredentials()">
+                  💾 Save Twilio Credentials
+                </button>
+                <button class="btn btn-secondary" onclick="cancelTwilioEdit()" id="cancelTwilioBtn" style="display: none;">
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- OpenAI API Key -->
@@ -540,16 +565,40 @@
               Your OpenAI API key powers the AI conversations. Get your key from <a href="https://platform.openai.com/api-keys" target="_blank" style="color: #667eea;">platform.openai.com</a>.
             </p>
 
-            <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">API Key</label>
-            <input type="password" id="openaiApiKey" placeholder="sk-..." style="margin-top: 0;">
-
-            <div style="margin-top: 15px; padding: 10px; background: #e0f2fe; border-radius: 6px; font-size: 13px; color: #075985;">
-              🔒 <strong>Security:</strong> Your API key is encrypted before being stored in the database and never exposed in logs or analytics.
+            <!-- Show status when configured -->
+            <div id="openaiConfiguredStatus" style="display: none;">
+              <div style="background: #f0fdf4; padding: 15px; border-radius: 8px; border-left: 4px solid #22c55e; margin: 15px 0;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="font-size: 24px;">✅</span>
+                  <h4 style="margin: 0; color: #166534;">OpenAI Key Configured</h4>
+                </div>
+                <p style="color: #15803d; font-size: 13px; margin-top: 10px; margin-bottom: 0;">
+                  Your API key is securely encrypted and stored.
+                </p>
+              </div>
+              <button class="btn btn-secondary" onclick="showOpenAIEditForm()" style="margin-top: 10px;">
+                ✏️ Update API Key
+              </button>
             </div>
 
-            <button class="btn" onclick="saveOpenAIKey()" style="margin-top: 15px;">
-              💾 Save OpenAI API Key
-            </button>
+            <!-- Show form when not configured or editing -->
+            <div id="openaiEditForm" style="display: none;">
+              <label style="display: block; margin-top: 15px; margin-bottom: 5px; font-weight: 600; color: #333;">API Key</label>
+              <input type="password" id="openaiApiKey" placeholder="sk-..." style="margin-top: 0;">
+
+              <div style="margin-top: 15px; padding: 10px; background: #e0f2fe; border-radius: 6px; font-size: 13px; color: #075985;">
+                🔒 <strong>Security:</strong> Your API key is encrypted before being stored in the database and never exposed in logs or analytics.
+              </div>
+
+              <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn" onclick="saveOpenAIKey()">
+                  💾 Save OpenAI API Key
+                </button>
+                <button class="btn btn-secondary" onclick="cancelOpenAIEdit()" id="cancelOpenAIBtn" style="display: none;">
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Current Configuration Summary -->
@@ -902,6 +951,50 @@
       const setupPrompt = document.getElementById('setupPrompt');
       if (setupPrompt) {
         setupPrompt.style.display = hasCredentials ? 'none' : 'block';
+      }
+
+      // Show/hide Twilio credentials based on configuration
+      const hasTwilioCredentials = config.twilioAccountSid && config.twilioAuthToken;
+      const twilioStatusDiv = document.getElementById('twilioConfiguredStatus');
+      const twilioFormDiv = document.getElementById('twilioEditForm');
+
+      if (twilioStatusDiv && twilioFormDiv) {
+        if (hasTwilioCredentials) {
+          twilioStatusDiv.style.display = 'block';
+          twilioFormDiv.style.display = 'none';
+
+          // Populate display fields
+          const sidDisplay = document.getElementById('twilioSidDisplay');
+          const phoneDisplay = document.getElementById('twilioPhoneDisplay');
+          if (sidDisplay) sidDisplay.textContent = config.twilioAccountSid;
+          if (phoneDisplay) phoneDisplay.textContent = config.selectedPhoneNumber || 'Not set';
+
+          // Hide cancel button on initial load
+          const cancelBtn = document.getElementById('cancelTwilioBtn');
+          if (cancelBtn) cancelBtn.style.display = 'none';
+        } else {
+          twilioStatusDiv.style.display = 'none';
+          twilioFormDiv.style.display = 'block';
+        }
+      }
+
+      // Show/hide OpenAI credentials based on configuration
+      const hasOpenAIKey = config.openaiApiKey;
+      const openaiStatusDiv = document.getElementById('openaiConfiguredStatus');
+      const openaiFormDiv = document.getElementById('openaiEditForm');
+
+      if (openaiStatusDiv && openaiFormDiv) {
+        if (hasOpenAIKey) {
+          openaiStatusDiv.style.display = 'block';
+          openaiFormDiv.style.display = 'none';
+
+          // Hide cancel button on initial load
+          const cancelBtn = document.getElementById('cancelOpenAIBtn');
+          if (cancelBtn) cancelBtn.style.display = 'none';
+        } else {
+          openaiStatusDiv.style.display = 'none';
+          openaiFormDiv.style.display = 'block';
+        }
       }
 
       const settingsContent = document.getElementById('settingsContent');
@@ -1904,7 +1997,7 @@
           // Clear password field for security
           document.getElementById('openaiApiKey').value = '';
 
-          // Update UI to hide setup prompt if all credentials are now set
+          // Update UI to hide setup prompt and switch to status view
           renderConfig();
         } else {
           alert('❌ Failed to save: ' + data.error);
@@ -1912,6 +2005,42 @@
       } catch (error) {
         alert('❌ Error: ' + error.message);
       }
+    }
+
+    // Toggle functions for credential display
+    function showTwilioEditForm() {
+      document.getElementById('twilioConfiguredStatus').style.display = 'none';
+      document.getElementById('twilioEditForm').style.display = 'block';
+      document.getElementById('cancelTwilioBtn').style.display = 'inline-block';
+
+      // Pre-fill current values (except auth token for security)
+      if (config.twilioAccountSid) {
+        document.getElementById('twilioAccountSid').value = config.twilioAccountSid;
+      }
+      if (config.selectedPhoneNumber) {
+        document.getElementById('twilioPhoneNumber').value = config.selectedPhoneNumber;
+      }
+    }
+
+    function cancelTwilioEdit() {
+      document.getElementById('twilioEditForm').style.display = 'none';
+      document.getElementById('twilioConfiguredStatus').style.display = 'block';
+      // Clear form fields
+      document.getElementById('twilioAccountSid').value = '';
+      document.getElementById('twilioAuthToken').value = '';
+      document.getElementById('twilioPhoneNumber').value = '';
+    }
+
+    function showOpenAIEditForm() {
+      document.getElementById('openaiConfiguredStatus').style.display = 'none';
+      document.getElementById('openaiEditForm').style.display = 'block';
+      document.getElementById('cancelOpenAIBtn').style.display = 'inline-block';
+    }
+
+    function cancelOpenAIEdit() {
+      document.getElementById('openaiEditForm').style.display = 'none';
+      document.getElementById('openaiConfiguredStatus').style.display = 'block';
+      document.getElementById('openaiApiKey').value = '';
     }
 
     // =========================================================================
