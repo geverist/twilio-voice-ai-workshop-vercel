@@ -120,9 +120,9 @@ export default async function handler(req, res) {
     // Use ConversationRelay to connect call to AI
     const connect = twiml.connect();
 
-    // ConversationRelay configuration
+    // ConversationRelay configuration - pointing to Railway WebSocket server
     const conversationRelay = connect.conversationRelay({
-      url: `wss://${req.headers.host}/api/workshop-websocket${sessionToken ? `?sessionToken=${encodeURIComponent(sessionToken)}` : ''}`,
+      url: `wss://workshop-websocket-server-production.up.railway.app/ws/${sessionToken || ''}`,
       voice: voice,
       welcomeGreeting: welcomeGreeting,
       dtmfDetection: true
