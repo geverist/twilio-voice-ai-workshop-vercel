@@ -91,6 +91,40 @@ export default async function handler(req, res) {
 
     console.log(`  → Using Twilio Account: ${accountSid}`);
 
+    // Fetch call details to get recording URL
+    console.log('  → Fetching call details for recording...');
+    const callUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Calls/${callSid}.json`;
+    const callResponse = await fetch(callUrl, {
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64')
+      }
+    });
+
+    let recordingUrl = null;
+    if (callResponse.ok) {
+      const callData = await callResponse.json();
+
+      // Fetch recordings for this call
+      const recordingsUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Calls/${callSid}/Recordings.json`;
+      const recordingsResponse = await fetch(recordingsUrl, {
+        headers: {
+          'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64')
+        }
+      });
+
+      if (recordingsResponse.ok) {
+        const recordingsData = await recordingsResponse.json();
+        if (recordingsData.recordings && recordingsData.recordings.length > 0) {
+          const recording = recordingsData.recordings[0];
+          // Construct the media URL for the recording
+          recordingUrl = `https://api.twilio.com${recording.uri.replace('.json', '.mp3')}`;
+          console.log(`  ✅ Found recording: ${recording.sid}`);
+        } else {
+          console.log('  ℹ️  No recordings found for this call');
+        }
+      }
+    }
+
     // Fetch call transcript from Twilio Intelligence API
     const transcriptUrl = `https://intelligence.twilio.com/v2/Transcripts?CallSid=${callSid}`;
 
@@ -108,6 +142,7 @@ export default async function handler(req, res) {
           success: true,
           transcript: null,
           sentences: [],
+          recordingUrl: recordingUrl,
           message: 'No transcript available. Intelligence may not be enabled or call is still processing.'
         });
       }
@@ -130,6 +165,7 @@ export default async function handler(req, res) {
         success: true,
         transcript: null,
         sentences: [],
+        recordingUrl: recordingUrl,
         message: 'No transcript available yet. Call may still be processing.'
       });
     }
@@ -171,12 +207,65 @@ export default async function handler(req, res) {
       .map(s => `${s.speaker}: ${s.text}`)
       .join('\n');
 
+    // Fetch sentiment analysis
+    console.log('  → Fetching sentiment analysis...');
+    let sentiment = null;
+    const sentimentUrl = `https://intelligence.twilio.com/v2/Transcripts/${transcriptSid}/Sentences?SentimentTag=positive,negative,neutral`;
+    const sentimentResponse = await fetch(sentimentUrl, {
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64')
+      }
+    });
+
+    if (sentimentResponse.ok) {
+      const sentimentData = await sentimentResponse.json();
+      // Calculate overall sentiment from sentences
+      const sentiments = { positive: 0, negative: 0, neutral: 0 };
+      sentimentData.sentences?.forEach(s => {
+        if (s.sentiment_tag) {
+          sentiments[s.sentiment_tag] = (sentiments[s.sentiment_tag] || 0) + 1;
+        }
+      });
+
+      // Determine overall sentiment
+      const total = sentiments.positive + sentiments.negative + sentiments.neutral;
+      if (total > 0) {
+        if (sentiments.positive > sentiments.negative && sentiments.positive > sentiments.neutral) {
+          sentiment = 'Positive';
+        } else if (sentiments.negative > sentiments.positive && sentiments.negative > sentiments.neutral) {
+          sentiment = 'Negative';
+        } else {
+          sentiment = 'Neutral';
+        }
+      }
+      console.log(`  ✅ Sentiment: ${sentiment || 'Unknown'}`);
+    }
+
+    // Fetch operators (language operators detect topics and entities)
+    console.log('  → Fetching language operators...');
+    let operators = [];
+    const operatorsUrl = `https://intelligence.twilio.com/v2/Transcripts/${transcriptSid}/OperatorResults`;
+    const operatorsResponse = await fetch(operatorsUrl, {
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64')
+      }
+    });
+
+    if (operatorsResponse.ok) {
+      const operatorsData = await operatorsResponse.json();
+      operators = operatorsData.operator_results || [];
+      console.log(`  ✅ Found ${operators.length} operator results`);
+    }
+
     return res.status(200).json({
       success: true,
       transcript: fullTranscript,
       sentences: formattedSentences,
       transcriptSid: transcriptSid,
       callSid: callSid,
+      recordingUrl: recordingUrl,
+      sentiment: sentiment,
+      operators: operators,
       metadata: {
         duration: transcript.duration,
         language: transcript.language_code,

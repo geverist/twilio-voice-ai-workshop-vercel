@@ -1823,6 +1823,39 @@
             </p>
           </div>
 
+          ${data.sentiment || data.metadata?.language ? `
+            <div class="settings-grid">
+              ${data.sentiment ? `
+                <div class="setting-card" style="background: ${data.sentiment === 'Positive' ? '#f0fdf4' : data.sentiment === 'Negative' ? '#fef2f2' : '#fef3c7'}; border-left: 4px solid ${data.sentiment === 'Positive' ? '#22c55e' : data.sentiment === 'Negative' ? '#ef4444' : '#f59e0b'};">
+                  <h4 style="color: ${data.sentiment === 'Positive' ? '#166534' : data.sentiment === 'Negative' ? '#991b1b' : '#92400e'}; margin-bottom: 5px;">
+                    ${data.sentiment === 'Positive' ? '😊' : data.sentiment === 'Negative' ? '😟' : '😐'} Sentiment
+                  </h4>
+                  <p style="color: ${data.sentiment === 'Positive' ? '#15803d' : data.sentiment === 'Negative' ? '#b91c1c' : '#b45309'}; font-size: 24px; font-weight: 600; margin: 0;">${data.sentiment}</p>
+                </div>
+              ` : ''}
+
+              ${data.metadata?.language ? `
+                <div class="setting-card" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
+                  <h4 style="color: #92400e; margin-bottom: 5px;">🗣️ Language</h4>
+                  <p style="color: #b45309; font-size: 18px; font-weight: 600; margin: 0;">${data.metadata.language || 'Unknown'}</p>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+
+          ${data.operators && data.operators.length > 0 ? `
+            <div class="setting-card" style="margin-top: 15px;">
+              <h4 style="color: #333; margin-bottom: 10px;">🏷️ Detected Topics & Entities</h4>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                ${data.operators.map(op => `
+                  <span style="background: #e0e7ff; color: #3730a3; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;">
+                    ${op.operator_type}: ${op.extracted_match || op.label || 'detected'}
+                  </span>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
           <div class="setting-card" style="margin-top: 15px;">
             <h4 style="color: #333; margin-bottom: 10px;">💬 Full Transcript</h4>
             <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; max-height: 400px; overflow-y: auto;">
@@ -1832,11 +1865,21 @@
 
           <div class="setting-card" style="margin-top: 15px;">
             <h4 style="color: #333; margin-bottom: 10px;">🎧 Recording</h4>
-            <audio controls style="width: 100%; margin-top: 10px;">
-              <source src="#" type="audio/mpeg">
-              Your browser does not support the audio element.
-            </audio>
-            <p style="color: #999; font-size: 12px; margin-top: 10px;">Recording URL will be available when call completes</p>
+            ${data.recordingUrl ? `
+              <audio controls style="width: 100%; margin-top: 10px;">
+                <source src="${data.recordingUrl}" type="audio/mpeg">
+                Your browser does not support the audio element.
+              </audio>
+              <p style="color: #666; font-size: 12px; margin-top: 10px;">
+                <a href="${data.recordingUrl}" target="_blank" style="color: #667eea; text-decoration: none;">⬇️ Download Recording</a>
+              </p>
+            ` : `
+              <div style="background: #fffbeb; padding: 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                <p style="color: #92400e; font-size: 13px; margin: 0;">
+                  ℹ️ No recording available. Make sure recording is enabled in your Twilio phone number settings.
+                </p>
+              </div>
+            `}
           </div>
         `;
       } catch (error) {
