@@ -1198,6 +1198,15 @@
         return;
       }
 
+      // Make sure we have a session token
+      if (!SESSION_TOKEN) {
+        alert('❌ Session token not found. Please reload the page.');
+        console.error('SESSION_TOKEN is empty:', SESSION_TOKEN);
+        return;
+      }
+
+      console.log('🔄 Regenerating prompts with sessionToken:', SESSION_TOKEN.substring(0, 20) + '...');
+
       // Show loading state
       const btn = event.target;
       const originalText = btn.textContent;
@@ -1205,15 +1214,19 @@
       btn.textContent = '⏳ Regenerating...';
 
       try {
+        const requestBody = {
+          sessionToken: SESSION_TOKEN,
+          useCaseDescription: useCaseDescription,
+          callDirection: callDirection,
+          skipInitialGreeting: skipInitialGreeting
+        };
+
+        console.log('📤 Request body:', JSON.stringify(requestBody, null, 2));
+
         const response = await fetch(`${API_BASE}/api/generate-use-case-content`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionToken: SESSION_TOKEN,
-            useCaseDescription: useCaseDescription,
-            callDirection: callDirection,
-            skipInitialGreeting: skipInitialGreeting
-          })
+          body: JSON.stringify(requestBody)
         });
 
         const data = await response.json();
