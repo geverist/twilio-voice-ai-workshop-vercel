@@ -294,7 +294,7 @@
             <p style="color: #666; font-size: 13px; margin: 10px 0;">Describe what your Voice AI does. Update this to regenerate all prompts.</p>
             <textarea id="useCaseEditor" style="min-height: 120px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;"></textarea>
             <button class="btn" onclick="updateUseCase()" style="margin-right: 10px;">💾 Save Use Case</button>
-            <button class="btn btn-secondary" onclick="regeneratePrompts()">✨ Regenerate AI Prompts</button>
+            <button class="btn btn-secondary" onclick="regeneratePrompts(event)">✨ Regenerate AI Prompts</button>
           </div>
 
           <h3 style="margin-top: 30px; color: #333;">Quick Actions</h3>
@@ -1188,7 +1188,7 @@
       }
     }
 
-    async function regeneratePrompts() {
+    async function regeneratePrompts(evt) {
       const useCaseDescription = document.getElementById('useCaseEditor').value.trim();
       const callDirection = config.callDirection || 'inbound';
       const skipInitialGreeting = config.skipInitialGreeting || false;
@@ -1208,12 +1208,16 @@
       console.log('🔄 Regenerating prompts with sessionToken:', SESSION_TOKEN.substring(0, 20) + '...');
 
       // Show loading state
-      const btn = event.target;
+      const btn = evt ? evt.target : event.target;
       const originalText = btn.textContent;
       btn.disabled = true;
       btn.textContent = '⏳ Regenerating...';
 
       try {
+        console.log('🔍 SESSION_TOKEN value:', SESSION_TOKEN);
+        console.log('🔍 SESSION_TOKEN type:', typeof SESSION_TOKEN);
+        console.log('🔍 SESSION_TOKEN length:', SESSION_TOKEN ? SESSION_TOKEN.length : 0);
+
         const requestBody = {
           sessionToken: SESSION_TOKEN,
           useCaseDescription: useCaseDescription,
