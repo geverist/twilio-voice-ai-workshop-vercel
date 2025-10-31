@@ -115,10 +115,12 @@ export default async function handler(req, res) {
     const phoneNumberSid = phoneNumbers[0].sid;
     console.log(`  → Phone number SID: ${phoneNumberSid}`);
 
-    // Construct the webhook URL using the request host (stable domain)
-    const baseUrl = req.headers.host.includes('localhost')
-      ? `http://${req.headers.host}`
-      : `https://${req.headers.host}`;
+    // Construct the webhook URL
+    const baseUrl = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : req.headers.host.includes('localhost')
+        ? `http://${req.headers.host}`
+        : `https://${req.headers.host}`;
 
     const webhookUrl = `${baseUrl}/api/voice-handler?sessionToken=${encodeURIComponent(sessionToken)}`;
 
