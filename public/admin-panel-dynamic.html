@@ -1016,7 +1016,7 @@
         'amazon': 'Amazon Transcribe',
         'azure': 'Azure Speech'
       };
-      return providers[provider] || 'Unknown';
+      return providers[provider] || providers['deepgram']; // Default to Deepgram
     }
 
     async function updateSystemPrompt() {
