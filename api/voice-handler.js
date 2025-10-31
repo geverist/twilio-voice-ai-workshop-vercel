@@ -131,9 +131,13 @@ export default async function handler(req, res) {
     // ConversationRelay configuration
     const conversationRelay = connect.conversationRelay({
       url: `wss://${req.headers.host}/api/workshop-websocket${sessionToken ? `?sessionToken=${encodeURIComponent(sessionToken)}` : ''}`,
-      voice: voice,
       welcomeGreeting: welcomeGreeting,
       dtmfDetection: true
+    });
+
+    // Set TTS configuration using the tts() method
+    conversationRelay.tts({
+      voice: voice
     });
 
     // Set response headers for TwiML
