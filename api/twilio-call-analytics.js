@@ -3,12 +3,11 @@
  *
  * Fetches call logs and analytics from Twilio API for a given phone number
  * Returns metrics like call count, duration, status, and detailed call logs
+ * Credentials are automatically loaded from database based on sessionToken
  *
  * POST /api/twilio-call-analytics
  * Body: {
- *   sessionToken: string,
- *   accountSid?: string,    // Optional - will try localStorage if not provided
- *   authToken?: string       // Optional - will try localStorage if not provided
+ *   sessionToken: string (required)
  * }
  */
 
@@ -42,7 +41,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { sessionToken, accountSid, authToken } = req.body;
+    const { sessionToken } = req.body;
 
     // Validation
     if (!sessionToken) {
@@ -52,18 +51,14 @@ export default async function handler(req, res) {
       });
     }
 
-    if (!accountSid || !authToken) {
-      return res.status(400).json({
-        success: false,
-        error: 'Twilio credentials (accountSid and authToken) are required'
-      });
-    }
-
     console.log(`📊 Fetching call analytics for session: ${sessionToken.substring(0, 20)}...`);
 
-    // Get student config to find their phone number
+    // Get student config to find their phone number and Twilio credentials
     const configs = await sql`
-      SELECT selected_phone_number
+      SELECT
+        selected_phone_number,
+        twilio_account_sid,
+        twilio_auth_token
       FROM student_configs
       WHERE session_token = ${sessionToken}
       LIMIT 1
@@ -76,7 +71,18 @@ export default async function handler(req, res) {
       });
     }
 
-    const phoneNumber = configs[0].selected_phone_number;
+    const config = configs[0];
+    const phoneNumber = config.selected_phone_number;
+    const accountSid = config.twilio_account_sid;
+    const authToken = config.twilio_auth_token;
+
+    // Check if Twilio credentials are configured
+    if (!accountSid || !authToken) {
+      return res.status(400).json({
+        success: false,
+        error: 'Twilio credentials not found. Please connect your Twilio account in Settings first.'
+      });
+    }
 
     if (!phoneNumber) {
       return res.status(200).json({
@@ -93,13 +99,15 @@ export default async function handler(req, res) {
       });
     }
 
+    console.log(`  → Using Twilio Account: ${accountSid}`);
+    console.log(`  → Fetching calls for phone: ${phoneNumber}`);
+
     // Fetch calls from Twilio API
     // Get calls from the last 30 days
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 30);
     const startDateStr = startDate.toISOString().split('T')[0];
 
-    console.log(`  → Fetching calls for phone: ${phoneNumber}`);
     console.log(`  → From date: ${startDateStr}`);
 
     // Build Twilio API URL with filters
