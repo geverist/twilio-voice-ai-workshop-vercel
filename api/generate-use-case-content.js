@@ -134,7 +134,7 @@ CRITICAL REQUIREMENTS:
 - ONLY customize: opening role description and the example User/You interactions${skipInitialGreeting && callDirection === 'outbound' ? ', AND add personalized greeting instructions in "# Initial Greeting" section' : ''}
 
 Also generate:
-- "ivrGreeting": ${skipInitialGreeting ? 'Return empty string "" because the AI will handle the greeting dynamically in the conversation' : `Friendly ${callDirection} greeting (1-2 sentences)`}
+- "ivrGreeting": ${skipInitialGreeting ? 'Return empty string "" because the AI will handle the greeting dynamically in the conversation' : `Friendly ${callDirection} greeting (1-2 sentences) that includes a brief recording disclaimer like "This call may be recorded for quality and training purposes."`}
 - "exampleQuestions": Array of 3-4 realistic questions
 - "suggestedVoice": Voice type recommendation
 

@@ -322,20 +322,27 @@
               <p>Check Twilio Console</p>
               <button class="btn" onclick="window.open('https://console.twilio.com/us1/monitor/logs/calls?frameUrl=%2Fconsole%2Fvoice%2Fcalls%2Flogs%3Fx-target-region%3Dus1', '_blank')">Open Logs</button>
             </div>
-            <div class="setting-card" style="border-left: 4px solid #f59e0b;">
-              <h3>⚙️ Webhook Configuration</h3>
-              <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Configure your Twilio phone number to use this webhook URL:</p>
+            <div class="setting-card" style="border-left: 4px solid #f59e0b; background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);">
+              <h3 style="color: #92400e;">⚙️ Webhook Configuration (Required)</h3>
+              <div style="background: #fef3c7; padding: 12px; border-radius: 6px; border-left: 3px solid #f59e0b; margin-bottom: 12px;">
+                <p style="font-size: 13px; color: #78350f; margin: 0; line-height: 1.6;">
+                  <strong>🚨 Important:</strong> To see real-time prompt and voice changes, you MUST configure your Twilio phone number with this webhook URL. Without this, changes won't take effect.
+                </p>
+              </div>
+              <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Copy this URL and paste it into your Twilio phone number's "A Call Comes In" webhook setting:</p>
               <div style="background: #fffbeb; padding: 12px; border-radius: 6px; border: 1px solid #fde047; margin-bottom: 10px;">
                 <div style="font-family: monospace; font-size: 11px; word-break: break-all; color: #854d0e;" id="webhookUrlDisplay">
                   Loading...
                 </div>
               </div>
-              <button class="btn btn-secondary" onclick="copyWebhookUrl()" style="font-size: 13px;">
-                📋 Copy Webhook URL
-              </button>
-              <button class="btn" onclick="window.open('https://console.twilio.com/us1/develop/phone-numbers/manage/incoming', '_blank')" style="font-size: 13px; margin-left: 10px;">
-                🔧 Configure in Twilio
-              </button>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="copyWebhookUrl()" style="font-size: 13px;">
+                  📋 Copy Webhook URL
+                </button>
+                <button class="btn" onclick="window.open('https://console.twilio.com/us1/develop/phone-numbers/manage/incoming', '_blank')" style="font-size: 13px;">
+                  🔧 Configure in Twilio
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1734,40 +1741,69 @@
       const detailsDiv = document.getElementById(`${callId}-details`);
 
       try {
-        // For now, show placeholder data
-        // TODO: Call Intelligence API endpoint
+        console.log(`🧠 Loading Intelligence data for call: ${callId}`);
+
+        // Call Intelligence API to fetch transcript
+        const response = await fetch(`${API_BASE}/api/twilio-intelligence`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN,
+            callSid: callId
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to load Intelligence data');
+        }
+
+        console.log(`✅ Intelligence data loaded:`, data);
+
+        // Format transcript display
+        let transcriptHtml = '';
+        if (data.sentences && data.sentences.length > 0) {
+          transcriptHtml = data.sentences.map(sentence => {
+            const speakerColor = sentence.speaker === 'User' ? '#667eea' : '#4fc1ff';
+            const speakerIcon = sentence.speaker === 'User' ? '👤' : '🤖';
+            return `
+              <div style="margin-bottom: 15px;">
+                <div style="color: ${speakerColor}; font-weight: 600; margin-bottom: 5px;">
+                  ${speakerIcon} ${sentence.speaker}
+                </div>
+                <div style="color: #333; line-height: 1.6; padding-left: 25px;">
+                  ${sentence.text}
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else if (data.transcript) {
+          // Fallback to plain transcript text
+          transcriptHtml = `<div style="color: #333; line-height: 1.8; white-space: pre-wrap;">${data.transcript}</div>`;
+        } else {
+          transcriptHtml = `
+            <div style="background: #fffbeb; padding: 12px; border-radius: 6px; border-left: 3px solid #f59e0b;">
+              <p style="color: #92400e; font-size: 13px; margin: 0;">
+                ℹ️ ${data.message || 'No transcript available yet. Intelligence may not be enabled or call may still be processing.'}
+              </p>
+            </div>
+          `;
+        }
+
+        // Display the intelligence data
         detailsDiv.innerHTML = `
           <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #0284c7;">
             <h4 style="color: #0c4a6e; margin-bottom: 10px;">📊 Conversational Intelligence</h4>
             <p style="color: #075985; font-size: 13px; margin: 0;">
-              ℹ️ Intelligence data will be available here once the Twilio Intelligence API is integrated.
-              This will include transcripts, summaries, sentiment analysis, and language operators.
-            </p>
-          </div>
-
-          <div class="settings-grid">
-            <div class="setting-card" style="background: #f0fdf4; border-left: 4px solid #22c55e;">
-              <h4 style="color: #166534; margin-bottom: 5px;">😊 Sentiment</h4>
-              <p style="color: #15803d; font-size: 24px; font-weight: 600; margin: 0;">Positive</p>
-            </div>
-
-            <div class="setting-card" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
-              <h4 style="color: #92400e; margin-bottom: 5px;">🗣️ Language</h4>
-              <p style="color: #b45309; font-size: 18px; font-weight: 600; margin: 0;">English</p>
-            </div>
-          </div>
-
-          <div class="setting-card" style="margin-top: 15px;">
-            <h4 style="color: #333; margin-bottom: 10px;">📝 Summary</h4>
-            <p style="color: #666; font-size: 14px; line-height: 1.6;">
-              Summary will be generated from the call transcript using Twilio's AI-powered intelligence features.
+              ${data.transcript ? '✅ Transcript successfully loaded from Twilio Intelligence' : 'ℹ️ Transcript not yet available'}
             </p>
           </div>
 
           <div class="setting-card" style="margin-top: 15px;">
             <h4 style="color: #333; margin-bottom: 10px;">💬 Full Transcript</h4>
             <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; max-height: 400px; overflow-y: auto;">
-              <p style="color: #999; font-size: 13px; font-style: italic;">Transcript will appear here...</p>
+              ${transcriptHtml}
             </div>
           </div>
 
@@ -1784,8 +1820,11 @@
         console.error('Error loading intelligence:', error);
         detailsDiv.innerHTML = `
           <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444;">
-            <h4 style="color: #991b1b; margin-bottom: 5px;">❌ Error</h4>
+            <h4 style="color: #991b1b; margin-bottom: 5px;">❌ Error Loading Intelligence</h4>
             <p style="color: #b91c1c; font-size: 13px; margin: 0;">${error.message}</p>
+            <p style="color: #b91c1c; font-size: 12px; margin-top: 8px;">
+              💡 Make sure Twilio Conversational Intelligence is enabled for your account.
+            </p>
           </div>
         `;
       }
