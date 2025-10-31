@@ -987,7 +987,7 @@
 
       // Initialize AI Configuration controls
       const aiProvider = config.aiProvider || 'openai';
-      const ttsProvider = config.ttsProvider || 'elevenlabs';
+      const ttsProvider = config.ttsProvider || 'deepgram';
 
       document.getElementById('aiProviderSelect').value = aiProvider;
       document.getElementById('ttsProviderSelect').value = ttsProvider;
@@ -1032,7 +1032,7 @@
         'deepgram': 'Deepgram Aura',
         'amazon': 'Amazon Polly'
       };
-      return providers[provider] || 'Unknown';
+      return providers[provider] || providers['deepgram']; // Default to Deepgram
     }
 
     function getSTTProviderName(provider) {
@@ -1641,7 +1641,14 @@
           { value: 'aura-asteria-en', label: 'Asteria (Warm)' },
           { value: 'aura-luna-en', label: 'Luna (Professional)' },
           { value: 'aura-stella-en', label: 'Stella (Friendly)' },
-          { value: 'aura-athena-en', label: 'Athena (Authoritative)' }
+          { value: 'aura-athena-en', label: 'Athena (Authoritative)' },
+          { value: 'aura-orion-en', label: 'Orion (Deep Male)' },
+          { value: 'aura-arcas-en', label: 'Arcas (Confident Male)' },
+          { value: 'aura-perseus-en', label: 'Perseus (Strong Male)' },
+          { value: 'aura-angus-en', label: 'Angus (Raspy Male)' },
+          { value: 'aura-orpheus-en', label: 'Orpheus (Smooth Male)' },
+          { value: 'aura-helios-en', label: 'Helios (Energetic Male)' },
+          { value: 'aura-zeus-en', label: 'Zeus (Powerful Male)' }
         ],
         'amazon': [
           { value: 'Joanna', label: 'Joanna (Female, US)' },
