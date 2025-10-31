@@ -336,13 +336,17 @@
                 </div>
               </div>
               <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button class="btn btn-secondary" onclick="copyWebhookUrl()" style="font-size: 13px;">
-                  📋 Copy Webhook URL
+                <button class="btn" onclick="autoConfigureWebhook()" style="font-size: 13px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                  ⚡ Auto-Configure Webhook
                 </button>
-                <button class="btn" onclick="window.open('https://console.twilio.com/us1/develop/phone-numbers/manage/incoming', '_blank')" style="font-size: 13px;">
-                  🔧 Configure in Twilio
+                <button class="btn btn-secondary" onclick="copyWebhookUrl()" style="font-size: 13px;">
+                  📋 Copy URL (Manual)
+                </button>
+                <button class="btn btn-secondary" onclick="window.open('https://console.twilio.com/us1/develop/phone-numbers/manage/incoming', '_blank')" style="font-size: 13px;">
+                  🔧 Twilio Console
                 </button>
               </div>
+              <div id="webhookConfigStatus" style="margin-top: 10px; display: none;"></div>
             </div>
           </div>
         </div>
@@ -1308,6 +1312,59 @@
       });
     }
 
+    async function autoConfigureWebhook() {
+      const statusDiv = document.getElementById('webhookConfigStatus');
+
+      // Show loading status
+      statusDiv.style.display = 'block';
+      statusDiv.innerHTML = `
+        <div style="background: #e0e7ff; padding: 12px; border-radius: 6px; border-left: 3px solid #6366f1;">
+          <p style="color: #312e81; font-size: 13px; margin: 0;">
+            ⏳ Configuring webhook automatically...
+          </p>
+        </div>
+      `;
+
+      try {
+        console.log('🔧 Auto-configuring webhook...');
+
+        const response = await fetch(`${API_BASE}/api/twilio-configure-webhook`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          console.log('✅ Webhook configured:', data);
+          statusDiv.innerHTML = `
+            <div style="background: #d1fae5; padding: 12px; border-radius: 6px; border-left: 3px solid #10b981;">
+              <p style="color: #064e3b; font-size: 13px; margin: 0;">
+                ✅ <strong>Webhook configured successfully!</strong><br>
+                Phone: ${data.phoneNumber}<br>
+                Your voice and prompt changes will now work immediately on this number.
+              </p>
+            </div>
+          `;
+        } else {
+          throw new Error(data.error || 'Configuration failed');
+        }
+      } catch (error) {
+        console.error('Webhook configuration error:', error);
+        statusDiv.innerHTML = `
+          <div style="background: #fee2e2; padding: 12px; border-radius: 6px; border-left: 3px solid #ef4444;">
+            <p style="color: #991b1b; font-size: 13px; margin: 0;">
+              ❌ ${error.message}<br>
+              <span style="font-size: 12px;">Make sure you have saved your Twilio credentials and selected a phone number.</span>
+            </p>
+          </div>
+        `;
+      }
+    }
+
     function showTab(tabName) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
@@ -2137,7 +2194,6 @@
         const data = await response.json();
 
         if (data.success) {
-          alert('✅ Twilio credentials saved successfully!');
           config.twilioAccountSid = accountSid;
           config.twilioAuthToken = authToken;
           config.selectedPhoneNumber = phoneNumber;
@@ -2147,6 +2203,12 @@
 
           // Update UI to hide setup prompt if all credentials are now set
           renderConfig();
+
+          // Automatically configure webhook
+          console.log('🔧 Twilio credentials saved, auto-configuring webhook...');
+          await autoConfigureWebhook();
+
+          alert('✅ Twilio credentials saved and webhook configured automatically!\n\nYou can now make test calls and see your changes in real-time.');
         } else {
           alert('❌ Failed to save: ' + data.error);
         }
@@ -2304,11 +2366,16 @@
         const data = await response.json();
 
         if (data.success) {
-          alert(`✅ Phone number updated to: ${selectedNumber}`);
           config.selectedPhoneNumber = selectedNumber;
 
           // Update displays
           renderConfig();
+
+          // Automatically configure webhook
+          console.log('📞 Phone number saved, auto-configuring webhook...');
+          await autoConfigureWebhook();
+
+          alert(`✅ Phone number updated and webhook configured automatically!\n\nYou can now make test calls and see your changes in real-time.`);
         } else {
           alert('❌ Failed to save: ' + data.error);
         }
