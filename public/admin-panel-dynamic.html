@@ -1188,6 +1188,73 @@
       }
     }
 
+    async function regeneratePrompts() {
+      const useCaseDescription = document.getElementById('useCaseEditor').value.trim();
+      const callDirection = config.callDirection || 'inbound';
+      const skipInitialGreeting = config.skipInitialGreeting || false;
+
+      if (!useCaseDescription) {
+        alert('❌ Please enter a use case description first');
+        return;
+      }
+
+      // Show loading state
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '⏳ Regenerating...';
+
+      try {
+        const response = await fetch(`${API_BASE}/api/generate-use-case-content`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken: SESSION_TOKEN,
+            useCaseDescription: useCaseDescription,
+            callDirection: callDirection,
+            skipInitialGreeting: skipInitialGreeting
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update the prompts in the UI
+          document.getElementById('systemPromptEditor').value = data.content.systemPrompt;
+          document.getElementById('ivrGreetingEditor').value = data.content.ivrGreeting;
+
+          // Save the regenerated prompts to the database
+          const updateResponse = await fetch(`${API_BASE}/api/student-config-update`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionToken: SESSION_TOKEN,
+              systemPrompt: data.content.systemPrompt,
+              ivrGreeting: data.content.ivrGreeting
+            })
+          });
+
+          const updateData = await updateResponse.json();
+
+          if (updateData.success) {
+            config.systemPrompt = data.content.systemPrompt;
+            config.ivrGreeting = data.content.ivrGreeting;
+            alert('✅ AI prompts regenerated and saved successfully!');
+          } else {
+            alert('⚠️ Prompts regenerated but failed to save: ' + updateData.error);
+          }
+        } else {
+          alert('❌ Failed to regenerate: ' + data.error);
+        }
+      } catch (error) {
+        alert('❌ Error: ' + error.message);
+      } finally {
+        // Restore button state
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
     function showTab(tabName) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
