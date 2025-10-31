@@ -82,6 +82,7 @@ export default async function handler(req, res) {
 
     // Fetch student's configuration if sessionToken is provided
     if (sessionToken) {
+      console.log(`🔍 Fetching config for sessionToken: ${sessionToken.substring(0, 20)}...`);
       try {
         const configs = await sql`
           SELECT
@@ -92,8 +93,16 @@ export default async function handler(req, res) {
           WHERE session_token = ${sessionToken}
         `;
 
+        console.log(`📊 Found ${configs.length} config(s) for session token`);
+
         if (configs.length > 0) {
           const config = configs[0];
+          console.log(`📦 Raw config from DB:`, JSON.stringify({
+            tts_provider: config.tts_provider,
+            selected_voice: config.selected_voice,
+            ivr_greeting: config.ivr_greeting?.substring(0, 50)
+          }));
+
           ttsProvider = config.tts_provider || 'elevenlabs';
           selectedVoice = config.selected_voice || 'Xb7hH8MSUJpSbSDYk0k2';
           welcomeGreeting = config.ivr_greeting || welcomeGreeting;
@@ -101,11 +110,16 @@ export default async function handler(req, res) {
           // Map TTS provider and voice to ConversationRelay format
           voice = mapVoiceToConversationRelay(ttsProvider, selectedVoice);
 
-          console.log(`✅ Loaded config for session ${sessionToken.substring(0, 8)}: provider=${ttsProvider}, voice=${selectedVoice} → ${voice}`);
+          console.log(`✅ VOICE CONFIG: provider=${ttsProvider}, voiceId=${selectedVoice} → ConversationRelay voice="${voice}"`);
+        } else {
+          console.warn(`⚠️  No config found for session token, using defaults`);
         }
       } catch (dbError) {
-        console.warn('Failed to fetch student config, using defaults:', dbError.message);
+        console.error('❌ Failed to fetch student config:', dbError.message);
+        console.warn('⚠️  Using default configuration');
       }
+    } else {
+      console.warn('⚠️  No sessionToken provided, using default configuration');
     }
 
     // Create TwiML response with ConversationRelay
@@ -124,9 +138,13 @@ export default async function handler(req, res) {
 
     // Set response headers for TwiML
     res.setHeader('Content-Type', 'text/xml');
-    res.status(200).send(twiml.toString());
+    const twimlString = twiml.toString();
+    res.status(200).send(twimlString);
 
     console.log(`✅ Generated TwiML for session: ${sessionToken || 'anonymous'}`);
+    console.log(`🎤 FINAL VOICE USED: "${voice}"`);
+    console.log(`💬 FINAL GREETING: "${welcomeGreeting.substring(0, 50)}..."`);
+    console.log(`📝 TwiML (first 500 chars): ${twimlString.substring(0, 500)}`);
 
   } catch (error) {
     console.error('Error generating TwiML:', error);
