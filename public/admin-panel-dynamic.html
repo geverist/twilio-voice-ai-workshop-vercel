@@ -1639,48 +1639,14 @@
       document.getElementById('analyticsEmpty').style.display = 'none';
 
       try {
-        // Get Twilio credentials from workshop progress
-        let accountSid = null;
-        let authToken = null;
-
-        // First try: Get from workshop progress (stored as object)
-        try {
-          const storageKey = `workshop_progress_${SESSION_TOKEN}`;
-          const progressData = localStorage.getItem(storageKey);
-          if (progressData) {
-            const progress = JSON.parse(progressData);
-            if (progress.twilioCredentials) {
-              accountSid = progress.twilioCredentials.accountSid;
-              authToken = progress.twilioCredentials.authToken;
-              console.log('✅ Loaded Twilio credentials from workshop progress');
-            }
-          }
-        } catch (parseError) {
-          console.warn('Could not parse workshop progress:', parseError);
-        }
-
-        // Second try: Get from separate localStorage keys (legacy/fallback)
-        if (!accountSid || !authToken) {
-          accountSid = localStorage.getItem('twilioAccountSid');
-          authToken = localStorage.getItem('twilioAuthToken');
-          if (accountSid && authToken) {
-            console.log('✅ Loaded Twilio credentials from localStorage keys');
-          }
-        }
-
-        if (!accountSid || !authToken) {
-          throw new Error('Twilio credentials not found. Please connect your Twilio account in the workshop first.');
-        }
-
         console.log('📊 Fetching call analytics...');
 
+        // API will load credentials from database using sessionToken
         const response = await fetch(`${API_BASE}/api/twilio-call-analytics`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            sessionToken: SESSION_TOKEN,
-            accountSid: accountSid,
-            authToken: authToken
+            sessionToken: SESSION_TOKEN
           })
         });
 
