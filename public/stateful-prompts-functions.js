@@ -40,6 +40,17 @@ function toggleStatefulMode() {
   const statefulMode = document.getElementById('statefulPromptMode');
 
   if (statefulModeEnabled) {
+    // If enabling stateful mode for first time with no states, create initial state from existing prompt
+    if (conversationStates.length === 0 && config.systemPrompt) {
+      conversationStates = [{
+        id: `state_${Date.now()}`,
+        name: 'Initial State',
+        isDefault: true,
+        systemPrompt: config.systemPrompt,
+        transitions: []
+      }];
+    }
+
     simpleMode.style.display = 'none';
     statefulMode.style.display = 'block';
     renderStates();
