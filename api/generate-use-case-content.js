@@ -3,11 +3,18 @@
  *
  * POST /api/generate-use-case-content
  * Body: {
+ *   sessionToken: string (required),
  *   useCaseDescription: string,
- *   callDirection: 'inbound' | 'outbound',
- *   openaiApiKey: string
+ *   callDirection: 'inbound' | 'outbound'
  * }
  */
+
+import postgres from 'postgres';
+
+const sql = postgres(process.env.POSTGRES_URL, {
+  ssl: 'require',
+  max: 1
+});
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -24,9 +31,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { useCaseDescription, callDirection, openaiApiKey, skipInitialGreeting } = req.body;
+    const { sessionToken, useCaseDescription, callDirection, skipInitialGreeting } = req.body;
 
     // Validation
+    if (!sessionToken) {
+      return res.status(400).json({ error: 'sessionToken is required' });
+    }
+
     if (!useCaseDescription || !useCaseDescription.trim()) {
       return res.status(400).json({ error: 'Use case description is required' });
     }
@@ -35,8 +46,22 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Valid call direction is required (inbound or outbound)' });
     }
 
+    // Get OpenAI API key from database
+    const configs = await sql`
+      SELECT openai_api_key
+      FROM student_configs
+      WHERE session_token = ${sessionToken}
+      LIMIT 1
+    `;
+
+    if (configs.length === 0) {
+      return res.status(404).json({ error: 'Configuration not found' });
+    }
+
+    const openaiApiKey = configs[0].openai_api_key;
+
     if (!openaiApiKey || !openaiApiKey.startsWith('sk-')) {
-      return res.status(400).json({ error: 'Valid OpenAI API key is required' });
+      return res.status(400).json({ error: 'Valid OpenAI API key is required. Please configure your API key in Settings.' });
     }
 
     console.log('🤖 Generating content for use case:', useCaseDescription.substring(0, 100));
