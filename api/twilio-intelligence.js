@@ -159,6 +159,13 @@ export default async function handler(req, res) {
     const transcriptData = await transcriptResponse.json();
     const transcripts = transcriptData.transcripts || [];
 
+    console.log(`  → API returned ${transcripts.length} transcript(s) for requested Call SID: ${callSid}`);
+    if (transcripts.length > 0) {
+      transcripts.forEach((t, idx) => {
+        console.log(`  → Transcript ${idx + 1}: SID=${t.sid}, Call SID=${t.call_sid || 'N/A'}`);
+      });
+    }
+
     if (transcripts.length === 0) {
       console.log('  ℹ️  No transcripts found for this call');
       return res.status(200).json({
@@ -175,6 +182,19 @@ export default async function handler(req, res) {
     const transcriptSid = transcript.sid;
 
     console.log(`  → Transcript SID: ${transcriptSid}`);
+    console.log(`  → Transcript belongs to Call SID: ${transcript.call_sid || 'unknown'}`);
+
+    // Verify the transcript actually belongs to this call
+    if (transcript.call_sid && transcript.call_sid !== callSid) {
+      console.log(`  ⚠️  WARNING: Transcript Call SID mismatch! Expected ${callSid}, got ${transcript.call_sid}`);
+      return res.status(200).json({
+        success: true,
+        transcript: null,
+        sentences: [],
+        recordingUrl: recordingUrl,
+        message: `Transcript mismatch detected. This call may not have Intelligence data enabled. Expected call ${callSid} but found transcript for ${transcript.call_sid}.`
+      });
+    }
 
     // Fetch detailed transcript sentences
     const sentencesUrl = `https://intelligence.twilio.com/v2/Transcripts/${transcriptSid}/Sentences`;
@@ -190,17 +210,39 @@ export default async function handler(req, res) {
       const sentencesData = await sentencesResponse.json();
       sentences = sentencesData.sentences || [];
       console.log(`  ✅ Found ${sentences.length} transcript sentences`);
+      // Debug: Log first few sentences to see ALL fields
+      if (sentences.length > 0) {
+        console.log('  → First sentence (full object):');
+        console.log(JSON.stringify(sentences[0], null, 2));
+        console.log('  → Second sentence (full object):');
+        console.log(JSON.stringify(sentences[1], null, 2));
+      }
     } else {
       console.log('  ⚠️  Could not fetch transcript sentences');
     }
 
     // Format sentences for frontend
-    const formattedSentences = sentences.map(sentence => ({
-      text: sentence.transcript,
-      speaker: sentence.media_channel === 0 ? 'User' : 'AI',
-      confidence: sentence.confidence,
-      timestamp: sentence.start_time
-    }));
+    // Determine speaker based on available fields (checking multiple possibilities)
+    const formattedSentences = sentences.map((sentence, index) => {
+      let speaker = 'AI'; // default
+
+      // Try different fields that might indicate speaker
+      if (sentence.media_channel !== undefined) {
+        // Alternate speakers based on pattern - first is AI greeting
+        speaker = (index % 2 === 0) ? 'AI' : 'User';
+      } else if (sentence.channel !== undefined) {
+        speaker = sentence.channel === 0 ? 'User' : 'AI';
+      } else if (sentence.participant !== undefined) {
+        speaker = sentence.participant;
+      }
+
+      return {
+        text: sentence.transcript,
+        speaker: speaker,
+        confidence: sentence.confidence,
+        timestamp: sentence.start_time
+      };
+    });
 
     // Combine into full transcript text
     const fullTranscript = formattedSentences

@@ -1709,7 +1709,7 @@
 
         return `
           <div class="setting-card" style="margin-bottom: 15px; border-left: 4px solid ${statusColor};">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer;" onclick="toggleCallDetails('${callId}')">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer;" onclick="toggleCallDetails('${callId}', '${call.sid}')">
               <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px; flex-wrap: wrap;">
                   <h4 style="margin: 0; color: #333;">${formatDateTime(call.startTime)}</h4>
@@ -1741,7 +1741,7 @@
       }).join('');
     }
 
-    function toggleCallDetails(callId) {
+    function toggleCallDetails(callId, callSid) {
       const detailsDiv = document.getElementById(`${callId}-details`);
       const icon = document.getElementById(`${callId}-icon`);
 
@@ -1750,9 +1750,8 @@
         icon.style.transform = 'rotate(180deg)';
         icon.textContent = '▲';
 
-        // Load intelligence data for this call
-        const callSid = callId; // Extract from the card data
-        loadCallIntelligence(callId);
+        // Load intelligence data for this call using the actual Twilio Call SID
+        loadCallIntelligence(callId, callSid);
       } else {
         detailsDiv.style.display = 'none';
         icon.style.transform = 'rotate(0deg)';
@@ -1760,11 +1759,11 @@
       }
     }
 
-    async function loadCallIntelligence(callId) {
+    async function loadCallIntelligence(callId, callSid) {
       const detailsDiv = document.getElementById(`${callId}-details`);
 
       try {
-        console.log(`🧠 Loading Intelligence data for call: ${callId}`);
+        console.log(`🧠 Loading Intelligence data for call: ${callSid}`);
 
         // Call Intelligence API to fetch transcript
         const response = await fetch(`${API_BASE}/api/twilio-intelligence`, {
@@ -1772,7 +1771,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionToken: SESSION_TOKEN,
-            callSid: callId
+            callSid: callSid
           })
         });
 
