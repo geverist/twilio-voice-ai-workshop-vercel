@@ -125,7 +125,8 @@ export default async function handler(req, res) {
       url: `wss://workshop-websocket-server-production.up.railway.app/ws/${sessionToken || ''}`,
       voice: voice,
       welcomeGreeting: welcomeGreeting,
-      dtmfDetection: true
+      dtmfDetection: true,
+      statusCallback: `https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=${sessionToken || ''}`
     });
 
     // Set response headers for TwiML
