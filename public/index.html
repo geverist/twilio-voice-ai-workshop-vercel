@@ -11369,6 +11369,9 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
     // Speech Recognition Hints (helps with domain-specific terms)
     // hints: 'Twilio,ConversationRelay,WebSocket,API'
+
+    // Status Callback for Intelligence Transcripts
+    statusCallback: 'https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=' + (event.sessionToken || '')
   });
 
   callback(null, response);
@@ -11702,7 +11705,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     ttsProvider: '${getConversationRelayTTSProvider(ttsProvider)}',${customWelcomeGreeting ? `
     welcomeGreeting: '${customWelcomeGreeting.replace(/'/g, "\\'")}',` : `
     // welcomeGreeting omitted - AI waits for caller to speak first`}
-    dtmfDetection: true
+    dtmfDetection: true,
+    statusCallback: 'https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=' + (event.sessionToken || '')
   });
 
   callback(null, response);
@@ -11865,6 +11869,9 @@ ${greetingLine}
 
     // Speech Recognition Hints (helps with domain-specific terms)
 ${hintsLine}${intelligenceLine}
+
+    // Status Callback for Intelligence Transcripts
+    statusCallback: 'https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=' + (event.sessionToken || '')
   });
 
   callback(null, response);
@@ -15273,6 +15280,9 @@ app.get('/health', (req, res) => {
 
     // Speech Recognition Hints (helps with domain-specific terms)
     // hints: 'Twilio,ConversationRelay,WebSocket,API'
+
+    // Status Callback for Intelligence Transcripts
+    statusCallback: 'https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=' + (event.sessionToken || '')
   });
 
   callback(null, response);
