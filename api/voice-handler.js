@@ -71,6 +71,7 @@ export default async function handler(req, res) {
     let welcomeGreeting = 'Hello! I am your AI assistant. How can I help you today?';
     let ttsProvider = 'elevenlabs';
     let selectedVoice = 'Xb7hH8MSUJpSbSDYk0k2'; // ElevenLabs default (Alice)
+    let ciServiceSid = null; // Intelligence Service SID
 
     // Fetch student's configuration if sessionToken is provided
     if (sessionToken) {
@@ -80,7 +81,8 @@ export default async function handler(req, res) {
           SELECT
             tts_provider,
             selected_voice,
-            ivr_greeting
+            ivr_greeting,
+            ci_service_sid
           FROM student_configs
           WHERE session_token = ${sessionToken}
         `;
@@ -98,11 +100,15 @@ export default async function handler(req, res) {
           ttsProvider = config.tts_provider || 'elevenlabs';
           selectedVoice = config.selected_voice || 'Xb7hH8MSUJpSbSDYk0k2';
           welcomeGreeting = config.ivr_greeting || welcomeGreeting;
+          ciServiceSid = config.ci_service_sid || null;
 
           // Map TTS provider and voice to ConversationRelay format
           voice = mapVoiceToConversationRelay(ttsProvider, selectedVoice);
 
           console.log(`✅ VOICE CONFIG: provider=${ttsProvider}, voiceId=${selectedVoice} → ConversationRelay voice="${voice}"`);
+          if (ciServiceSid) {
+            console.log(`✅ Intelligence Service: ${ciServiceSid}`);
+          }
         } else {
           console.warn(`⚠️  No config found for session token, using defaults`);
         }
@@ -124,12 +130,19 @@ export default async function handler(req, res) {
     });
 
     // ConversationRelay configuration - pointing to Railway WebSocket server
-    const conversationRelay = connect.conversationRelay({
+    const relayConfig = {
       url: `wss://workshop-websocket-server-production.up.railway.app/ws/${sessionToken || ''}`,
       voice: voice,
       welcomeGreeting: welcomeGreeting,
       dtmfDetection: true
-    });
+    };
+
+    // Add Intelligence Service if configured
+    if (ciServiceSid) {
+      relayConfig.intelligenceService = ciServiceSid;
+    }
+
+    const conversationRelay = connect.conversationRelay(relayConfig);
 
     // Set response headers for TwiML
     res.setHeader('Content-Type', 'text/xml');

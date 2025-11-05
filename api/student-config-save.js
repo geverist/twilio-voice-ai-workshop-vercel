@@ -71,6 +71,7 @@ export default async function handler(req, res) {
       codespaceUrl,
       githubRepoUrl,
       railwayUrl,
+      ciServiceSid, // Intelligence Service SID
       // State tracking fields
       demoMode,
       currentStep,
@@ -149,6 +150,7 @@ export default async function handler(req, res) {
         codespace_url TEXT,
         github_repo_url TEXT,
         railway_url TEXT,
+        ci_service_sid TEXT,
         -- State tracking columns
         demo_mode BOOLEAN DEFAULT false,
         current_step INTEGER DEFAULT 0,
@@ -190,6 +192,18 @@ export default async function handler(req, res) {
       console.log('ℹ️ Migration: demo_mode column already exists or migration skipped');
     }
 
+    // Add ci_service_sid column if it doesn't exist (migration for existing tables)
+    try {
+      await sql`
+        ALTER TABLE student_configs
+        ADD COLUMN IF NOT EXISTS ci_service_sid TEXT
+      `;
+      console.log('✅ Migration: ci_service_sid column ensured in student_configs');
+    } catch (migrationError) {
+      // Column might already exist, that's okay
+      console.log('ℹ️ Migration: ci_service_sid column already exists or migration skipped');
+    }
+
     // Insert or update student configuration
     await sql`
       INSERT INTO student_configs (
@@ -210,6 +224,7 @@ export default async function handler(req, res) {
         codespace_url,
         github_repo_url,
         railway_url,
+        ci_service_sid,
         demo_mode,
         current_step,
         twilio_connected,
@@ -252,6 +267,7 @@ export default async function handler(req, res) {
         ${codespaceUrl || null},
         ${githubRepoUrl || null},
         ${railwayUrl || null},
+        ${ciServiceSid || null},
         ${demoMode || false},
         ${currentStep !== undefined ? currentStep : 0},
         ${twilioConnected || false},
@@ -295,6 +311,7 @@ export default async function handler(req, res) {
         codespace_url = EXCLUDED.codespace_url,
         github_repo_url = EXCLUDED.github_repo_url,
         railway_url = EXCLUDED.railway_url,
+        ci_service_sid = EXCLUDED.ci_service_sid,
         demo_mode = EXCLUDED.demo_mode,
         current_step = EXCLUDED.current_step,
         twilio_connected = EXCLUDED.twilio_connected,
