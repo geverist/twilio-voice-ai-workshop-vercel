@@ -11369,9 +11369,6 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
     // Speech Recognition Hints (helps with domain-specific terms)
     // hints: 'Twilio,ConversationRelay,WebSocket,API'
-
-    // Status Callback for Intelligence Transcripts
-    statusCallback: 'https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=' + (event.sessionToken || '')
   });
 
   callback(null, response);
@@ -11693,7 +11690,10 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   // response.dial('+1234567890');
 
   // NEW: Upgrade to ConversationRelay with AI
-  const connect = response.connect();
+  // Set action callback for when Connect ends (call completes) to create Intelligence transcript
+  const connect = response.connect({
+    action: 'https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=' + (event.sessionToken || '')
+  });
   console.log('conversationRelay method exists?', typeof connect.conversationRelay);
 
   // WebSocket handler URL (hosted on Railway)
@@ -11705,8 +11705,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     ttsProvider: '${getConversationRelayTTSProvider(ttsProvider)}',${customWelcomeGreeting ? `
     welcomeGreeting: '${customWelcomeGreeting.replace(/'/g, "\\'")}',` : `
     // welcomeGreeting omitted - AI waits for caller to speak first`}
-    dtmfDetection: true,
-    statusCallback: 'https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=' + (event.sessionToken || '')
+    dtmfDetection: true
   });
 
   callback(null, response);
@@ -11838,7 +11837,10 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
   // Log SDK version for debugging
   console.log('Twilio SDK version:', require('twilio/package.json').version);
 
-  const connect = response.connect();
+  // Set action callback for when Connect ends (call completes) to create Intelligence transcript
+  const connect = response.connect({
+    action: 'https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=' + (event.sessionToken || '')
+  });
   console.log('conversationRelay method exists?', typeof connect.conversationRelay);
 
   // WebSocket handler URL (hosted on Railway)
@@ -11869,9 +11871,6 @@ ${greetingLine}
 
     // Speech Recognition Hints (helps with domain-specific terms)
 ${hintsLine}${intelligenceLine}
-
-    // Status Callback for Intelligence Transcripts
-    statusCallback: 'https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=' + (event.sessionToken || '')
   });
 
   callback(null, response);
@@ -15280,9 +15279,6 @@ app.get('/health', (req, res) => {
 
     // Speech Recognition Hints (helps with domain-specific terms)
     // hints: 'Twilio,ConversationRelay,WebSocket,API'
-
-    // Status Callback for Intelligence Transcripts
-    statusCallback: 'https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=' + (event.sessionToken || '')
   });
 
   callback(null, response);

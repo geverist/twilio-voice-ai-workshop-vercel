@@ -118,15 +118,17 @@ export default async function handler(req, res) {
     const twiml = new VoiceResponse();
 
     // Use ConversationRelay to connect call to AI
-    const connect = twiml.connect();
+    // Set action callback for when Connect ends (call completes)
+    const connect = twiml.connect({
+      action: `https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=${sessionToken || ''}`
+    });
 
     // ConversationRelay configuration - pointing to Railway WebSocket server
     const conversationRelay = connect.conversationRelay({
       url: `wss://workshop-websocket-server-production.up.railway.app/ws/${sessionToken || ''}`,
       voice: voice,
       welcomeGreeting: welcomeGreeting,
-      dtmfDetection: true,
-      statusCallback: `https://twilio-voice-ai-workshop-vercel.vercel.app/api/call-status-callback?sessionToken=${sessionToken || ''}`
+      dtmfDetection: true
     });
 
     // Set response headers for TwiML
