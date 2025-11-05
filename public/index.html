@@ -1475,7 +1475,8 @@
           systemPrompt: customSystemPrompt,
           tools: toolsPayload,
           selectedVoice: conversationRelayVoice,
-          ttsProvider: ttsProvider
+          ttsProvider: ttsProvider,
+          ciServiceSid: ciServiceSid  // Intelligence Service SID
         };
 
         const response = await fetch('/api/student-config-save', {
@@ -1684,6 +1685,7 @@
         deployedServiceSid,
         ttsProvider,
         conversationRelayVoice,
+        ciServiceSid,  // Intelligence Service SID
         // Deployment flags
         step4Committed,
         step4Deployed,
@@ -2103,6 +2105,7 @@
       deployedServiceSid = progress.deployedServiceSid || null;
       ttsProvider = progress.ttsProvider || 'elevenlabs';
       conversationRelayVoice = progress.conversationRelayVoice || null;
+      ciServiceSid = progress.ciServiceSid || null;  // Intelligence Service SID
       step4Committed = progress.step4Committed || false;
       step4Deployed = progress.step4Deployed || false;
       step4CodeValidated = progress.step4CodeValidated || false;  // ✅ ADDED
