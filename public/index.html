@@ -3013,15 +3013,32 @@ Example:
     // Render progress indicator
     function renderProgressSteps() {
       const container = document.getElementById('progressSteps');
-      container.innerHTML = steps.map((step, index) => `
-        <div class="step-item ${index === currentStep ? 'active' : ''} ${index < currentStep ? 'completed' : ''}"
-             onclick="navigateToStep(${index})"
-             style="cursor: pointer;"
-             title="Click to go to ${step.title}">
-          <div class="step-number">${index < currentStep ? '' : step.id}</div>
-          <div class="step-title">${step.title}</div>
-        </div>
-      `).join('');
+
+      // Find the highest step that can be accessed (all previous steps are complete)
+      let maxAccessibleStep = 0;
+      for (let i = 0; i < steps.length; i++) {
+        if (i === 0 || (STEP_CONDITIONS[i - 1] && STEP_CONDITIONS[i - 1]())) {
+          maxAccessibleStep = i;
+        } else {
+          break;
+        }
+      }
+
+      container.innerHTML = steps.map((step, index) => {
+        const isAccessible = index <= maxAccessibleStep;
+        const isCompleted = index < currentStep;
+        const isActive = index === currentStep;
+
+        return `
+          <div class="step-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${!isAccessible ? 'locked' : ''}"
+               ${isAccessible ? `onclick="navigateToStep(${index})"` : ''}
+               style="cursor: ${isAccessible ? 'pointer' : 'not-allowed'}; opacity: ${isAccessible ? '1' : '0.5'};"
+               title="${isAccessible ? `Click to go to ${step.title}` : `Complete previous steps to unlock ${step.title}`}">
+            <div class="step-number">${isCompleted ? '' : (isAccessible ? step.id : '🔒')}</div>
+            <div class="step-title">${step.title}</div>
+          </div>
+        `;
+      }).join('');
     }
 
     // Render step content
@@ -15129,7 +15146,7 @@ app.get('/health', (req, res) => {
     }
 
     /**
-     * Navigate directly to a specific step (for skip buttons)
+     * Navigate directly to a specific step (for skip buttons and progress indicator clicks)
      * @param {number} targetStep - The step index to navigate to (0-based)
      */
     function navigateToStep(targetStep) {
@@ -15138,13 +15155,34 @@ app.get('/health', (req, res) => {
         return;
       }
 
+      // Allow going back to any previous step
+      if (targetStep < currentStep) {
+        currentStep = targetStep;
+        renderProgressSteps();
+        renderStepContent();
+        window.scrollTo(0, 0);
+        saveProgressToStorage();
+        console.log(`⬅️ Navigated back to step ${targetStep}: ${steps[targetStep].title}`);
+        return;
+      }
+
+      // For moving forward, check if all previous steps are complete
+      for (let i = 0; i < targetStep; i++) {
+        if (STEP_CONDITIONS[i] && !STEP_CONDITIONS[i]()) {
+          alert(`⚠️ Please complete Step ${i + 1}: ${steps[i].title} before proceeding.`);
+          console.warn(`Cannot skip to step ${targetStep}. Step ${i} is incomplete.`);
+          return;
+        }
+      }
+
+      // All validations passed, navigate forward
       currentStep = targetStep;
       renderProgressSteps();
       renderStepContent();
       window.scrollTo(0, 0);
       saveProgressToStorage();
 
-      console.log(`📍 Navigated to step ${targetStep}: ${steps[targetStep].title}`);
+      console.log(`➡️ Navigated to step ${targetStep}: ${steps[targetStep].title}`);
     }
 
     function showStatus(elementId, type, message) {
