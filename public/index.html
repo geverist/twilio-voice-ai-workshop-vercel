@@ -1847,13 +1847,20 @@ Example:
     // =========================================================================
 
     function saveProgressToStorage() {
+      // Validate useCaseDescription to prevent saving DOM elements
+      let cleanUseCaseDescription = useCaseDescription;
+      if (typeof cleanUseCaseDescription !== 'string' || cleanUseCaseDescription.includes('[object')) {
+        console.warn('⚠️ Prevented saving corrupted useCaseDescription:', cleanUseCaseDescription);
+        cleanUseCaseDescription = '';
+      }
+
       const progress = {
         currentStep,
         twilioConnected,
         openaiConnected,
         callDirectionChosen,
         callDirection,
-        useCaseDescription,
+        useCaseDescription: cleanUseCaseDescription,
         skipInitialGreeting,  // ✅ ADDED - user preference for greeting behavior
         generatedContent,
         servicesReady,
@@ -2273,7 +2280,13 @@ Example:
       openaiConnected = progress.openaiConnected || false;
       callDirectionChosen = progress.callDirectionChosen || false;
       callDirection = progress.callDirection || '';
-      useCaseDescription = progress.useCaseDescription || '';
+      // Clean up corrupted useCaseDescription data (fix for [object HTMLTextAreaElement] bug)
+      if (progress.useCaseDescription && typeof progress.useCaseDescription === 'string' && !progress.useCaseDescription.includes('[object')) {
+        useCaseDescription = progress.useCaseDescription;
+      } else {
+        useCaseDescription = '';
+        console.warn('⚠️ Cleaned up corrupted useCaseDescription from localStorage');
+      }
       skipInitialGreeting = progress.skipInitialGreeting || false;  // ✅ ADDED - user preference for greeting behavior
       generatedContent = progress.generatedContent || null;
       servicesReady = progress.servicesReady || false;
@@ -2760,6 +2773,55 @@ Example:
         }
       } else {
         console.log('Restored session token from localStorage:', sessionToken);
+      }
+
+      // Load latest config from database (in case it was updated via use-cases page or admin panel)
+      if (sessionToken) {
+        try {
+          const configResponse = await fetch(`/api/student-config-get?sessionToken=${sessionToken}`);
+          if (configResponse.ok) {
+            const configData = await configResponse.json();
+            if (configData.success && configData.config) {
+              const config = configData.config;
+
+              // Update use case description if present in database
+              if (config.useCaseDescription) {
+                useCaseDescription = config.useCaseDescription;
+                console.log('✅ Loaded use case description from database:', useCaseDescription);
+              }
+
+              // Update other fields if present
+              if (config.callDirection) {
+                callDirection = config.callDirection;
+                callDirectionChosen = true;
+              }
+
+              // Update system prompt and greeting if present
+              if (config.systemPrompt) {
+                generatedContent = generatedContent || {};
+                generatedContent.systemPrompt = config.systemPrompt;
+              }
+              if (config.ivrGreeting) {
+                generatedContent = generatedContent || {};
+                generatedContent.ivrGreeting = config.ivrGreeting;
+              }
+
+              // Update TTS settings if present
+              if (config.ttsProvider) {
+                ttsProvider = config.ttsProvider;
+              }
+              if (config.selectedVoice) {
+                conversationRelayVoice = config.selectedVoice;
+              }
+
+              // Save to localStorage
+              saveProgressToStorage();
+            }
+          }
+        } catch (error) {
+          console.warn('Could not load config from database:', error);
+          // Continue with localStorage data
+        }
       }
 
       // Restore GitHub credentials from localStorage if they exist
@@ -4003,7 +4065,7 @@ Example:
                 placeholder="Example: An AI receptionist that answers common questions about business hours, services, and can schedule appointments..."
                 style="width: 100%; min-height: 120px; padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical;"
                 oninput="handleUseCaseInput()"
-              >${window.useCaseDescription || ''}</textarea>
+              >${useCaseDescription || ''}</textarea>
               <p style="font-size: 12px; color: #666; margin-top: 8px;">
                 💡 Be specific! The more detail you provide, the better we can customize prompt suggestions and examples throughout the workshop.
               </p>
