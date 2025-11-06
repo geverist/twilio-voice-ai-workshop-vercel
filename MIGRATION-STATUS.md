@@ -34,7 +34,7 @@ Your deployment is in progress. Once complete, you can run via API:
 # https://vercel.com/geverists-projects/twilio-voice-ai-workshop-vercel/settings/environment-variables
 
 # Then run:
-curl -X POST https://voice-ai-workshop.vercel.app/api/admin-migrate-to-unified-schema \
+curl -X POST https://twilio-voice-ai-workshop-vercel.vercel.app/api/admin-migrate-to-unified-schema \
   -H "Content-Type: application/json" \
   -d '{"adminPassword": "YOUR_ADMIN_PASSWORD", "dryRun": true}'
 ```
@@ -62,7 +62,7 @@ AND table_name IN ('workshop_students', 'student_configs');
 
 The simplest way to verify:
 
-1. Open: https://voice-ai-workshop.vercel.app/public/instructor-dashboard.html
+1. Open: https://twilio-voice-ai-workshop-vercel.vercel.app/public/instructor-dashboard.html
 2. Click "Admin Login"
 3. Click "Load Sessions"
 4. If you see all your students and sessions, the migration likely already worked!
@@ -90,6 +90,6 @@ If the instructor dashboard shows no data or errors:
 3. If dashboard works, migration is complete!
 4. If not, run migration via deployed API endpoints
 
-**Deployment URL:** https://voice-ai-workshop.vercel.app
+**Deployment URL:** https://twilio-voice-ai-workshop-vercel.vercel.app
 
 **Deployment Status:** Check at https://vercel.com/geverists-projects/twilio-voice-ai-workshop-vercel

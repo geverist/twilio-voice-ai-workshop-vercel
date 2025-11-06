@@ -164,7 +164,7 @@ POSTGRES_PRISMA_URL=...
 SENDGRID_API_KEY=SG.xxx
 INSTRUCTOR_EMAIL=instructor@example.com
 INSTRUCTOR_NAME=John Smith
-WORKSHOP_URL=https://voice-ai-workshop.vercel.app
+WORKSHOP_URL=https://twilio-voice-ai-workshop-vercel.vercel.app
 ```
 
 To add environment variables:

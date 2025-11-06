@@ -48,7 +48,7 @@ wss.on('connection', async (ws, req) => {
   if (sessionToken) {
     try {
       // Fetch student settings from Vercel API (includes decrypted OpenAI key)
-      const apiBaseUrl = process.env.VERCEL_API_URL || 'https://voice-ai-workshop.vercel.app';
+      const apiBaseUrl = process.env.VERCEL_API_URL || 'https://twilio-voice-ai-workshop-vercel.vercel.app';
       const settingsResponse = await fetch(
         `${apiBaseUrl}/api/get-student-ai-settings?sessionToken=${encodeURIComponent(sessionToken)}`
       );
@@ -244,6 +244,6 @@ httpServer.listen(PORT, () => {
   console.log(`  2. Connect with: ws://localhost:${PORT}/ws?sessionToken=ws_xxx`);
   console.log(`  3. Server will fetch your OpenAI key from database`);
   console.log(`\n🔑 Environment Variables:`);
-  console.log(`  - VERCEL_API_URL: ${process.env.VERCEL_API_URL || 'https://voice-ai-workshop.vercel.app (default)'}`);
+  console.log(`  - VERCEL_API_URL: ${process.env.VERCEL_API_URL || 'https://twilio-voice-ai-workshop-vercel.vercel.app (default)'}`);
   console.log(`  - OPENAI_API_KEY: ${process.env.OPENAI_API_KEY ? '✓ Set (fallback)' : '✗ Not set'}`);
 });
