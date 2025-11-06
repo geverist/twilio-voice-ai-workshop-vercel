@@ -16311,7 +16311,7 @@ app.get('/health', (req, res) => {
             </div>
             <div style="font-size: 1.3rem; font-weight: 600; color: #0d122b; margin-bottom: 10px;">${useCase.displayName}</div>
             <div style="color: #666; line-height: 1.6; margin-bottom: 15px;">${useCase.description}</div>
-            <button onclick="selectAndActivateUseCase('${useCase.id}'); event.stopPropagation();"
+            <button onclick="selectAndActivateUseCase('${useCase.id}', this); event.stopPropagation();"
                     style="width: 100%; background: #F22F46; color: white; padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
               ✨ Use This Template
             </button>
@@ -16349,12 +16349,95 @@ app.get('/health', (req, res) => {
       document.getElementById('useCaseCustomizationPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    async function selectAndActivateUseCase(useCaseId) {
+    async function selectAndActivateUseCase(useCaseId, buttonElement) {
       selectedUseCaseModal = useCasesData.find(uc => uc.id === useCaseId);
       if (!selectedUseCaseModal) return;
 
+      // Disable the button immediately to prevent double-clicks
+      if (buttonElement) {
+        buttonElement.disabled = true;
+        buttonElement.textContent = 'Activating...';
+      }
+
       // Activate without customizations (use template defaults)
-      await activateUseCaseModal(false);
+      await activateUseCaseModalDirect();
+    }
+
+    async function activateUseCaseModalDirect() {
+      if (!selectedUseCaseModal) return;
+      if (!sessionToken) {
+        alert('❌ No session token found.');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/use-case-activate-simple', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionToken,
+            useCaseId: selectedUseCaseModal.id,
+            customizations: null
+          })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          alert(`❌ ${data.error || 'Failed to activate use case'}`);
+          return;
+        }
+
+        // Close modal immediately and navigate to step 2
+        closeModal('useCasesModal');
+
+        // Load the config from database to get the use case description
+        try {
+          const configResponse = await fetch(`/api/student-config-get?sessionToken=${sessionToken}`);
+          if (configResponse.ok) {
+            const configData = await configResponse.json();
+            if (configData.success && configData.config) {
+              const config = configData.config;
+
+              // Update use case description
+              if (config.useCaseDescription) {
+                useCaseDescription = config.useCaseDescription;
+              }
+
+              // Update other fields
+              if (config.callDirection) {
+                callDirection = config.callDirection;
+                callDirectionChosen = true;
+              }
+              if (config.systemPrompt) {
+                generatedContent = generatedContent || {};
+                generatedContent.systemPrompt = config.systemPrompt;
+              }
+              if (config.ivrGreeting) {
+                generatedContent = generatedContent || {};
+                generatedContent.ivrGreeting = config.ivrGreeting;
+              }
+              if (config.ttsProvider) {
+                ttsProvider = config.ttsProvider;
+              }
+              if (config.selectedVoice) {
+                conversationRelayVoice = config.selectedVoice;
+              }
+
+              saveProgressToStorage();
+            }
+          }
+        } catch (error) {
+          console.warn('Could not load config from database:', error);
+        }
+
+        // Navigate to step 2 to show the use case
+        navigateToStep(1);
+
+      } catch (error) {
+        console.error('Error activating use case:', error);
+        alert(`❌ Error: ${error.message}`);
+      }
     }
 
     async function activateUseCaseModal(useCustomizations) {
@@ -16401,11 +16484,12 @@ app.get('/health', (req, res) => {
 
         showUseCaseAlert('success', `✅ ${data.message}`);
 
-        // Close modal after 2 seconds
+        // Close modal and navigate to step 2 after 2 seconds
         setTimeout(() => {
           closeModal('useCasesModal');
-          // Refresh the page or update relevant fields
-          location.reload();
+          // Navigate to step 2 (use case) to show the activated configuration
+          navigateToStep(1);
+          renderStepContent();
         }, 2000);
 
       } catch (error) {
