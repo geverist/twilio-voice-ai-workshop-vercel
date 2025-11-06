@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     const workshopUrl = process.env.WORKSHOP_URL || process.env.VERCEL_URL || 'https://your-workshop-url.vercel.app';
     const instructorEmail = process.env.INSTRUCTOR_EMAIL || 'workshop@example.com';
     const instructorName = process.env.INSTRUCTOR_NAME || 'Workshop Instructor';
-    const githubRepo = process.env.GITHUB_REPO_URL || 'https://github.com/geverist/twilio-voice-ai-workshop';
+    const githubRepo = process.env.GITHUB_REPO_URL || 'https://github.com/geverist/twilio-voice-ai-workshop-vercel';
 
     // Build email content
     const emailSubject = 'Welcome to the Twilio Voice AI Workshop!';
