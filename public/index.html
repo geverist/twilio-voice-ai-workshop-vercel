@@ -16484,13 +16484,53 @@ app.get('/health', (req, res) => {
 
         showUseCaseAlert('success', `✅ ${data.message}`);
 
-        // Close modal and navigate to step 2 after 2 seconds
-        setTimeout(() => {
+        // Close modal immediately and navigate to step 2
+        setTimeout(async () => {
           closeModal('useCasesModal');
+
+          // Load the config from database to get the use case description
+          try {
+            const configResponse = await fetch(`/api/student-config-get?sessionToken=${sessionToken}`);
+            if (configResponse.ok) {
+              const configData = await configResponse.json();
+              if (configData.success && configData.config) {
+                const config = configData.config;
+
+                // Update use case description
+                if (config.useCaseDescription) {
+                  useCaseDescription = config.useCaseDescription;
+                }
+
+                // Update other fields
+                if (config.callDirection) {
+                  callDirection = config.callDirection;
+                  callDirectionChosen = true;
+                }
+                if (config.systemPrompt) {
+                  generatedContent = generatedContent || {};
+                  generatedContent.systemPrompt = config.systemPrompt;
+                }
+                if (config.ivrGreeting) {
+                  generatedContent = generatedContent || {};
+                  generatedContent.ivrGreeting = config.ivrGreeting;
+                }
+                if (config.ttsProvider) {
+                  ttsProvider = config.ttsProvider;
+                }
+                if (config.selectedVoice) {
+                  conversationRelayVoice = config.selectedVoice;
+                }
+
+                saveProgressToStorage();
+              }
+            }
+          } catch (error) {
+            console.warn('Could not load config from database:', error);
+          }
+
           // Navigate to step 2 (use case) to show the activated configuration
           navigateToStep(1);
-          renderStepContent();
-        }, 2000);
+        }, 1500);
 
       } catch (error) {
         console.error('Error activating use case:', error);
