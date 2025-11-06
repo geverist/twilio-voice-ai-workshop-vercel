@@ -10114,25 +10114,32 @@ async function getLatestNews(args, context) {
       try {
         console.log('📊 Opening admin panel...');
 
-        // First, ensure all configuration is saved to database
-        await saveAllConfigToDatabase();
+        // In demo mode, provide a clear message about functionality
+        if (studentDemoMode) {
+          console.log('ℹ️ Opening admin panel in demo mode');
+        } else {
+          // First, ensure all configuration is saved to database (live mode only)
+          await saveAllConfigToDatabase();
 
-        // If GitHub repo exists, push admin panel HTML to it
-        if (githubToken && githubUsername && studentRepoName) {
-          console.log('📤 Pushing admin panel to GitHub repo...');
-          try {
-            await pushAdminPanelToGitHub();
-          } catch (pushError) {
-            console.warn('⚠️ Failed to push admin panel to GitHub:', pushError);
-            // Continue anyway - they can still use the hosted version
+          // If GitHub repo exists, push admin panel HTML to it
+          if (githubToken && githubUsername && studentRepoName) {
+            console.log('📤 Pushing admin panel to GitHub repo...');
+            try {
+              await pushAdminPanelToGitHub();
+            } catch (pushError) {
+              console.warn('⚠️ Failed to push admin panel to GitHub:', pushError);
+              // Continue anyway - they can still use the hosted version
+            }
           }
         }
 
-        // Open admin panel with session token
+        // Open admin panel with student-specific session token
+        // Demo mode: Uses demo session token for simulated data
+        // Live mode: Uses real session token for actual student data
         const url = `/admin-panel-dynamic.html?session=${sessionToken}`;
         window.open(url, '_blank');
 
-        console.log('✅ Admin panel opened');
+        console.log(`✅ Admin panel opened ${studentDemoMode ? '(demo mode)' : '(live mode with your data)'}`);
       } catch (error) {
         console.error('❌ Failed to open admin panel:', error);
         alert('Failed to open admin panel: ' + error.message);
@@ -17589,7 +17596,8 @@ Scroll down to see the updated system prompt.
 
       // Display shows max of (actual completions, current step + 1)
       // This ensures when you're on step 9, it shows "9 of 9" even if not all prior steps completed
-      const displayedCompleted = Math.max(actuallyCompleted, currentStep + 1);
+      // In demo mode, use current step only (flags are pre-set and don't reflect actual progress)
+      const displayedCompleted = studentDemoMode ? currentStep + 1 : Math.max(actuallyCompleted, currentStep + 1);
 
       const percentage = Math.round((displayedCompleted / totalSteps) * 100);
 
