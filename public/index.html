@@ -9978,37 +9978,6 @@ async function getLatestNews(args, context) {
             ` : ''}
           </div>
 
-          <!-- View Conversation History -->
-          <div class="service-card" style="background: linear-gradient(135deg, #4fc1ff 0%, #1a73e8 100%); color: white;">
-            <h3 style="color: white; margin-bottom: 15px;">💬 Review Your Conversations</h3>
-            <p style="color: rgba(255,255,255,0.95); margin-bottom: 20px; line-height: 1.6;">
-              View full transcripts of all your AI phone calls. See what users asked, how your AI responded, and identify areas for improvement.
-            </p>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px;">
-              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 15px; border-radius: 8px;">
-                <div style="font-size: 28px; margin-bottom: 8px;">📊</div>
-                <h4 style="color: white; margin: 0 0 8px 0;">Call Analytics</h4>
-                <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 0;">Track call volume, duration, and turn counts</p>
-              </div>
-              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 15px; border-radius: 8px;">
-                <div style="font-size: 28px; margin-bottom: 8px;">💬</div>
-                <h4 style="color: white; margin: 0 0 8px 0;">Full Transcripts</h4>
-                <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 0;">Read every message exchanged during calls</p>
-              </div>
-              <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 15px; border-radius: 8px;">
-                <div style="font-size: 28px; margin-bottom: 8px;">🔍</div>
-                <h4 style="color: white; margin: 0 0 8px 0;">Debug & Improve</h4>
-                <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 0;">Find issues and refine your AI prompts</p>
-              </div>
-            </div>
-            <button class="btn" onclick="openConversationHistory()" style="width: 100%; padding: 15px; font-size: 16px; font-weight: 600; background: white; color: #1a73e8;">
-              📖 View All Conversations →
-            </button>
-            <div style="margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px; font-size: 13px;">
-              💡 <strong>Pro Tip:</strong> Review conversations after test calls to see exactly how your AI responded. Use this to refine your system prompt and improve responses!
-            </div>
-          </div>
-
           <!-- Hero Section: Your AI Admin Dashboard -->
           <div style="margin: 40px 0; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; text-align: center; border: 3px solid #5a67d8; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">
             <div style="font-size: 72px; margin-bottom: 20px;">🚀</div>
@@ -10020,7 +9989,7 @@ async function getLatestNews(args, context) {
             </p>
 
             <button
-              class="btn"
+              class="btn next-action"
               onclick="openAdminPanel()"
               style="font-size: 1.3rem; padding: 20px 50px; background: white; color: #667eea; font-weight: bold; border: none; border-radius: 12px; cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.3); transition: transform 0.2s, box-shadow 0.2s;"
               onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.4)'"
