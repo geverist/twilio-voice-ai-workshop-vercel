@@ -16478,6 +16478,66 @@ app.get('/health', (req, res) => {
       document.getElementById('vxmlLoadingState').style.display = 'block';
 
       try {
+        // Check if in demo mode
+        const isDemoMode = studentDemoMode || openaiApiKey?.startsWith('sk-demo-');
+
+        if (isDemoMode) {
+          // Simulate VXML conversion for demo mode
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
+          // Parse VXML to extract basic information
+          const promptMatches = vxmlContent.match(/<prompt[^>]*>([\s\S]*?)<\/prompt>/gi) || [];
+          const firstPrompt = promptMatches[0]?.replace(/<[^>]+>/g, '').trim() || 'Welcome!';
+
+          const menuOptions = [];
+          const conditionalMatches = vxmlContent.match(/menuChoice\s*==\s*['"](\d+)['"]/g) || [];
+          conditionalMatches.forEach(match => {
+            const digit = match.match(/\d+/)[0];
+            menuOptions.push(`Press ${digit}`);
+          });
+
+          vxmlConversionResult = {
+            success: true,
+            systemPrompt: `You are a helpful customer service AI assistant converted from an IVR system.
+
+Your responsibilities:
+1. Greet callers warmly and professionally
+2. Present menu options clearly: ${menuOptions.join(', ')}
+3. Help users navigate to the right department or service
+4. Answer common questions about services and hours
+5. Transfer to human agents when needed
+
+Important guidelines:
+- Keep responses brief and conversational (1-2 sentences)
+- Use natural language instead of rigid menu structures
+- Be patient and helpful if callers are unsure
+- Confirm understanding before taking action
+- Maintain a friendly, professional tone
+
+Note: This is a simulated conversion for demo purposes. In production, you would use your actual OpenAI API key for more sophisticated analysis.`,
+            greeting: firstPrompt,
+            suggestedTools: [
+              {
+                name: 'transfer_to_department',
+                description: 'Transfer caller to specific department',
+                reasoning: 'VXML had menu-based routing to different departments'
+              }
+            ],
+            vxmlAnalysis: {
+              purpose: 'Customer service IVR system',
+              menuOptions: menuOptions.length > 0 ? menuOptions : ['Multiple menu options detected'],
+              tone: 'Professional and helpful',
+              specialFeatures: ['Menu-based navigation', 'Department routing']
+            },
+            demoMode: true
+          };
+
+          displayVXMLResults(vxmlConversionResult);
+          showVXMLAlert('success', '✅ VXML converted to AI prompt! (Demo Mode - using simulated conversion)');
+          return;
+        }
+
+        // Real API call for non-demo mode
         const response = await fetch('/api/convert-vxml-to-prompt', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
