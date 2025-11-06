@@ -9859,29 +9859,55 @@ async function getLatestNews(args, context) {
             <!-- Option 2: Clone from GitHub -->
             <div style="border: 2px solid #24292e; border-radius: 8px; padding: 20px;">
               <h4 style="margin: 0 0 10px 0; color: #24292e;">🐙 Option 2: Clone from GitHub</h4>
-              <p style="margin-bottom: 15px; color: #666;">
-                For developers who want version control and ongoing updates. Clone the complete workshop repository.
-              </p>
-              <div style="margin-bottom: 15px;">
-                <strong>✅ Pros:</strong>
-                <ul style="margin: 5px 0 0 20px; color: #666;">
-                  <li>Version control with Git</li>
-                  <li>Easy to collaborate with team</li>
-                  <li>Get workshop updates via git pull</li>
-                  <li>Best for production deployments</li>
-                </ul>
-              </div>
-              <div style="background: #f6f8fa; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 13px; margin-bottom: 15px;">
-                <div style="color: #666; margin-bottom: 5px;">Run these commands in your terminal:</div>
-                <code style="display: block; margin: 5px 0;">git clone https://github.com/geverist/twilio-voice-ai-workshop-vercel.git</code>
-                <code style="display: block; margin: 5px 0;">cd twilio-voice-ai-workshop-vercel</code>
-                <code style="display: block; margin: 5px 0;">cp .env.example .env.local</code>
-                <code style="display: block; margin: 5px 0;"># Edit .env.local with your credentials</code>
-                <code style="display: block; margin: 5px 0;">npm install && npm run dev</code>
-              </div>
-              <button class="btn btn-secondary" onclick="window.open('https://github.com/geverist/twilio-voice-ai-workshop-vercel', '_blank')" style="width: 100%; padding: 12px; font-size: 16px;">
-                🔗 Open GitHub Repository
-              </button>
+              ${studentRepoName && githubUsername ? `
+                <p style="margin-bottom: 15px; color: #666;">
+                  Clone your personal repository with all your custom configurations and code.
+                </p>
+                <div style="margin-bottom: 15px;">
+                  <strong>✅ Pros:</strong>
+                  <ul style="margin: 5px 0 0 20px; color: #666;">
+                    <li>Version control with Git</li>
+                    <li>Easy to collaborate with team</li>
+                    <li>Contains your workshop progress</li>
+                    <li>Best for production deployments</li>
+                  </ul>
+                </div>
+                <div style="background: #f6f8fa; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 13px; margin-bottom: 15px;">
+                  <div style="color: #666; margin-bottom: 5px;">Run these commands in your terminal:</div>
+                  <code style="display: block; margin: 5px 0;">git clone https://github.com/${githubUsername}/${studentRepoName}.git</code>
+                  <code style="display: block; margin: 5px 0;">cd ${studentRepoName}</code>
+                  <code style="display: block; margin: 5px 0;">cp .env.example .env.local</code>
+                  <code style="display: block; margin: 5px 0;"># Edit .env.local with your credentials</code>
+                  <code style="display: block; margin: 5px 0;">npm install && npm run dev</code>
+                </div>
+                <button class="btn btn-secondary" onclick="window.open('https://github.com/${githubUsername}/${studentRepoName}', '_blank')" style="width: 100%; padding: 12px; font-size: 16px;">
+                  🔗 Open Your GitHub Repository
+                </button>
+              ` : `
+                <p style="margin-bottom: 15px; color: #666;">
+                  For developers who want version control and ongoing updates. Clone the complete workshop repository.
+                </p>
+                <div style="margin-bottom: 15px;">
+                  <strong>✅ Pros:</strong>
+                  <ul style="margin: 5px 0 0 20px; color: #666;">
+                    <li>Version control with Git</li>
+                    <li>Easy to collaborate with team</li>
+                    <li>Get workshop updates via git pull</li>
+                    <li>Best for production deployments</li>
+                  </ul>
+                </div>
+                <div style="background: #f6f8fa; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 13px; margin-bottom: 15px;">
+                  <div style="color: #666; margin-bottom: 5px;">Run these commands in your terminal:</div>
+                  <code style="display: block; margin: 5px 0;">git clone https://github.com/geverist/twilio-voice-ai-workshop-vercel.git</code>
+                  <code style="display: block; margin: 5px 0;">cd twilio-voice-ai-workshop-vercel</code>
+                  <code style="display: block; margin: 5px 0;">cp .env.example .env.local</code>
+                  <code style="display: block; margin: 5px 0;"># Edit .env.local with your credentials</code>
+                  <code style="display: block; margin: 5px 0;">npm install && npm run dev</code>
+                </div>
+                <button class="btn btn-secondary" onclick="window.open('https://github.com/geverist/twilio-voice-ai-workshop-vercel', '_blank')" style="width: 100%; padding: 12px; font-size: 16px;">
+                  🔗 Open GitHub Repository
+                </button>
+              `}
             </div>
 
             <!-- Option 3: Local Development with ngrok -->
