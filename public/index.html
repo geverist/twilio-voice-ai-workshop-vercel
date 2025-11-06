@@ -12890,6 +12890,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         step6CodeValidated = true;
         showStatus('step6Status', 'success', '✅ Perfect! ConversationRelay TwiML is valid. Deploy it below!');
         updateProgressBar();
+        saveProgressToStorage();
 
         // Clear all existing next-action highlights first
         document.querySelectorAll('.next-action').forEach(el => {
