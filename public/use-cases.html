@@ -500,9 +500,9 @@
 
         showAlert('success', `✅ ${data.message}`);
 
-        // Redirect back to workshop after 2 seconds
+        // Redirect back to workshop step 2 (use case) after 2 seconds
         setTimeout(() => {
-          window.location.href = '/?sessionToken=' + sessionToken;
+          window.location.href = '/?sessionToken=' + sessionToken + '&step=1';
         }, 2000);
 
       } catch (error) {

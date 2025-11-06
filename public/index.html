@@ -1386,6 +1386,13 @@ Example:
     let studentEmail = emailParam || localStorage.getItem('studentEmail') || '';
     let studentDemoMode = localStorage.getItem('studentDemoMode') === 'true';
 
+    // Auto-connect services in demo mode
+    if (studentDemoMode) {
+      twilioConnected = true;
+      openaiConnected = true;
+      console.log('✅ Demo mode: Auto-connected Twilio and OpenAI');
+    }
+
     // If URL params were provided, save them to localStorage
     if (emailParam) {
       localStorage.setItem('studentEmail', emailParam);
@@ -2956,6 +2963,18 @@ Example:
         // Resume from saved step (even if coming from GitHub callback or setting up accounts)
         currentStep = savedProgress.currentStep || 0;
         console.log('📦 Resuming from step: ' + currentStep);
+      }
+
+      // Check for step parameter in URL (from use case activation)
+      const stepParam = urlParams.get('step');
+      if (stepParam !== null) {
+        const targetStep = parseInt(stepParam, 10);
+        if (!isNaN(targetStep) && targetStep >= 0 && targetStep < steps.length) {
+          currentStep = targetStep;
+          console.log(`🔗 Navigating to step ${targetStep} from URL parameter`);
+        }
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname + (sessionToken ? '?sessionToken=' + sessionToken : ''));
       }
 
       // Always render content first
