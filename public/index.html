@@ -16868,32 +16868,6 @@ Note: This is a simulated conversion for demo purposes. In production, you would
         return;
       }
 
-      // Demo mode handling
-      if (studentDemoMode) {
-        const demoAlert = `
-🎭 DEMO MODE - Phase Application Preview
-
-In live mode, this would:
-✅ Add ${conversationPhases.length} conversation phases to your system prompt
-✅ Structure your AI conversation with clear progression
-✅ Include gate conditions for phase transitions
-✅ Enable stateful conversation management
-
-Phases that would be added:
-${conversationPhases.map((p, i) => `${i + 1}. ${p.name}`).join('\n')}
-
-💡 Complete Step 1 (Connect Accounts) to enable live functionality!
-        `.trim();
-
-        alert(demoAlert);
-
-        // In demo mode, show a preview in the console
-        console.log('📋 DEMO MODE - Phase Prompt Preview:');
-        console.log(document.getElementById('phasePromptPreview').textContent);
-
-        return;
-      }
-
       const systemPromptField = document.getElementById('systemPrompt');
       if (!systemPromptField) {
         alert('❌ System prompt field not found.');
@@ -16916,7 +16890,19 @@ ${conversationPhases.map((p, i) => `${i + 1}. ${p.name}`).join('\n')}
       // Trigger input event for any listeners
       systemPromptField.dispatchEvent(new Event('input'));
 
-      alert(`✅ Conversation phases added to system prompt!\n\nPhases defined: ${conversationPhases.length}\n\nScroll down to see the updated system prompt.`);
+      // Different success message for demo vs live mode
+      if (studentDemoMode) {
+        alert(`✅ Conversation phases added to system prompt! (Demo Mode)
+
+Phases applied: ${conversationPhases.length}
+${conversationPhases.map((p, i) => `${i + 1}. ${p.name}`).join('\n')}
+
+Scroll down to see the updated system prompt.
+
+💡 In live mode, these phases enable stateful conversation management!`);
+      } else {
+        alert(`✅ Conversation phases added to system prompt!\n\nPhases defined: ${conversationPhases.length}\n\nScroll down to see the updated system prompt.`);
+      }
 
       // Close the builder
       toggleConversationPhasesBuilder();
