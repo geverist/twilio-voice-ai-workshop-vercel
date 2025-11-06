@@ -747,6 +747,64 @@
             </div>
           </div>
         </div>
+
+        <!-- Conversation Phases Section -->
+        <div class="panel" style="margin-top: 30px;">
+          <h2>🎯 Conversation Phases</h2>
+          <p style="color: #666; margin-bottom: 20px;">
+            Break your conversation into distinct phases with specific goals and progression gates. Each phase guides the AI through a structured flow.
+          </p>
+
+          <!-- Phase Templates -->
+          <div style="background: #f0f9ff; border: 2px solid #60a5fa; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+            <h3 style="margin: 0 0 12px 0; color: #1e40af; display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.2rem;">📚</span> Start with a Template
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px;">
+              <button onclick="loadAdminPhaseTemplate('customer-support')" class="btn" style="background: #10b981; color: white;">
+                🎧 Customer Support
+              </button>
+              <button onclick="loadAdminPhaseTemplate('appointment-booking')" class="btn" style="background: #3b82f6; color: white;">
+                📅 Appointment Booking
+              </button>
+              <button onclick="loadAdminPhaseTemplate('lead-qualification')" class="btn" style="background: #f59e0b; color: white;">
+                💼 Lead Qualification
+              </button>
+            </div>
+            <p style="color: #666; font-size: 13px; margin: 10px 0 0 0;">
+              💡 <strong>Tip:</strong> Start with a template and customize it, or build your own from scratch.
+            </p>
+          </div>
+
+          <!-- Phase Action Buttons -->
+          <div style="display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap;">
+            <button class="btn" onclick="addAdminPhase()">
+              ➕ Add Phase
+            </button>
+            <button class="btn" onclick="saveAdminPhases()">
+              💾 Save Phases
+            </button>
+            <button class="btn" onclick="generateSystemPromptFromPhases()">
+              ✨ Generate Prompt from Phases
+            </button>
+            <button class="btn btn-secondary" onclick="clearAllAdminPhases()">
+              🗑️ Clear All
+            </button>
+          </div>
+
+          <!-- Phases List -->
+          <div id="adminPhasesContainer" style="margin-bottom: 25px;">
+            <!-- Dynamically populated phase cards -->
+          </div>
+
+          <!-- Phase Flow Visualization -->
+          <div id="adminPhaseFlowViz" style="display: none; margin-top: 25px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px;">
+            <h4 style="margin: 0 0 15px 0; color: white;">🔄 Phase Flow Diagram</h4>
+            <div id="adminPhaseFlowCanvas" style="background: white; border-radius: 6px; padding: 20px; min-height: 150px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+              <!-- Flow diagram will be rendered here -->
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="functions" class="tab-content">
@@ -793,7 +851,7 @@
                 💡 <strong>Tip:</strong> Parameters use JSON Schema format. Define what inputs your function needs.
               </div>
               <div style="margin-top: 10px; padding: 10px; background: #e0f2fe; border-radius: 6px; font-size: 13px; color: #075985;">
-                🔗 <strong>Webhook URL:</strong> Optional HTTPS endpoint for external tool execution. See <a href="/WEBHOOK_TOOLS.md" target="_blank" style="color: #0369a1; text-decoration: underline;">WEBHOOK_TOOLS.md</a> for details.
+                🔗 <strong>Webhook URL:</strong> Optional HTTPS endpoint for external tool execution. Leave empty to use simulated responses.
               </div>
 
               <button class="btn" onclick="addFunction()" style="margin-top: 15px; margin-right: 10px;">
@@ -1103,6 +1161,9 @@
 
       // Initialize stateful mode
       initializeStatefulPrompts();
+
+      // Initialize conversation phases
+      initializeConversationPhases();
 
       // Initialize memory settings
       initializeMemorySettings();
@@ -2545,6 +2606,9 @@
 
   <!-- Stateful Prompts Management -->
   <script src="/stateful-prompts-functions.js"></script>
+
+  <!-- Conversation Phases Management -->
+  <script src="/conversation-phases-functions.js"></script>
 
   <!-- Memory Management -->
   <script src="/memory-functions.js"></script>

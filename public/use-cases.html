@@ -373,7 +373,7 @@
 
     async function loadUseCases() {
       try {
-        const response = await fetch('/api/use-cases-list');
+        const response = await fetch('/api/use-cases-library');
         const data = await response.json();
 
         if (!data.success) {
@@ -479,12 +479,12 @@
           voice: document.getElementById('customVoice').value
         } : null;
 
-        const response = await fetch('/api/use-case-activate', {
+        const response = await fetch('/api/use-case-activate-simple', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionToken,
-            useCaseTemplateId: selectedUseCase.id,
+            useCaseId: selectedUseCase.id,
             customizations
           })
         });
