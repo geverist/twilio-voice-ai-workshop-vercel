@@ -1743,7 +1743,20 @@ Example:
       switch(currentStep) {
         case 0: // currentStep 0 = Step 1: Setup
           if (!twilioConnected) {
-            targetSelector = '[onclick*="connectTwilio"]';
+            // Check if credentials are filled before highlighting Connect button
+            const accountSid = document.getElementById('twilioAccountSid')?.value?.trim();
+            const authToken = document.getElementById('twilioAuthToken')?.value?.trim();
+
+            if (!accountSid || !accountSid.startsWith('AC') || accountSid.length !== 34) {
+              // Need Account SID - highlight the input group
+              targetSelector = '#accountSidGroup';
+            } else if (!authToken || authToken.length < 10) {
+              // Have Account SID, need Auth Token - highlight auth token input
+              targetSelector = '#authTokenGroup';
+            } else {
+              // Both filled - highlight Connect button
+              targetSelector = '[onclick*="connectTwilio"]';
+            }
           } else if (!openaiConnected) {
             targetSelector = '[onclick*="connectOpenAI"]';
           } else {
