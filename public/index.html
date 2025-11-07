@@ -1360,9 +1360,9 @@ Example:
 
     // Code change tracking flags (for validate button state)
     let code4Changed = false;
-    let code7Changed = false;
+    let code5Changed = false;
+    let code6Changed = false;
     let code8Changed = false;
-    let code9Changed = false;
 
     let twilioCredentials = null;
     let openaiApiKey = null;
@@ -1825,7 +1825,7 @@ Example:
 
         case 5: // currentStep 5 = Step 6: ConversationRelay
           if (!step6CodeValidated) {
-            targetSelector = '[onclick="validateCode8()"]';
+            targetSelector = '[onclick="validateCode6()"]';
           } else if (!step6Deployed) {
             targetSelector = '[onclick*="commitStep(6)"]';
           } else {
@@ -1843,7 +1843,7 @@ Example:
 
         case 7: // currentStep 7 = Step 8: Tools
           if (!toolsConfigured) {
-            targetSelector = '[onclick="validateCode9()"]';
+            targetSelector = '[onclick="validateCode8()"]';
           } else {
             targetSelector = '#nextBtn8';
           }
@@ -2481,7 +2481,7 @@ Example:
 
       // Step 6: Add next-action to validate button if not yet validated and on step 6
       if (currentStep === 5 && !step6CodeValidated) {
-        const validateBtn6 = document.querySelector('[onclick="validateCode8()"]');
+        const validateBtn6 = document.querySelector('[onclick="validateCode6()"]');
         if (validateBtn6) validateBtn6.classList.add('next-action');
       }
 
@@ -2509,7 +2509,7 @@ Example:
 
       // Step 8: Add next-action to validate button if not yet validated and on step 8
       if (currentStep === 7 && !toolsConfigured) {
-        const validateBtn8 = document.querySelector('[onclick="validateCode9()"]');
+        const validateBtn8 = document.querySelector('[onclick="validateCode8()"]');
         if (validateBtn8) validateBtn8.classList.add('next-action');
       }
 
@@ -3233,8 +3233,8 @@ Example:
           nextButton = document.getElementById('nextBtn3');
         }
       } else if (currentStep === 4) {
-        // Step 5: WebSocket Handler - uses validateCode7, deployCodespaceBtn5, nextBtn7
-        const validateBtn = document.querySelector('[onclick="validateCode7()"]');
+        // Step 5: WebSocket Handler - uses validateCode5, deployCodespaceBtn5, nextBtn7
+        const validateBtn = document.querySelector('[onclick="validateCode5()"]');
         const deployBtn = document.getElementById('deployCodespaceBtn5');
         const nextBtn = document.getElementById('nextBtn7');
 
@@ -3249,8 +3249,8 @@ Example:
           nextButton = validateBtn;
         }
       } else if (currentStep === 5) {
-        // Step 6: ConversationRelay - uses validateCode8, commitStep6Btn, nextBtn8
-        const validateBtn = document.querySelector('[onclick="validateCode8()"]');
+        // Step 6: ConversationRelay - uses validateCode6, commitStep6Btn, nextBtn8
+        const validateBtn = document.querySelector('[onclick="validateCode6()"]');
         const deployBtn = document.getElementById('commitStep6Btn');
         const nextBtn = document.getElementById('nextBtn8');
 
@@ -7914,12 +7914,12 @@ Expected: ${scenario.expected}</div>`;
             <div class="code-header">
               <span>📝 WebSocket Handler with Tools & Knowledge Base</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success ${toolsConfigured ? '' : 'next-action'}" style="padding: 6px 12px; font-size: 13px; ${toolsConfigured ? 'opacity: 0.5;' : ''}" onclick="validateCode9()" ${toolsConfigured ? 'disabled' : ''}>✓ Validate</button>
-                <button class="btn-copy" onclick="copyCode('code9')">📋 Copy Code</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode9()">Reset</button>
+                <button class="btn btn-success ${toolsConfigured ? '' : 'next-action'}" style="padding: 6px 12px; font-size: 13px; ${toolsConfigured ? 'opacity: 0.5;' : ''}" onclick="validateCode8()" ${toolsConfigured ? 'disabled' : ''}>✓ Validate</button>
+                <button class="btn-copy" onclick="copyCode('code8')">📋 Copy Code</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode8()">Reset</button>
               </div>
             </div>
-            <textarea class="code-textarea" id="code9" rows="30" oninput="handleCodeChange('code9')">exports.handler = async function(context, event, callback) {
+            <textarea class="code-textarea" id="code8" rows="30" oninput="handleCodeChange('code8')">exports.handler = async function(context, event, callback) {
   const OpenAI = require('openai');
   const twilio = require('twilio');
 
@@ -11370,11 +11370,11 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           functionName = 'voice-handler';
         } else if (stepNumber === 5) {
           // Step 5: WebSocket Handler - NEW separate handler
-          functionCode = document.getElementById('code7')?.value || '';
+          functionCode = document.getElementById('code5')?.value || '';
           functionName = 'websocket-handler';
         } else if (stepNumber === 6) {
           // Step 6: ConversationRelay - UPDATE voice-handler to use ConversationRelay
-          functionCode = document.getElementById('code8')?.value || '';
+          functionCode = document.getElementById('code6')?.value || '';
           functionName = 'voice-handler';  // Update voice-handler with ConversationRelay
         } else if (stepNumber === 7) {
           // Step 7: Custom Prompt - UPDATE database with custom system prompt
@@ -11384,7 +11384,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
           functionName = null;
         } else if (stepNumber === 8) {
           // Step 8: Tooling - Update websocket-handler with tools
-          functionCode = document.getElementById('code9')?.value || '';
+          functionCode = document.getElementById('code8')?.value || '';
           functionName = 'websocket-handler';
         }
 
@@ -12592,12 +12592,12 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
             <div class="code-header">
               <span>📝 ConversationRelay TwiML Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success ${(!step6CodeValidated || code8Changed) ? 'next-action' : ''}" style="padding: 6px 12px; font-size: 13px; ${(step6CodeValidated && !code8Changed) ? 'opacity: 0.5;' : ''}" onclick="validateCode8()" ${(step6CodeValidated && !code8Changed) ? 'disabled' : ''}>✓ Validate</button>
-                <button class="btn-copy" onclick="copyCode('code8')">📋 Copy Code</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode8()">Reset</button>
+                <button class="btn btn-success ${(!step6CodeValidated || code6Changed) ? 'next-action' : ''}" style="padding: 6px 12px; font-size: 13px; ${(step6CodeValidated && !code6Changed) ? 'opacity: 0.5;' : ''}" onclick="validateCode6()" ${(step6CodeValidated && !code6Changed) ? 'disabled' : ''}>✓ Validate</button>
+                <button class="btn-copy" onclick="copyCode('code6')">📋 Copy Code</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode6()">Reset</button>
               </div>
             </div>
-            <textarea class="code-textarea" id="code8" oninput="handleCodeChange('code8')">exports.handler = function(context, event, callback) {
+            <textarea class="code-textarea" id="code6" oninput="handleCodeChange('code6')">exports.handler = function(context, event, callback) {
   const twilio = require('twilio');
   const VoiceResponse = twilio.twiml.VoiceResponse;
   const response = new VoiceResponse();
@@ -12840,7 +12840,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
     }
 
     function testCode8() {
-      const code = document.getElementById('code8').value;
+      const code = document.getElementById('code6').value;
       const console8 = document.getElementById('console8');
       console8.style.display = 'block';
 
@@ -12903,8 +12903,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       }
     }
 
-    function validateCode8() {
-      const code = document.getElementById('code8').value;
+    function validateCode6() {
+      const code = document.getElementById('code6').value;
 
       const checks = {
         hasTwiml: code.includes('twiml') || code.includes('VoiceResponse'),
@@ -12930,7 +12930,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         });
 
         // Disable the validate button
-        const validateBtn = document.querySelector('[onclick="validateCode8()"]');
+        const validateBtn = document.querySelector('[onclick="validateCode6()"]');
         if (validateBtn) {
           validateBtn.disabled = true;
           validateBtn.style.opacity = '0.5';
@@ -12941,7 +12941,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         if (deployBtn) deployBtn.classList.add('next-action');
 
         // Reset code change flag
-        code8Changed = false;
+        code6Changed = false;
 
         // Enable next button (Step 6 uses nextBtn8)
         const nextBtn = document.getElementById('nextBtn8');
@@ -12970,8 +12970,8 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
       }
     }
 
-    function resetCode8() {
-      document.getElementById('code8').value = `exports.handler = function(context, event, callback) {
+    function resetCode6() {
+      document.getElementById('code6').value = `exports.handler = function(context, event, callback) {
   const twilio = require('twilio');
   const VoiceResponse = twilio.twiml.VoiceResponse;
   const response = new VoiceResponse();
@@ -13010,15 +13010,15 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
       // Mark as not validated so user can re-validate
       step6CodeValidated = false;
-      code8Changed = false;
+      code6Changed = false;
 
       // Re-render to update validate button state
       renderStepContent();
     }
 
     // Validate Step 8 WebSocket Handler with Tools & Knowledge Base
-    function validateCode9() {
-      const code = document.getElementById('code9').value;
+    function validateCode8() {
+      const code = document.getElementById('code8').value;
 
       // Validation checks for advanced WebSocket handler with tools
       const checks = {
@@ -13052,7 +13052,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         });
 
         // Disable the validate button
-        const validateBtn = document.querySelector('[onclick="validateCode9()"]');
+        const validateBtn = document.querySelector('[onclick="validateCode8()"]');
         if (validateBtn) {
           validateBtn.disabled = true;
           validateBtn.style.opacity = '0.5';
@@ -13065,7 +13065,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
         }
 
         // Reset code change flag
-        code9Changed = false;
+        code8Changed = false;
       } else {
         const missing = [];
         if (!checks.hasOpenAI) missing.push('OpenAI import/initialization');
@@ -13170,7 +13170,7 @@ ${hintsLine}${intelligenceLine}
   callback(null, response);
 };`;
 
-      document.getElementById('code8').value = code;
+      document.getElementById('code6').value = code;
 
       // Show success message
       showStatus('step8Status', 'success', '✅ Code updated with your settings! Review and test when ready.');
@@ -13249,12 +13249,12 @@ ${hintsLine}${intelligenceLine}
             <div class="code-header">
               <span>📝 WebSocket Handler</span>
               <div style="display: flex; gap: 10px;">
-                <button class="btn btn-success" id="validateBtn7" style="padding: 6px 12px; font-size: 13px; ${step5CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode7()" ${step5CodeValidated ? 'disabled' : ''}>✓ Validate</button>
-                <button class="btn-copy" onclick="copyCode('code7')">📋 Copy Code</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode7()">Reset</button>
+                <button class="btn btn-success" id="validateBtn7" style="padding: 6px 12px; font-size: 13px; ${step5CodeValidated ? 'opacity: 0.5;' : ''}" onclick="validateCode5()" ${step5CodeValidated ? 'disabled' : ''}>✓ Validate</button>
+                <button class="btn-copy" onclick="copyCode('code5')">📋 Copy Code</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 13px;" onclick="resetCode5()">Reset</button>
               </div>
             </div>
-            <textarea class="code-textarea" id="code7" oninput="handleCodeChange('code7')">/**
+            <textarea class="code-textarea" id="code5" oninput="handleCodeChange('code5')">/**
  * WebSocket Handler for Real-Time Voice AI (Node.js/Express)
  *
  * ⚠️ IMPORTANT: WebSocket servers cannot run on Twilio Serverless!
@@ -13578,7 +13578,7 @@ app.get('/health', (req, res) => {
     }
 
     async function testCode7() {
-      const code = document.getElementById('code7').value;
+      const code = document.getElementById('code5').value;
       const console7 = document.getElementById('console7');
       console7.style.display = 'block';
       console7.innerHTML = '<div class="console-line">🔍 Validating JavaScript syntax...</div>';
@@ -13905,7 +13905,7 @@ app.get('/health', (req, res) => {
       }
 
       // Get the student's WebSocket handler code
-      const studentCode = document.getElementById('code7')?.value || '';
+      const studentCode = document.getElementById('code5')?.value || '';
       if (!studentCode) {
         console7.style.display = 'block';
         console7.innerHTML = '<div class="console-line error">❌ No code to test</div>';
@@ -13980,8 +13980,8 @@ app.get('/health', (req, res) => {
       }
     }
 
-    function validateCode7() {
-      const code = document.getElementById('code7').value;
+    function validateCode5() {
+      const code = document.getElementById('code5').value;
 
       // Count TODO comments vs actual implementation
       const lines = code.split('\n');
@@ -14037,7 +14037,7 @@ app.get('/health', (req, res) => {
         if (deployBtn) deployBtn.classList.add('next-action');
 
         // Reset code change flag
-        code7Changed = false;
+        code5Changed = false;
       } else {
         let message = '⚠️ Validation issues found:\n';
         if (!checks.hasWebSocket) message += '- Missing WebSocket import (require(\'ws\') or WebSocketServer)\n';
@@ -14503,8 +14503,8 @@ app.get('/health', (req, res) => {
       }, 3000);
     }
 
-    function validateCode7_OLD_WEBSOCKET() {
-      const code = document.getElementById('code7').value;
+    function validateCode5_OLD_WEBSOCKET() {
+      const code = document.getElementById('code5').value;
       const checks = {
         hasWebSocket: code.includes('WebSocket') || code.includes('ws'),
         hasOpenAI: code.includes('OpenAI'),
@@ -14522,8 +14522,8 @@ app.get('/health', (req, res) => {
       }
     }
 
-    function resetCode7() {
-      document.getElementById('code7').value = `exports.handler = async function(context, event, callback) {
+    function resetCode5() {
+      document.getElementById('code5').value = `exports.handler = async function(context, event, callback) {
   const response = new Twilio.Response();
   response.setStatusCode(200);
   response.appendHeader('Content-Type', 'text/plain');
@@ -14635,8 +14635,8 @@ app.get('/health', (req, res) => {
       document.getElementById('step7Status').innerHTML = '';
     }
 
-    function resetCode7_OLD_WEBSOCKET() {
-      document.getElementById('code7').value = `exports.handler = function(context, event, callback) {
+    function resetCode5_OLD_WEBSOCKET() {
+      document.getElementById('code5').value = `exports.handler = function(context, event, callback) {
   const WebSocket = require('ws');
   const OpenAI = require('openai');
 
@@ -15217,21 +15217,21 @@ app.get('/health', (req, res) => {
           validatedFlag: 'step4CodeValidated',
           deployedFlag: 'step4Deployed'
         },
-        'code7': {
-          flag: 'code7Changed',
+        'code5': {
+          flag: 'code5Changed',
           buttonSelector: '#validateBtn7',
           validatedFlag: 'step5CodeValidated',
           deployedFlag: 'step5Deployed'
         },
-        'code8': {
-          flag: 'code8Changed',
-          buttonSelector: '[onclick="validateCode8()"]',
+        'code6': {
+          flag: 'code6Changed',
+          buttonSelector: '[onclick="validateCode6()"]',
           validatedFlag: 'step6CodeValidated',
           deployedFlag: 'step6Deployed'
         },
-        'code9': {
-          flag: 'code9Changed',
-          buttonSelector: '[onclick="validateCode9()"]',
+        'code8': {
+          flag: 'code8Changed',
+          buttonSelector: '[onclick="validateCode8()"]',
           validatedFlag: 'toolsConfigured',
           deployedFlag: 'step8Deployed'
         }
@@ -15259,18 +15259,18 @@ app.get('/health', (req, res) => {
       }
     }
 
-    // Add channel code to the code9 editor
+    // Add channel code to the code8 editor
     function addChannelCodeToEditor(channelCodeId) {
       const channelCode = document.getElementById(channelCodeId);
-      const code9Editor = document.getElementById('code9');
+      const code8Editor = document.getElementById('code8');
 
-      if (!channelCode || !code9Editor) {
+      if (!channelCode || !code8Editor) {
         console.error('Could not find code elements');
         return;
       }
 
       const codeToAdd = channelCode.value;
-      const currentCode = code9Editor.value;
+      const currentCode = code8Editor.value;
 
       // Find where to insert the code (before the closing of exports.handler)
       // Look for the last closing brace
@@ -15285,14 +15285,14 @@ app.get('/health', (req, res) => {
         const channelName = channelCodeId.replace('Function', '').toUpperCase();
         const insertCode = `\n\n  // ============================================\n  // ${channelName} CHANNEL CODE - Added from examples\n  // ============================================\n\n  ${codeToAdd.split('\n').map(line => '  ' + line).join('\n')}\n\n`;
 
-        code9Editor.value = beforeClosing + insertCode + closing;
+        code8Editor.value = beforeClosing + insertCode + closing;
       } else {
         // If we can't find the structure, just append at the end
-        code9Editor.value = currentCode + '\n\n' + codeToAdd;
+        code8Editor.value = currentCode + '\n\n' + codeToAdd;
       }
 
       // Trigger change detection to re-enable validate button if needed
-      handleCodeChange('code9');
+      handleCodeChange('code8');
 
       // Update the button that was clicked to show success
       const clickedButton = event?.target;
@@ -15310,14 +15310,14 @@ app.get('/health', (req, res) => {
         }, 3000);
       }
 
-      // Scroll back up to the code9 editor
-      const code9Container = code9Editor.closest('.code-editor');
-      if (code9Container) {
-        code9Container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Scroll back up to the code8 editor
+      const code8Container = code8Editor.closest('.code-editor');
+      if (code8Container) {
+        code8Container.scrollIntoView({ behavior: 'smooth', block: 'start' });
         // Give a visual indication that code was added
-        code9Editor.style.border = '2px solid #10b981';
+        code8Editor.style.border = '2px solid #10b981';
         setTimeout(() => {
-          code9Editor.style.border = '';
+          code8Editor.style.border = '';
         }, 2000);
       }
 
@@ -15606,8 +15606,8 @@ app.get('/health', (req, res) => {
         selectedPhoneNumber,
         syncServiceSkipped,
         code4: document.getElementById('code4')?.value,
-        code7: document.getElementById('code7')?.value,
-        code8: document.getElementById('code8')?.value,
+        code5: document.getElementById('code5')?.value,
+        code6: document.getElementById('code6')?.value,
         timestamp: new Date().toISOString()
       };
 
