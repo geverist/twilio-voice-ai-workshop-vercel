@@ -12908,7 +12908,7 @@ TWILIO_SYNC_SVC_SID=your_sync_service_sid
 
       const checks = {
         hasTwiml: code.includes('twiml') || code.includes('VoiceResponse'),
-        hasConnect: code.includes('.connect()'),
+        hasConnect: code.includes('.connect('),
         hasConversationRelay: code.includes('conversationRelay'),
         hasUrl: code.includes('url:'),
         hasVoice: code.includes('voice:'),
