@@ -850,7 +850,7 @@
       <div class="toolbar-left">
         <button class="btn-icon" onclick="saveProgress()">💾 Save Progress</button>
         <button class="btn-icon" onclick="loadProgress()">📂 Load Progress</button>
-        <button class="btn-icon" onclick="exportProject()">📦 Export Project</button>
+        <button class="btn-icon" id="exportProjectBtn" onclick="exportProject()">📦 Export Project</button>
       </div>
       <div class="toolbar-right">
         <button class="btn-icon" disabled style="opacity: 0.5; cursor: not-allowed; background: #2c313c; color: #666;" title="Collaborate With Your Team">👥 Collaborate</button>
@@ -15625,6 +15625,23 @@ app.get('/health', (req, res) => {
       const modal = document.getElementById('exportModal');
       const content = document.getElementById('exportContent');
 
+      // Check if in demo mode
+      if (studentDemoMode || twilioCredentials?.demoMode === true) {
+        content.innerHTML = `
+          <div class="service-card">
+            <h3>🎭 Demo Mode</h3>
+            <p style="margin: 15px 0; color: #666;">
+              Export is not available in Demo Mode. Please exit Demo Mode and connect your real accounts to export your project.
+            </p>
+            <button class="btn btn-primary" onclick="closeModal('exportModal')">
+              Close
+            </button>
+          </div>
+        `;
+        modal.classList.add('show');
+        return;
+      }
+
       // Check if we have GitHub credentials
       if (!githubToken || !githubUsername || !studentRepoName) {
         content.innerHTML = `
@@ -17818,10 +17835,28 @@ Scroll down to see the updated system prompt.
     // Show demo mode banner when demo mode is active
     function updateDemoModeBanner() {
       const banner = document.getElementById('demoModeBanner');
+      const exportBtn = document.getElementById('exportProjectBtn');
+
       if (studentDemoMode || twilioCredentials?.demoMode === true) {
         banner.style.display = 'block';
+
+        // Disable export button in demo mode
+        if (exportBtn) {
+          exportBtn.disabled = true;
+          exportBtn.style.opacity = '0.5';
+          exportBtn.style.cursor = 'not-allowed';
+          exportBtn.title = 'Export is not available in Demo Mode';
+        }
       } else {
         banner.style.display = 'none';
+
+        // Enable export button in live mode
+        if (exportBtn) {
+          exportBtn.disabled = false;
+          exportBtn.style.opacity = '1';
+          exportBtn.style.cursor = 'pointer';
+          exportBtn.title = 'Export your project files';
+        }
       }
     }
 
