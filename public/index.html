@@ -3039,7 +3039,8 @@ Example:
 
       container.innerHTML = steps.map((step, index) => {
         const isAccessible = index <= maxAccessibleStep;
-        const isCompleted = index < currentStep;
+        // A step is completed if it meets its condition (not just if we've moved past it)
+        const isCompleted = STEP_CONDITIONS[index] && STEP_CONDITIONS[index]();
         const isActive = index === currentStep;
 
         return `
