@@ -3203,8 +3203,8 @@ Example:
           // Need use case description - highlight the textarea
           nextButton = document.getElementById('useCaseDescription');
         } else if (!callDirectionChosen) {
-          // Have description, need direction - highlight outbound card
-          nextButton = document.getElementById('outboundCard');
+          // Have description, need direction - highlight inbound card (most common)
+          nextButton = document.getElementById('inboundCard');
         }
       } else if (currentStep === 2) {
         // Step 3: Services - guide through phone → messaging → sync/skip → next
@@ -4157,27 +4157,6 @@ Example:
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0;">
-            <!-- Outbound Calls -->
-            <div class="service-card" onclick="selectCallDirection('outbound')" style="cursor: pointer; border: 3px solid transparent; transition: all 0.3s;" id="outboundCard">
-              <div style="text-align: center; margin-bottom: 15px;">
-                <div style="font-size: 64px;">📞</div>
-                <h3 style="margin: 10px 0; color: #0d122b;">Outbound Calls</h3>
-              </div>
-              <p style="margin-bottom: 15px; line-height: 1.6;">
-                <strong>You initiate the call</strong> - Perfect for:
-              </p>
-              <ul style="margin: 0 0 15px 20px; line-height: 1.8; font-size: 14px;">
-                <li>Recruiting candidate outreach</li>
-                <li>Customer follow-ups</li>
-                <li>Survey campaigns</li>
-                <li>Appointment reminders</li>
-              </ul>
-              <div style="background: #e7f5ff; padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 13px; line-height: 1.6;">
-                <strong>Phase 1:</strong> <code>&lt;Say&gt;</code>, <code>&lt;Gather&gt;</code>, <code>&lt;Dial&gt;</code><br>
-                <strong>Phase 2:</strong> ConversationRelay + STT + TTS + AI
-              </div>
-            </div>
-
             <!-- Inbound Calls -->
             <div class="service-card" onclick="selectCallDirection('inbound')" style="cursor: pointer; border: 3px solid transparent; transition: all 0.3s;" id="inboundCard">
               <div style="text-align: center; margin-bottom: 15px;">
@@ -4195,6 +4174,27 @@ Example:
               </ul>
               <div style="background: #e7f5ff; padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 13px; line-height: 1.6;">
                 <strong>Phase 1:</strong> <code>&lt;Say&gt;</code> + <code>&lt;Gather&gt;</code><br>
+                <strong>Phase 2:</strong> ConversationRelay + STT + TTS + AI
+              </div>
+            </div>
+
+            <!-- Outbound Calls -->
+            <div class="service-card" onclick="selectCallDirection('outbound')" style="cursor: pointer; border: 3px solid transparent; transition: all 0.3s;" id="outboundCard">
+              <div style="text-align: center; margin-bottom: 15px;">
+                <div style="font-size: 64px;">📞</div>
+                <h3 style="margin: 10px 0; color: #0d122b;">Outbound Calls</h3>
+              </div>
+              <p style="margin-bottom: 15px; line-height: 1.6;">
+                <strong>You initiate the call</strong> - Perfect for:
+              </p>
+              <ul style="margin: 0 0 15px 20px; line-height: 1.8; font-size: 14px;">
+                <li>Recruiting candidate outreach</li>
+                <li>Customer follow-ups</li>
+                <li>Survey campaigns</li>
+                <li>Appointment reminders</li>
+              </ul>
+              <div style="background: #e7f5ff; padding: 10px; border-radius: 4px; margin-top: 15px; font-size: 13px; line-height: 1.6;">
+                <strong>Phase 1:</strong> <code>&lt;Say&gt;</code>, <code>&lt;Gather&gt;</code>, <code>&lt;Dial&gt;</code><br>
                 <strong>Phase 2:</strong> ConversationRelay + STT + TTS + AI
               </div>
             </div>
