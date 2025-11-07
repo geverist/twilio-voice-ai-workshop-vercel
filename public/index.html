@@ -17645,7 +17645,8 @@ Scroll down to see the updated system prompt.
       // Display shows max of (actual completions, current step + 1)
       // This ensures when you're on step 9, it shows "9 of 9" even if not all prior steps completed
       // In demo mode, use current step only (flags are pre-set and don't reflect actual progress)
-      const displayedCompleted = studentDemoMode ? currentStep + 1 : Math.max(actuallyCompleted, currentStep + 1);
+      const isDemoMode = studentDemoMode || twilioCredentials?.demoMode === true;
+      const displayedCompleted = isDemoMode ? currentStep + 1 : Math.max(actuallyCompleted, currentStep + 1);
 
       const percentage = Math.round((displayedCompleted / totalSteps) * 100);
 
