@@ -4131,26 +4131,6 @@ Example:
             </div>
           </div>
 
-          <!-- Skip Initial Greeting Option -->
-          <div class="service-card" style="margin-bottom: 20px; background: #f8f9fa;">
-            <label style="display: flex; align-items: start; gap: 12px; cursor: pointer; user-select: none;">
-              <input
-                type="checkbox"
-                id="skipInitialGreeting"
-                onchange="handleSkipGreetingChange()"
-                ${window.skipInitialGreeting ? 'checked' : ''}
-                style="width: 20px; height: 20px; cursor: pointer; margin-top: 2px; flex-shrink: 0;"
-              />
-              <div style="flex: 1;">
-                <div style="font-weight: 600; color: #0d122b; margin-bottom: 4px;">Dynamic AI Greeting</div>
-                <div style="font-size: 13px; color: #666; line-height: 1.5;">
-                  <strong>For outbound calls:</strong> Moves the greeting into the system prompt so the AI can personalize it (e.g., "Hi Sarah, this is...") based on your use case.<br>
-                  <strong>For inbound calls:</strong> The AI will wait for the caller to speak first instead of using a pre-recorded greeting.
-                </div>
-              </div>
-            </label>
-          </div>
-
           <div class="instructions">
             <h3>📞 Choose Your Call Direction</h3>
             <p>Select how you want to use your Voice AI bot. We'll start simple, then add AI capabilities!</p>
