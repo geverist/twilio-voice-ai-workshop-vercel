@@ -4324,9 +4324,16 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
           saveProgressToStorage();
 
           console.log('✅ Generated content (Demo Mode):', generatedContent);
+
+          // Show preview of the system prompt that will be used in Step 7
+          const promptPreview = generatedContent.systemPrompt.substring(0, 150) + '...';
           showStatus('step2Status', 'success',
             `✨ AI customized the workshop content! (Demo Mode)<br>` +
-            `<div style="margin-top: 8px; font-size: 13px;">📝 Using simulated AI generation for learning purposes.</div>`
+            `<div style="margin-top: 10px; padding: 12px; background: #f8f9fa; border-left: 3px solid #F22F46; border-radius: 4px;">` +
+            `<div style="font-weight: 600; color: #0d122b; margin-bottom: 6px;">📝 System Prompt Preview (Step 7):</div>` +
+            `<div style="font-size: 13px; color: #666; font-family: monospace; line-height: 1.5;">${promptPreview}</div>` +
+            `<div style="font-size: 12px; color: #999; margin-top: 6px;">You'll customize this in Step 7: Prompt Engineering</div>` +
+            `</div>`
           );
 
           // Show regenerate button if not already visible
@@ -4449,10 +4456,16 @@ Remember: In voice conversations, brevity is key. Keep it natural and conversati
         console.log('👋 IVR Greeting:', generatedContent.ivrGreeting);
         console.log(`📊 Used ${data.usageTokens} tokens`);
 
-        // Show success message with token usage
+        // Show success message with system prompt preview
         const tokenInfo = data.usageTokens ? ` (${data.usageTokens} tokens used)` : '';
+        const promptPreview = generatedContent.systemPrompt?.substring(0, 150) + '...';
         showStatus('step2Status', 'success',
-          `✨ AI customized the workshop content based on your use case!${tokenInfo}`
+          `✨ AI customized the workshop content based on your use case!${tokenInfo}<br>` +
+          `<div style="margin-top: 10px; padding: 12px; background: #f8f9fa; border-left: 3px solid #F22F46; border-radius: 4px;">` +
+          `<div style="font-weight: 600; color: #0d122b; margin-bottom: 6px;">📝 System Prompt Preview (Step 7):</div>` +
+          `<div style="font-size: 13px; color: #666; font-family: monospace; line-height: 1.5;">${promptPreview}</div>` +
+          `<div style="font-size: 12px; color: #999; margin-top: 6px;">You'll customize this in Step 7: Prompt Engineering</div>` +
+          `</div>`
         );
 
         // Show regenerate button if not already visible
