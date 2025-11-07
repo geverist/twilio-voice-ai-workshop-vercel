@@ -1696,7 +1696,7 @@ Example:
       0: () => twilioConnected && openaiConnected,
       1: () => callDirectionChosen && useCaseDescription?.trim(),
       2: () => selectedPhoneNumber && servicesReady,
-      3: () => step4CodeValidated && step4Deployed,
+      3: () => step4CodeValidated && (step4Deployed || basicCallTested),
       4: () => step5CodeValidated && step5Deployed,
       5: () => step6CodeValidated && step6Deployed,
       6: () => systemPromptSaved && step7Deployed,
